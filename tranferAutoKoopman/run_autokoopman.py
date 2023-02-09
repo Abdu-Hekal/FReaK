@@ -47,6 +47,6 @@ def run(times, trajectories, param_dict, inputs_list):
 
     return koopman_model
 
-run(times,trajectories, param_dict,inputs_list)
+koopman_model = run(times,trajectories, param_dict,inputs_list)
 
 
