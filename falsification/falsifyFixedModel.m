@@ -52,7 +52,12 @@ function R = reachKoopman(A,B,g,R0,U,tFinal,dt)
     set{1} = R0; time{1} = interval(-dt/2,dt/2);
 
     for i = 1:length(t)-1
-        set{i+1} = A*set{i} + B*zonotope(U);
+        % AH edit to check if system has external input
+        if B
+            set{i+1} = A*set{i} + B*zonotope(U);
+        else
+            set{i+1} = A*set{i};
+        end
         time{i+1} = time{i} + dt;
     end
 

@@ -8,6 +8,8 @@ function [tout, yout] = run_transmission(~, u, T)
         'SaveTime', 'on', 'TimeSaveName', 'tout', ...
         'SaveOutput', 'on', 'OutputSaveName', 'yout', ...
         'SaveFormat', 'Array');
+
     tout = result.tout;
     yout = result.yout;
+
 end

@@ -5,7 +5,6 @@ for i = 1:10
     u = [linspace(0,30,N)',100*rand(N,1),320*rand(N,1)];
     [t{end+1}, x] = run_transmission([], u, 30);
     U{end+1} = repelem(u(:,2:end)',1,30); X{end+1} = x';
-
 end
 dt = t{1}(2) - t{1}(1);
 
