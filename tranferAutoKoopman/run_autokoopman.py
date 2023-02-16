@@ -8,7 +8,7 @@ def run(times, trajectories, param_dict, inputs_list):
 
     data = []
     for i, (time, trajectory) in enumerate(zip(times, trajectories)):
-        inputs = np.asarray(inputs_list).T if inputs_list else None
+        inputs = np.asarray(inputs_list[0]).T if inputs_list else None
         data.append(traj.Trajectory(np.asarray(time), np.asarray(trajectory).T, inputs))
     
     if param_dict["obs_type"] == 'deep':
@@ -48,5 +48,6 @@ def run(times, trajectories, param_dict, inputs_list):
     return koopman_model
 
 koopman_model = run(times,trajectories, param_dict,inputs_list)
+
 
 

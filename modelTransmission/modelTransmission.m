@@ -59,5 +59,6 @@ u_ = [linspace(0,30,size(u,2))', u'];
 
 [~, x] = run_transmission([], u_, 30);
 % 
-% plot([0 90],[4750, 4750],'--r')
-% plot(x(:,1),x(:,2),'g');
+plot([0 90],[4750, 4750],'--r')
+disp(x)
+plot(x(:,1),x(:,2),'g');

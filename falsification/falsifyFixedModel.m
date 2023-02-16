@@ -173,7 +173,12 @@ function [x0,u] = falsifyingTrajectory(R0,U,set,alpha)
     end
 
     R0 = zonotope(R0);
-    x0 = center(R0) + generators(R0)*alphaInit;
+    %AH modification, checks if R0 is not exact, to avoid error
+    if isempty(generators(R0))
+       x0 = center(R0);
+    else
+       x0 = center(R0) + generators(R0)*alphaInit;
+    end
 
     % determine most ctritical control input
     if ~isempty(set.Grest)
