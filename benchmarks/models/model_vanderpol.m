@@ -24,7 +24,7 @@ function model = model_vanderpol()
 %------------------------------------------------------------------
     
     % initalize training data and model specific information
-    % if either R0 or U don't exist for the model, set them as "interval(0,0)"
+    % if U don't exist for the model, set as "interval(0,0)"
     % N: no. of (piecewise constant) inputs, set to 1 if no inputs
     % spec: specification of (unsafe) set
     model.name = 'vanderpol'; %name of the simulink model
