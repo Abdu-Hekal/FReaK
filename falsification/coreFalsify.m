@@ -17,14 +17,12 @@ while i < max_train_size && falsified==false
     x0=crit_x(1,:)';
     u=crit_u;
     disp(i)
-    digits(100);
-
     for j = 1:size(model.spec,1)
     % different types of specifications
         if strcmp(model.spec(j,1).type,'unsafeSet')
-            check = any(model.spec.set.contains(crit_x'));
+            check = any(model.spec(j,1).set.contains(crit_x'));
         elseif strcmp(model.spec(j,1).type,'logic')
-            check = modelCheckTrace(model.spec.set,crit_x,vpa(linspace(0,model.T,size(crit_x,1))));
+            check = check_stl(model.spec(j,1).set,crit_x,vpa(linspace(0,model.T,size(crit_x,1)')));
         end
         if check 
             falsified = true;

@@ -1,0 +1,34 @@
+function visualize_train(trainset)
+
+    n = size(trainset.X{end},1); %number of variables
+    dt = trainset.t{1}(2) - trainset.t{1}(1);
+    T = trainset.t{1}(end);
+ 
+    % visualize the predictions for the identfied Koopman model
+    load("autokoopman_model.mat", "A","B")
+
+    figure; hold on; box on;
+    for r = 1:length(trainset.X)
+        %plot Autokoopman vs real trajectory for all simulations
+        x = sim_autokoopman(trainset.X{r}(:,1), trainset.XU{r}, @(x) autokoopman(x), A, B, T/dt);
+        plot(trainset.X{r}(1,:),trainset.X{r}(2,:),'r:',LineWidth=2);
+        plot(x(1,:),x(2,:),'b');
+        legend('real_trajectory','Autokoopman')
+    end
+
+end
+
+% Auxiliary Functions -----------------------------------------------------
+
+function x = sim_autokoopman(x0,u,g,A,B,steps)
+    x = zeros(size(x0,1),steps);
+    x(:,1) = x0;
+    for i = 2:steps
+        if isempty(B)
+            xtemp = A*g(x(:,i-1));
+        else
+            xtemp = A*g(x(:,i-1)) + B*u(:,i-1);
+        end
+        x(:,i) = xtemp(1:size(x0,1),:);
+    end
+end
