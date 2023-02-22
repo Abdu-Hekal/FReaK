@@ -30,6 +30,7 @@ function plot_logic(phi)
         % convert to a union of unsafe sets
         unsafeSet = safe2unsafe(safeSet);
         for k=1:length(unsafeSet)
+            disp(unsafeSet{k}.P)
             plot(unsafeSet{k},[1,2], 'FaceColor','red','FaceAlpha',.1)
         end
     else
