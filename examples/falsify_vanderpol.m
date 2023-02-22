@@ -9,7 +9,7 @@ max_train_size=5; %maximum number of training trajectories before quitting
 
 if falsified
     disp("falsifying trace found")
-    visualize_falsification(crit_x, model.spec)
+    visualize_falsification(crit_x, trainset.t{1}, model.spec)
 end
 
 visualize_train(trainset)

@@ -1,17 +1,23 @@
-function visualize_falsification(crit_x, spec)
-    %plot falsifying trace
-    figure; hold on; box on;
-    xlim([min(crit_x(:,1))-abs(0.2*min(crit_x(:,1))),max(crit_x(:,1))+abs(0.2*max(crit_x(:,1)))]); 
-    ylim([min(crit_x(:,2))-abs(0.2*min(crit_x(:,2))),max(crit_x(:,2))+abs(0.2*min(crit_x(:,2)))])
+function visualize_falsification(crit_x, times, spec)
     for i = 1:size(spec,1)
+        figure; hold on; box on;
+        xlim([min(crit_x(:,1))-abs(0.2*min(crit_x(:,1))),max(crit_x(:,1))+abs(0.2*max(crit_x(:,1)))]); 
+        ylim([min(crit_x(:,2))-abs(0.2*min(crit_x(:,2))),max(crit_x(:,2))+abs(0.2*min(crit_x(:,2)))])
+
+        %plot spec
         if strcmp(spec(i,1).type,'unsafeSet')
-            plot(spec(i,1).set, [1,2], 'FaceColor','red','FaceAlpha',.1)
+            plot(spec(i,1).set, [1,2], 'FaceColor','red','FaceAlpha',.1,'DisplayName','unsafe set')
+            %plot falsifying trace
+            plot(crit_x(:,1),crit_x(:,2),'b','DisplayName','falsifying traj');
         elseif strcmp(spec(i,1).type,'logic')
             phi = negationNormalForm(spec(i,1).set);
             plot_logic(phi);
+            from = find(times==phi.from); to = find(times==phi.to);
+            plot(crit_x(from:to,1),crit_x(from:to,2),'b','DisplayName','falsifying traj in spec range');
+            plot(crit_x(to:end,1),crit_x(to:end,2),'b--','DisplayName','remainder of trajectory');
         end
+        legend
     end
-    plot(crit_x(:,1),crit_x(:,2),'g');
 end
 
 
@@ -30,8 +36,8 @@ function plot_logic(phi)
         % convert to a union of unsafe sets
         unsafeSet = safe2unsafe(safeSet);
         for k=1:length(unsafeSet)
-            disp(unsafeSet{k}.P)
-            plot(unsafeSet{k},[1,2], 'FaceColor','red','FaceAlpha',.1)
+            disp(unsafeSet{k})
+            plot(unsafeSet{k},[1,2], 'FaceColor','red','FaceAlpha',.1,'DisplayName','spec')
         end
     else
         plot_logic(phi.lhs);
