@@ -4,12 +4,13 @@
 
 model = model_AutoTransmission();
 max_train_size=10; %maximum number of training trajectories before quitting
+plot_vars = [1,2];
 
 [falsified, trainset, crit_x] = coreFalsify(model, max_train_size);
 
 if falsified
     disp("falsifying trace found")
-    visualize_falsification(crit_x, trainset.t{1}, model.spec)
+    visualize_falsification(crit_x, trainset.t{1}, model.spec, plot_vars)
 end
 
-visualize_train(trainset)
+visualize_train(trainset, plot_vars)

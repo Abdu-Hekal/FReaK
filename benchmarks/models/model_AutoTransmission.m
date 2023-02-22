@@ -34,7 +34,7 @@ function model = model_AutoTransmission()
     model.N=3000;
 
     x = stl('x',3);
-    eq = globally(x(2) < 4750,interval(0,10));
+    eq = globally(x(2) < 4750,interval(0,10)) & globally(x(1)<50,interval(0,10));
     model.spec = specification(eq,'logic');
 %     model.spec = specification(halfspace([0 -1 0],-4750),'unsafeSet');
 

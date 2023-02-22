@@ -1,4 +1,4 @@
-function visualize_train(trainset)
+function visualize_train(trainset, plot_vars)
 
     n = size(trainset.X{end},1); %number of variables
     dt = trainset.t{1}(2) - trainset.t{1}(1);
@@ -11,8 +11,8 @@ function visualize_train(trainset)
     for r = 1:length(trainset.X)
         %plot Autokoopman vs real trajectory for all simulations
         x = sim_autokoopman(trainset.X{r}(:,1), trainset.XU{r}, @(x) autokoopman(x), A, B, T/dt);
-        plot(trainset.X{r}(1,:),trainset.X{r}(2,:),'r:',LineWidth=2);
-        plot(x(1,:),x(2,:),'b');
+        plot(trainset.X{r}(plot_vars(1),:),trainset.X{r}(plot_vars(2),:),'r:',LineWidth=2);
+        plot(x(plot_vars(1),:),x(plot_vars(2),:),'b');
         legend('real_trajectory','Autokoopman')
     end
 

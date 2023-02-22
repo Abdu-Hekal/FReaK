@@ -22,7 +22,7 @@ while i < max_train_size && falsified==false
         if strcmp(model.spec(j,1).type,'unsafeSet')
             check = any(model.spec(j,1).set.contains(crit_x'));
         elseif strcmp(model.spec(j,1).type,'logic')
-            check = ~check_stl(model.spec(j,1).set,crit_x,vpa(linspace(0,model.T,size(crit_x,1)')));
+            check = ~checkStl(model.spec(j,1).set,crit_x,vpa(linspace(0,model.T,size(crit_x,1)')));
         end
         if check 
             falsified = true;
