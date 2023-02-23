@@ -15,10 +15,12 @@ function visualize_falsification(crit_x, times, spec, plot_vars)
             from = find(times==from);
             if to==-1; to = size(times,1); else to=find(times==to); end
             plotUnsafeCell(unsafeCell, plot_vars);
-            plot(crit_x(from:to,plot_vars(1)),crit_x(from:to,plot_vars(2)),'b','DisplayName','falsifying traj in spec range');
-            plot(crit_x(to:end,plot_vars(1)),crit_x(to:end,plot_vars(2)),'b--','DisplayName','remainder of trajectory');
+            plot(crit_x(1:from,plot_vars(1)),crit_x(1:from,plot_vars(2)), 'Color' , '#33F6FF','LineStyle','--','LineWidth',1.5,'DisplayName','trajectory before');
+            plot(crit_x(from:to,plot_vars(1)),crit_x(from:to,plot_vars(2)),'b','LineWidth',1.5,'DisplayName','falsifying traj in spec range');
+            plot(crit_x(to:end,plot_vars(1)),crit_x(to:end,plot_vars(2)), 'Color' , '#CA33FF','LineStyle','--','LineWidth',1.5,'DisplayName','trajectory after');
         end
-        legend
+        l = legend;
+        l.Location = 'best';
     end
 end
 
@@ -48,13 +50,13 @@ function [unsafeCell, from, to] = phiToUnsafeSet(phi, from, to)
         unsafeCell= [unsafeCell,safe2unsafe(safeSet)];
     elseif strcmp(phi.type,'&')
         % OR implies that unsafe set is BOTH rhs & lhs
-        [lhsUnsafeCell, from, to] = phiToUnsafeSet(phi.lhs, from, to);
-        [rhsUnsafeCell, from, to] = phiToUnsafeSet(phi.rhs, from, to);
+        [lhsUnsafeCell, from, to] = phiToUnsafeSet(phi.lhs, phi.from, phi.to);
+        [rhsUnsafeCell, from, to] = phiToUnsafeSet(phi.rhs, phi.from, phi.to);
         unsafeCell= [unsafeCell, lhsUnsafeCell, rhsUnsafeCell];
     elseif strcmp(phi.type,'|')
         % AND implies that unsafe set is intersection of rhs & lhs
-        [lhsUnsafeCell,from, to] = phiToUnsafeSet(phi.lhs,from, to);
-        [rhsUnsafeCell,from, to] = phiToUnsafeSet(phi.rhs,from, to);
+        [lhsUnsafeCell,from, to] = phiToUnsafeSet(phi.lhs,phi.from, phi.to);
+        [rhsUnsafeCell,from, to] = phiToUnsafeSet(phi.rhs,phi.from, phi.to);
         for kl=1:length(lhsUnsafeCell)
             for kr=1:length(rhsUnsafeCell)
                 unsafeIntersect = lhsUnsafeCell{kl} & rhsUnsafeCell{kr};
@@ -64,21 +66,27 @@ function [unsafeCell, from, to] = phiToUnsafeSet(phi, from, to)
             end
         end
     elseif any(strcmp(phi.type,{'finally','globally'}))
-        [lhsUnsafeCell,from, to] = phiToUnsafeSet(phi.lhs,from, to);
+        [lhsUnsafeCell,from, to] = phiToUnsafeSet(phi.lhs,phi.from, phi.to);
         unsafeCell= [unsafeCell,lhsUnsafeCell]; 
-    %FIXME: function throws error for minkDiff
-    elseif strcmp(phi.type,'until')
-        % AND implies that unsafe set is intersection of rhs & lhs
-        [lhsUnsafeCell,from, to] = phiToUnsafeSet(phi.lhs,from, to);
-        [rhsUnsafeCell,from, to] = phiToUnsafeSet(phi.rhs,from, to);
-        for kl=1:length(lhsUnsafeCell)
-            for kr=1:length(rhsUnsafeCell)
-                unsafeDiff = minkDiff(lhsUnsafeCell{kl},rhsUnsafeCell{kr})
-            end
-            if ~isempty(unsafeDiff)
-                unsafeCell{end+1} = unsafeDiff;
-            end
-        end
+    elseif strcmp(phi.type,'next')
+        [lhsUnsafeCell,from, to] = phiToUnsafeSet(phi.lhs,phi.from, phi.from);
+        unsafeCell= [unsafeCell,lhsUnsafeCell]; 
+        
+    %FIXME: function throws error for plotting
+%     elseif strcmp(phi.type,'until')
+%         % AND implies that unsafe set is intersection of rhs & lhs
+%         [lhsUnsafeCell,from, to] = phiToUnsafeSet(phi.lhs,from, to);
+%         [rhsUnsafeCell,from, to] = phiToUnsafeSet(phi.rhs,from, to);
+%         for kl=1:length(lhsUnsafeCell)
+%             for kr=1:length(rhsUnsafeCell)
+%                 unsafeDiff = mldivide(lhsUnsafeCell{kl},rhsUnsafeCell{kr})
+%             end
+%             if ~isempty(unsafeDiff)
+%                 unsafeCell{end+1} = unsafeDiff;
+%             end
+%         end
+    else
+        fprintf("support for stl of type %s is not added\n",phi.type);
     end
 end
 
@@ -118,6 +126,6 @@ end
 
 function plotUnsafeCell(unsafeCell,plot_vars)
     for k=1:length(unsafeCell)
-        plot(unsafeCell{k},plot_vars, 'FaceColor','red','FaceAlpha',.1,'DisplayName','spec')
+        plot(unsafeCell{k},plot_vars, 'FaceColor','red','FaceAlpha',.05,'DisplayName','spec')
     end
 end

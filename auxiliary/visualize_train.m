@@ -13,7 +13,9 @@ function visualize_train(trainset, plot_vars)
         x = sim_autokoopman(trainset.X{r}(:,1), trainset.XU{r}, @(x) autokoopman(x), A, B, T/dt);
         plot(trainset.X{r}(plot_vars(1),:),trainset.X{r}(plot_vars(2),:),'r:',LineWidth=2);
         plot(x(plot_vars(1),:),x(plot_vars(2),:),'b');
-        legend('real_trajectory','Autokoopman')
+        l = legend('real_trajectory','Autokoopman');
+        l.Location = 'best';
+
     end
 
 end
