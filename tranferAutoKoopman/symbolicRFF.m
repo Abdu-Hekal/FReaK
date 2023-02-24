@@ -6,7 +6,6 @@ function [trainset, crit_x, crit_u] = symbolicRFF(model, trainset, x0, u)
     dt = trainset.t{1}(2) - trainset.t{1}(1);
     iters=model.T/(model.N*dt);
     %no support yet for different number of inputs in falsifyFixedModel
-    assert(model.N == model.T/dt, 'Number of inputs must be equal to simulation-time/time-step') 
     assert(rem(iters,1)==0, 'Number of inputs has to be a factor of simulation-time/time-step')
     %append zeros at end to account for last time point (which has no
     %inputs), but length must be consistant with trajectory states

@@ -1,4 +1,4 @@
-function [falsified, trainset, crit_x] = coreFalsify(model, max_train_size)
+function [falsified, trainset, crit_x, train_iter] = coreFalsify(model, max_train_size)
 
 %Ensure that autokoopman is installed & imported in your python environment
 py.importlib.import_module('autokoopman');
@@ -11,11 +11,15 @@ trainset.X = {}; trainset.XU={}; trainset.t = {}; %empty cells to store states, 
 
 falsified = false;
 i = 0;
-while i < max_train_size && falsified==false
+while i < max_train_size % && falsified==false
     [trainset, crit_x, crit_u] = symbolicRFF(model, trainset, x0, u);
     %retrain with initial set as the critical set found in prev iteration
     x0=crit_x(1,:)';
     u=crit_u;
+
+    x0 = (model.R0.sup-model.R0.inf)*rand()+model.R0.inf;
+    u = [linspace(0,model.T-model.T/model.N,model.N)',((model.U.sup-model.U.inf).*rand(1,model.N)+model.U.inf)']; %check this
+    disp(u)
     disp(i)
     for j = 1:size(model.spec,1)
     % different types of specifications
@@ -34,5 +38,4 @@ end
 %close simulink model
 close_system;
 
-train_iter = ['training iterations required: ',num2str(i)];
-disp(train_iter)
+train_iter = i;
