@@ -16,11 +16,6 @@ while i < max_train_size % && falsified==false
     %retrain with initial set as the critical set found in prev iteration
     x0=crit_x(1,:)';
     u=crit_u;
-
-    x0 = (model.R0.sup-model.R0.inf)*rand()+model.R0.inf;
-    u = [linspace(0,model.T-model.T/model.N,model.N)',((model.U.sup-model.U.inf).*rand(1,model.N)+model.U.inf)']; %check this
-    disp(u)
-    disp(i)
     for j = 1:size(model.spec,1)
     % different types of specifications
         if strcmp(model.spec(j,1).type,'unsafeSet')

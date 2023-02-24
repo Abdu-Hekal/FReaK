@@ -31,7 +31,8 @@ def run(times, trajectories, param_dict, inputs_list):
         max_opt_iter=200,  # maximum number of optimization iterations
         grid_param_slices=int(param_dict["grid_param_slices"]),
         # for grid search, number of slices for each parameter
-        rank=(1, 20, 1) # rank range (start, stop, step) DMD hyperparameter
+        rank=(1, 20, 1), # rank range (start, stop, step) DMD hyperparameter
+        verbose= False,
     )
     
     
@@ -43,13 +44,6 @@ def run(times, trajectories, param_dict, inputs_list):
     
     koopman_model = {"A": A, "B": B, "w": w, "u": u}
     savemat("autokoopman_model.mat", koopman_model)
-
-    trajectory = model.solve_ivp(
-    initial_state=training_data.get_trajectory(0).states[0],
-    tspan=(0.0, 7.0),
-    sampling_period=0.01
-    )
-    print(trajectory.states)
 
     return koopman_model
 
