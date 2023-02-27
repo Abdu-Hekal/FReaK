@@ -3,7 +3,7 @@
 % py.importlib.import_module('autokoopman');
 
 model = model_AutoTransmission();
-max_train_size=10; %maximum number of training trajectories before quitting
+max_train_size=1; %maximum number of training trajectories before quitting
 plot_vars = [1,2];
 
 

@@ -11,7 +11,9 @@ trainset.X = {}; trainset.XU={}; trainset.t = {}; %empty cells to store states, 
 
 falsified = false;
 i = 0;
-while i < max_train_size % && falsified==false
+while i < max_train_size && falsified==false
+%     disp("input")
+%     disp(u)
     [trainset, crit_x, crit_u] = symbolicRFF(model, trainset, x0, u);
     %retrain with initial set as the critical set found in prev iteration
     x0=crit_x(1,:)';
@@ -28,6 +30,7 @@ while i < max_train_size % && falsified==false
         end
     end
     i=i+1;
+    disp(['iteration completed: ',num2str(i)])
 end
 
 %close simulink model

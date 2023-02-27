@@ -3,7 +3,7 @@
 % py.importlib.import_module('autokoopman');
 
 model = model_vanderpol();
-max_train_size=1; %maximum number of training trajectories before quitting
+max_train_size=5; %maximum number of training trajectories before quitting
 plot_vars = [1,2];
 
 [falsified, trainset, crit_x, train_iter] = coreFalsify(model, max_train_size);

@@ -6,19 +6,16 @@ import numpy as np
 
 def run(times, trajectories, param_dict, inputs_list):
 
-    data = []
+    training_data = []
     for i, (time, trajectory) in enumerate(zip(times, trajectories)):
-        inputs = np.asarray(inputs_list[0]).T if inputs_list else None
-        data.append(traj.Trajectory(np.asarray(time), np.asarray(trajectory).T, inputs))
+        inputs = np.asarray(inputs_list[i]).T if inputs_list else None
+        training_data.append(traj.Trajectory(np.asarray(time), np.asarray(trajectory).T, inputs))
     
     if param_dict["obs_type"] == 'deep':
         opt = 'bopt'
     else:
         opt = 'grid'
-    
-    
-    training_data = [data[i] for i in range(0, len(data))]
-    
+        
     ids = np.arange(0, len(training_data)).tolist()
     training_data = traj.TrajectoriesData(dict(zip(ids, training_data)))
 
@@ -31,7 +28,7 @@ def run(times, trajectories, param_dict, inputs_list):
         max_opt_iter=200,  # maximum number of optimization iterations
         grid_param_slices=int(param_dict["grid_param_slices"]),
         # for grid search, number of slices for each parameter
-        rank=(1, 20, 1), # rank range (start, stop, step) DMD hyperparameter
+        rank=(1, 20, 4), # rank range (start, stop, step) DMD hyperparameter
         verbose= False,
     )
     
