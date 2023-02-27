@@ -36,7 +36,7 @@ function [trainset, crit_x, crit_u] = symbolicRFF(model, trainset, x0, u)
     [crit_x0,crit_u] = falsifyFixedModel(A,B,g,dt,model.spec,model.R0,model.U,model.T);
     crit_u = [crit_u';zeros(size(crit_u,1),model.N-size(crit_u,2))'];
     crit_u = [linspace(0,model.T-model.T/model.N,model.N)',crit_u];
-    disp(crit_u)
+%     disp(crit_u)
 
     % run most critical input on the real system
     [~, crit_x] = run_simulation(model.name, model.T, crit_x0, crit_u);

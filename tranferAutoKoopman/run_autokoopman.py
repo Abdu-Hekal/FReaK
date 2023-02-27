@@ -28,7 +28,7 @@ def run(times, trajectories, param_dict, inputs_list):
         max_opt_iter=200,  # maximum number of optimization iterations
         grid_param_slices=int(param_dict["grid_param_slices"]),
         # for grid search, number of slices for each parameter
-        rank=(1, 20, 4), # rank range (start, stop, step) DMD hyperparameter
+        rank=(1, 200, 20), # rank range (start, stop, step) DMD hyperparameter
         verbose= False,
     )
     
