@@ -12,12 +12,19 @@ trainset.X = {}; trainset.XU={}; trainset.t = {}; %empty cells to store states, 
 falsified = false;
 i = 0;
 while i < max_train_size && falsified==false
-%     disp("input")
-%     disp(u)
     [trainset, crit_x, crit_u] = symbolicRFF(model, trainset, x0, u);
-    %retrain with initial set as the critical set found in prev iteration
-    x0=crit_x(1,:)';
-    u=crit_u;
+    %retrain with initial set & input as the critical values found in prev iteration.
+    %If the critical values are the same as previous, generate new random
+    %values
+    if isequal(crit_x(1,:)', x0) && isequal(crit_u, u)
+        x0 = (model.R0.sup-model.R0.inf)*rand()+model.R0.inf;
+        u = [linspace(0,model.T-model.T/model.N,model.N)',((model.U.sup-model.U.inf).*rand(1,model.N)+model.U.inf)']; %check this
+    else
+        x0=crit_x(1,:)';
+        u=crit_u;
+    end
+    disp(crit_u)
+
     for j = 1:size(model.spec,1)
     % different types of specifications
         if strcmp(model.spec(j,1).type,'unsafeSet')
