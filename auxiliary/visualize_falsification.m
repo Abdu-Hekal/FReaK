@@ -1,10 +1,38 @@
 function visualize_falsification(crit_x, times, spec, plot_vars)
+% visualize_falsification - visualize the falsifying trace (and possibly unsafe set)
+%
+% Syntax:  
+%    visualize_falsification(crit_x, times, spec, plot_vars)
+%
+% Inputs:
+%    crit_x - the falsifying trajectory 
+%    times - time points of the trajectory
+%    spec - falsifying spec 
+%    plot_vars - dimensions of variables to plot (matrix or scalar value).
+%    If plot_vars is scalar value, plot against time
+%
+% Outputs:
+%    -
+%
+% Other m-files required: none
+% Subfunctions: none
+% MAT-files required: none
+%
+
+% Author:      Abdelrahman Hekal
+% Written:      28-February-2023 
+% Last update:  ---
+% Last revision:---
+
+%------------- BEGIN CODE --------------
+
     for i = 1:size(spec,1)
         figure; hold on; box on;
+        if ~any(size(plot_vars)>[1,1]) %singular plot var, plot against time
+            plot(times,crit_x(:,plot_vars),'b','DisplayName','falsifying traj');
+        else
         xlim([min(crit_x(:,1))-abs(0.2*min(crit_x(:,1))),max(crit_x(:,1))+abs(0.2*max(crit_x(:,1)))]); 
         ylim([min(crit_x(:,2))-abs(0.2*min(crit_x(:,2))),max(crit_x(:,2))+abs(0.2*min(crit_x(:,2)))])
-
-        %plot spec
         if strcmp(spec(i,1).type,'unsafeSet')
             plot(spec(i,1).set, [1,2], 'FaceColor','red','FaceAlpha',.1,'DisplayName','unsafe set')
             %plot falsifying trace
@@ -18,6 +46,7 @@ function visualize_falsification(crit_x, times, spec, plot_vars)
             plot(crit_x(1:from,plot_vars(1)),crit_x(1:from,plot_vars(2)), 'Color' , '#33F6FF','LineStyle','--','LineWidth',1.5,'DisplayName','trajectory before');
             plot(crit_x(from:to,plot_vars(1)),crit_x(from:to,plot_vars(2)),'b','LineWidth',1.5,'DisplayName','falsifying traj in spec range');
             plot(crit_x(to:end,plot_vars(1)),crit_x(to:end,plot_vars(2)), 'Color' , '#CA33FF','LineStyle','--','LineWidth',1.5,'DisplayName','trajectory after');
+        end
         end
         l = legend;
         l.Location = 'best';
@@ -125,7 +154,12 @@ function res = reverseHalfspaceConstraints(poly)
 end
 
 function plotUnsafeCell(unsafeCell,plot_vars)
+    disp(length(unsafeCell))
     for k=1:length(unsafeCell)
-        plot(unsafeCell{k},plot_vars, 'FaceColor','red','FaceAlpha',.05,'DisplayName','spec')
+        try
+            plot(unsafeCell{k},plot_vars, 'FaceColor','red','FaceAlpha',.05,'DisplayName','spec')
+        catch
+            disp("failed to plot spec")
+        end
     end
 end

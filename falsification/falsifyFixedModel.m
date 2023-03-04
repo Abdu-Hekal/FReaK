@@ -22,13 +22,24 @@ function [x0,u] = falsifyFixedModel(A,B,g,dt,spec,R0,U,tFinal)
 
     % compute reachable set for Koopman linearized model
     R = reachKoopman(A,B,g,R0,U,tFinal,dt);
-
     % determine most critical reachable set and specification
     [set,alpha] = mostCriticalReachSet(R,spec);
 
     % extract most critical initial state and input signal
     [x0,u] = falsifyingTrajectory(R0,U,set,alpha);
 
+    %modification to test (delete me)
+%     x = g(x0); 
+%     disp(size(u,2))
+%     for i = 1:size(u,2)
+%         x = [x, A*x(:,end) + B*u(:,i)]; 
+%     end
+%     figure; hold on; box on;
+%     for i=1:size(u,2)
+%         plot(R.zono{i})
+%     end
+%     plot(x(1,:),x(2,:),'r','LineWidth',2);
+%     drawnow
 end
 
 
@@ -198,12 +209,18 @@ function [r,alpha] = robustness(P,Z)
 % compute robustness of the zonotope Z with respect to an unsafe polytope P
     
     % catch special case of a halfspace to accelearte computation
+%     if size(P.P.A,1) == 1
+%         disp("halfspace")
+%     end
     if size(P.P.A,1) == 1
 
         r = infimum(interval(P.P.A*Z)) - P.P.b;
         alpha = -sign(P.P.A*generators(Z))';
+%         disp(alpha)
+        disp("halfspace")
 
     else
+        disp("not halfspace")
 
         if isIntersecting(P,Z)
     

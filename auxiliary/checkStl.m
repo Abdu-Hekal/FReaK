@@ -1,4 +1,4 @@
-function res = check_stl(obj,x,t)
+function res = checkStl(obj,x,t)
 % modelCheckTrace - check if a trace satisfies an STL formula 
 %
 % Syntax:  
