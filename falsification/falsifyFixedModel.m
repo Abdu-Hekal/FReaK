@@ -148,14 +148,12 @@ function [setCrit,alphaCrit] = mostCriticalReachSet(R,spec)
             end
 
             % compute robustness with recursive function
-            [rob_,alpha,ind] = robustnessTemporalLogic(phi,R.zono,time);
+            [rob_,alpha, ind] = robustnessTemporalLogic(phi,R.zono,time);
 
             % check if smaller than current robustness
-            if rob_(1) < rob
-                alphaCrit = alpha{1};
-                setCrit = R.set{ind(1)};
-                rob = rob_(1);
-            end
+            alphaCrit = alpha;
+            setCrit = R.set{end};
+            rob = rob_;
 
         else
             error('This type of specification is not supported!');
@@ -216,12 +214,8 @@ function [r,alpha] = robustness(P,Z)
 
         r = infimum(interval(P.P.A*Z)) - P.P.b;
         alpha = -sign(P.P.A*generators(Z))';
-%         disp(alpha)
-        disp("halfspace")
 
     else
-        disp("not halfspace")
-
         if isIntersecting(P,Z)
     
             % solve linear program with variables [x;r;\alpha]
@@ -297,8 +291,10 @@ function [r,alpha] = robustness(P,Z)
     end
 end
 
-function [r,alpha,ind] = robustnessTemporalLogic(phi,R,time)
+function [r,alpha, ind] = robustnessTemporalLogic(phi,R,time)
 % recursive function to compute the robustness of a temporal logic formula
+
+    ind=0;
 
     if ~phi.temporal
 
@@ -314,21 +310,17 @@ function [r,alpha,ind] = robustnessTemporalLogic(phi,R,time)
         unsafeSet = safe2unsafe(safeSet);
 
         % loop over all reachable sets
-        r = inf*ones(1,length(R)); alpha = cell(1,length(R));
-        ind = 1:length(R);
-
-        for i = 1:length(R)
+        r = inf; alpha = 0;
             
-            % loop over all unsafe sets
-            for j = 1:length(unsafeSet)
-                
-                % compute robustness
-                [r_,alpha_] = robustness(unsafeSet{j},R{i});
+        % loop over all unsafe sets
+        for j = 1:length(unsafeSet)
+            
+            % compute robustness
+            [r_,alpha_] = robustness(unsafeSet{j},R{end});
 
-                % check if robustness is smaller than for other sets
-                if r_ < r(i)
-                    r(i) = r_; alpha{i} = alpha_;
-                end
+            % check if robustness is smaller than for other sets
+            if r_ < r
+                r = r_; alpha = alpha_;
             end
         end
 
@@ -390,21 +382,21 @@ function [r,alpha,ind] = robustnessTemporalLogic(phi,R,time)
 
     elseif strcmp(phi.type,'globally')
 
-        [r_,alpha_,ind_] = robustnessTemporalLogic(phi.lhs,R,time);
+        [r,alpha,ind] = robustnessTemporalLogic(phi.lhs,R,time);
 
-        cnt = 1; r = []; ind = []; alpha = {};
-
-        while time(cnt) + phi.to < time(end)
-
-            index = find(time >= phi.from & time <= phi.to);
-            [rTmp,indexTmp] = min(r_(index));
-            index = index(indexTmp);
-
-            r = [r;rTmp]; ind = [ind;ind_(index)]; 
-            alpha = [alpha,alpha_(index)];
-
-            cnt = cnt + 1;
-        end
+%         cnt = 1; r = []; ind = []; alpha = {};
+% 
+%         while time(cnt) + phi.to < time(end)
+% 
+%             index = find(time >= phi.from & time <= phi.to);
+%             [rTmp,indexTmp] = min(r_(index));
+%             index = index(indexTmp);
+% 
+%             r = [r;rTmp]; ind = [ind;ind_(index)]; 
+%             alpha = [alpha,alpha_(index)];
+% 
+%             cnt = cnt + 1;
+%         end
 
     elseif strcmp(phi.type,'until')
 
