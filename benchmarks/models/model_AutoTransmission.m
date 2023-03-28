@@ -9,7 +9,8 @@ function model = model_AutoTransmission()
 %
 % Output Arguments:
 %
-%       -model:             a structure containing following options
+%       -model:             a koopman falsification model containing
+%                           following properties
 %
 %           -.name:         name of simulink model
 %           -.T:            time horizon for simulation

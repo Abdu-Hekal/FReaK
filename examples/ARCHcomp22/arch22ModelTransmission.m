@@ -39,21 +39,21 @@ for i = 1:size(requirements, 1)
     plot_vars = requirements{i, 3};
 
     model.spec = specification(eq,'logic');
-
-%     model.spec(1,1) = specification(halfspace([0 -1 0],-3000),'unsafeSet');
-
-
-    [falsified, trainset, crit_x, train_iter] = coreFalsify(model, max_train_size);
-
-    if falsified
-        disp(" ")
-        fprintf("falsifying trace found! for requirement '%s'\n", name)
-    else
-        fprintf("No falsifying trace found! for requirement '%s'\n", name)
-    end
-    visualize_falsification(crit_x, trainset.t{1}, model.spec, plot_vars)
-    disp(['training iterations: ',num2str(train_iter)])
-    visualize_train(trainset, plot_vars)
-    results = [falsified;train_iter];
+% 
+% %     model.spec(1,1) = specification(halfspace([0 -1 0],-3000),'unsafeSet');
+% 
+% 
+%     [falsified, trainset, crit_x, train_iter] = coreFalsify(model, max_train_size);
+% 
+%     if falsified
+%         disp(" ")
+%         fprintf("falsifying trace found! for requirement '%s'\n", name)
+%     else
+%         fprintf("No falsifying trace found! for requirement '%s'\n", name)
+%     end
+%     visualize_falsification(crit_x, trainset.t{1}, model.spec, plot_vars)
+%     disp(['training iterations: ',num2str(train_iter)])
+%     visualize_train(trainset, plot_vars)
+%     results = [falsified;train_iter];
 end
 

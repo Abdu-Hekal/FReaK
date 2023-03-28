@@ -52,6 +52,7 @@ function R = reachKoopman(A,B,g,R0,U,tFinal,dt)
     n = dim(R0);
     tay = taylm(R0);
     tay = g(tay);
+    disp(tay)
     R0 = polyZonotope(tay);
     R0 = polyZonotope(R0.c,R0.G,[],R0.expMat(1:n,:));
 
@@ -137,23 +138,7 @@ function [setCrit,alphaCrit] = mostCriticalReachSet(R,spec)
 
         elseif strcmp(spec(i,1).type,'logic')
     
-            % convert to negation normal form
-            phi = negationNormalForm(spec(i,1).set);
-
-            % constrct time vector
-            time = zeros(size(R.time));
-
-            for j = 1:length(R.time)
-                time(j) = center(R.time{j});
-            end
-
-            % compute robustness with recursive function
-            [rob_,alpha, ind] = robustnessTemporalLogic(phi,R.zono,time);
-
-            % check if smaller than current robustness
-            alphaCrit = alpha;
-            setCrit = R.set{end};
-            rob = rob_;
+            
 
         else
             error('This type of specification is not supported!');
@@ -288,181 +273,5 @@ function [r,alpha] = robustness(P,Z)
             r = sqrt(r);
             alpha = x(2*n+1:end);
         end
-    end
-end
-
-function [r,alpha, ind] = robustnessTemporalLogic(phi,R,time)
-% recursive function to compute the robustness of a temporal logic formula
-
-    ind=0;
-
-    if ~phi.temporal
-
-        % convert logic equation to union of safe sets
-        eq = disjunctiveNormalForm(phi);
-        safeSet = getClauses(eq,'dnf');
-
-        for k = 1:length(safeSet)
-            safeSet{k} = convert2set(safeSet{k});
-        end
-
-        % convert to a union of unsafe sets
-        unsafeSet = safe2unsafe(safeSet);
-
-        % loop over all reachable sets
-        r = inf; alpha = 0;
-            
-        % loop over all unsafe sets
-        for j = 1:length(unsafeSet)
-            
-            % compute robustness
-            [r_,alpha_] = robustness(unsafeSet{j},R{end});
-
-            % check if robustness is smaller than for other sets
-            if r_ < r
-                r = r_; alpha = alpha_;
-            end
-        end
-
-    elseif strcmp(phi.type,'&')
-
-        [r1,alpha1,ind1] = robustnessTemporalLogic(phi.lhs,R,time);
-        [r2,alpha2,ind2] = robustnessTemporalLogic(phi.rhs,R,time);
-
-        r = zeros(size(r1)); ind = zeros(size(ind1)); 
-        alpha = cell(size(alpha1)); 
-
-        for i = 1:length(r)
-            if r1(i) < r2(i)
-                r(i) = r1(i); ind = ind1(i); alpha{i} = alpha1{i};
-            else
-                r(i) = r2(i); ind = ind2(i); alpha{i} = alpha2{i};
-            end
-        end
-
-    elseif strcmp(phi.type,'|')
-
-        [r1,alpha1,ind1] = robustnessTemporalLogic(phi.lhs,R,time);
-        [r2,alpha2,ind2] = robustnessTemporalLogic(phi.rhs,R,time);
-
-        r = zeros(size(r1)); ind = zeros(size(ind1)); 
-        alpha = cell(size(alpha1)); 
-
-        for i = 1:length(r)
-            if r1(i) > r2(i)
-                r(i) = r1(i); ind = ind1(i); alpha{i} = alpha1{i};
-            else
-                r(i) = r2(i); ind = ind2(i); alpha{i} = alpha2{i};
-            end
-        end
-
-    elseif strcmp(phi.type,'next')
-
-        [r,alpha,ind] = robustnessTemporalLogic(phi.lhs,R,time);
-        index = find(time >= phi.from);
-        r = r(index); alpha = alpha(index); ind = ind(index);
-
-    elseif strcmp(phi.type,'finally')
-
-        [r_,alpha_,ind_] = robustnessTemporalLogic(phi.lhs,R,time);
-
-        cnt = 1; r = []; ind = []; alpha = {};
-
-        while time(cnt) + phi.to < time(end)
-
-            index = find(time >= phi.from & time <= phi.to);
-            [rTmp,indexTmp] = max(r_(index));
-            index = index(indexTmp);
-
-            r = [r;rTmp]; ind = [ind;ind_(index)]; 
-            alpha = [alpha,alpha_(index)];
-
-            cnt = cnt + 1;
-        end
-
-    elseif strcmp(phi.type,'globally')
-
-        [r,alpha,ind] = robustnessTemporalLogic(phi.lhs,R,time);
-
-%         cnt = 1; r = []; ind = []; alpha = {};
-% 
-%         while time(cnt) + phi.to < time(end)
-% 
-%             index = find(time >= phi.from & time <= phi.to);
-%             [rTmp,indexTmp] = min(r_(index));
-%             index = index(indexTmp);
-% 
-%             r = [r;rTmp]; ind = [ind;ind_(index)]; 
-%             alpha = [alpha,alpha_(index)];
-% 
-%             cnt = cnt + 1;
-%         end
-
-    elseif strcmp(phi.type,'until')
-
-        [r1,alpha1,ind1] = robustnessTemporalLogic(phi.lhs,R,time);
-        [r2,alpha2,ind2] = robustnessTemporalLogic(phi.rhs,R,time);
-
-        
-        cnt = 1; r = []; ind = []; alpha = {};
-    
-        while time(cnt) + phi.to < time(end)
-    
-            r = [r;-inf]; ind = [ind;0]; alpha = [alpha,{0}];
-    
-            index = find(time >= phi.from & time <= phi.to);
-    
-            for i = index'
-                
-                [r_,index_] = min(r1(1:i));
-    
-                if min(r_,r2(i)) > r(end)
-                    if r_ < r2(i)
-                        r(end) = r_; alpha{end} = alpha1{index_}; 
-                        ind(end) = ind1(index_);
-                    else
-                        r(end) = r2(i); alpha{end} = alpha2{index_}; 
-                        ind(end) = ind2(index_);
-                    end
-                end
-            end
-    
-            cnt = cnt + 1;
-        end
-    end
-end
-
-function list = safe2unsafe(sets)
-% convert a safe set defined by the union of multiple polytopes to an
-% equivalent union of unsafe sets
-
-    list = reverseHalfspaceConstraints(sets{1});
-
-    for i = 2:length(sets)
-
-        tmp = reverseHalfspaceConstraints(sets{i});
-
-        list_ = {};
-
-        for j = 1:length(tmp)
-            for k = 1:length(list)
-                if isIntersecting(list{k},tmp{j})
-                    list_{end+1} = list{k} & tmp{j};
-                end
-            end
-        end
-
-        list = list_;
-    end
-end
-
-function res = reverseHalfspaceConstraints(poly)
-% get a list of reversed halfspace constraints for a given polytope
-
-    res = {};
-    poly = mptPolytope(poly);
-
-    for i = 1:length(poly.P.b)
-        res{end+1} = mptPolytope(-poly.P.A(i,:),-poly.P.b(i));
     end
 end
