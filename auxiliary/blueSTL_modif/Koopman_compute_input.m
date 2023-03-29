@@ -26,7 +26,7 @@ Sys.model_data.time = ((0:L)+max(t_model-L,0))*ts;
 %% call solver
 [sol_control, errorflag1] = controller{{}, []};
 if(errorflag1==0)
-    Sys.model_data.U = double(sol_control{1});
+    Sys.model_data.alpha = double(sol_control{1});
     Sys.model_data.X = double(sol_control{2});
     Sys.model_data.rob = double(sol_control{3});
 elseif (errorflag1==1 || errorflag1==15||errorflag1==12)  % some error, infeasibility or else

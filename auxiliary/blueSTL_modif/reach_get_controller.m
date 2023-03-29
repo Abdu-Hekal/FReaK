@@ -18,7 +18,6 @@ ts=Sys.ts; % sampling time
 
 %% System dimensions and variables
 nx=size(Sys.x0,1);
-
 % variables
 X = sdpvar(nx, L+1);
 Alpha = sdpvar(1, size(Sys.reach_zonos{end}.generators,2));
@@ -26,16 +25,7 @@ Alpha = sdpvar(1, size(Sys.reach_zonos{end}.generators,2));
 %% STL formula
 Fstl = [];
 Pstl = [];
-varStd = struct('X',X);
-
-if isstruct(Sys.var)
-    %remove overlapping fields from std
-    var = rmfield(varStd, intersect(fieldnames(Sys.var), fieldnames(varStd)));
-    keys = [fieldnames(var); fieldnames(Sys.var)];
-    var = cell2struct([struct2cell(varStd); struct2cell(Sys.var)], keys, 1);
-else
-    var = varStd;
-end
+var = struct('X',X);
 
 stl_list= STLC_parse_stl_labels(Sys);
 M = Sys.bigM;

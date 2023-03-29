@@ -18,13 +18,10 @@ toc
 
 %%
 % Now we can call the main constructor of STLC_lti class.
-Sys= Koopman_lti(A,Bu);
-
-Sys.reach_zonos = R.zono;
+Sys= Koopman_lti(R.zono);
 %%
 % In the next section, we will define the different settings for the
 % control synthesis experiment. Before that, we define some initial state:
-Sys.x0=[0;1000;1];
 
 %% Defining the controller
 % We start by defining the time instants for the whole experiment, the discrete time
@@ -33,14 +30,9 @@ Sys.time = 0:.01:1; % time for the dynamics
 Sys.ts=0.01; % sampling time for controller
 Sys.L=100;  % horizon (# of control inputs in blueSTL defined internally as (2*L)-1, AH modified so # of control inputs=L)
 
-% Sys.plot_x=1;
-% Sys.plot=true;
+Sys.plot_x=2;
+Sys.plot=true;
 
-%%
-% Next we declare some constraints on control inputs, here, lower and upper
-% bounds:
-Sys.u_ub = [100 325];  % upper bound on u
-Sys.u_lb = [0 0]; % lower bound on u
 
 %%
 % Then the following define a signal temporal logic formula to be satisfied
@@ -70,7 +62,6 @@ Sys.solver_options = sdpsettings('verbose', verb,'solver', solver, ...
     'gurobi.BarHomogeneous', 1,...
     'gurobi.ScaleFlag', 2, ...
     'gurobi.DualReductions', 0);
-
 Sys.bigM=100000000;
 
 % Now we are ready to compile the controller for our problem.
@@ -80,20 +71,20 @@ setup_time = toc;
 tic
 Sys.run_open_loop(controller);
 solve_time = toc;
-Sys.model_data.rob
-Sys.model_data.U'
+% Sys.model_data.rob
+% Sys.model_data.alpha'
 % Sys.model_data.X(1,1:end)
 
 elapsed_time = toc;
 fprintf('Setup time: %f seconds\n', setup_time);
 fprintf('Solve time: %f seconds\n', solve_time);
 
-alphaU = Sys.model_data.U(2:end);
-
-U = zonotope(U); c_u = center(U); G_u = generators(U);
-alphaU = reshape(alphaU,[size(G_u,2),length(alphaU)/size(G_u,2)]);
-
-u = c_u + G_u*alphaU
+% alphaU = Sys.model_data.alpha(2:end);
+% 
+% U = zonotope(U); c_u = center(U); G_u = generators(U);
+% alphaU = reshape(alphaU,[size(G_u,2),length(alphaU)/size(G_u,2)]);
+% 
+% u = c_u + G_u*alphaU
 
 function R = reachKoopman(A,B,g,R0,U,tFinal,dt)
 % compute reachable set for Koopman linearized model

@@ -7,6 +7,27 @@ classdef Koopman_lti < STLC_lti
     end
 
     methods
+        % Constructor
+        function Sys = Koopman_lti(varargin)
+            switch nargin
+                case 1
+                    reach_zonos = varargin{1};
+                    nx = size(reach_zonos{1}.center,1);
+                    nu = size(reach_zonos{2}.generators,2) - size(reach_zonos{1}.generators,2);
+                    varargin{1} = zeros(nx);
+                    varargin{2} = zeros(nx,nu);
+            end
+            Sys = Sys@STLC_lti(varargin{:})
+
+            switch nargin
+                case 1
+                    Sys.reach_zonos = reach_zonos;
+                    assert(reach_zonos{1}.isInterval, "initial set is not an interval")
+                    Sys.x0 = [reach_zonos{1}.interval.inf,reach_zonos{1}.interval.sup];
+
+            end
+        end
+
         function controller = get_controller(Sys,enc)
             if nargin < 2
                 if isempty(Sys.encoding)
@@ -33,16 +54,9 @@ classdef Koopman_lti < STLC_lti
             [Sys, status] = Sys.compute_input(controller);
 
             if status==0 && Sys.plot
-                current_time =0;
-                while (current_time < Sys.model_data.time(end))
-                    out = sprintf('time:%g', current_time );
-                    rfprintf(out);
-                    Sys = Sys.apply_input();
-                    Sys = Sys.update_plot();
-                    drawnow;
-                    current_time= Sys.system_data.time(end);
+                for v = 1:length(Sys.plot_x)
+                    plot(Sys.model_data.time,Sys.model_data.X(Sys.plot_x(v),:));
                 end
-                fprintf('\n');
             end
         end
         function Sys = apply_input(Sys)

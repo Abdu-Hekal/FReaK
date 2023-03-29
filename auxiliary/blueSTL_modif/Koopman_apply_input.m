@@ -5,7 +5,7 @@ sys_time = [Sys.time(it) Sys.time(it+1)];
 
 w_new = get_disturbance(Sys);
 
-u_new = interp1(Sys.model_data.time(1:end-1),Sys.model_data.U', sys_time', 'previous', 'extrap')';
+u_new = interp1(Sys.model_data.time(1:end-1),Sys.model_data.alpha', sys_time', 'previous', 'extrap')';
 %AH: modified from: x0 = Sys.system_data.X(:,it);
 x0 = Sys.model_data.X(:,it);
 
