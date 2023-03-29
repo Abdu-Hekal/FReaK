@@ -307,7 +307,8 @@ Sys.ts=dt;
 Sys.L=size(R.zono,1)-1;
 
 Sys.stl_list = {blu_stl};
-Sys.bigM=100000000;
+%what value of bigM is needed?
+Sys.bigM=1e16;
 
 %modify solver options:
 solver = 'gurobi';  % gurobi, cplex, glpk
