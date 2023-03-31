@@ -30,14 +30,11 @@ R = reachKoopman(A,B,g,R0,U,tFinal,dt);
 
 %modification to test (delete me)
     x = g(x0);
-    disp(size(u,2))
-%     for i = 1:size(u,2)
-    for i = 1:2000
+    for i = 1:size(u,2)
         x = [x, A*x(:,end) + B*u(:,i)];
     end
     figure; hold on; box on;
-%     for i=1:size(u,2)
-    for i=1:2000
+    for i=1:size(u,2)
         plot(R.zono{i})
     end
     plot(x(1,:),x(2,:),'r','LineWidth',2);
@@ -308,7 +305,7 @@ Sys.L=size(R.zono,1)-1;
 
 Sys.stl_list = {blu_stl};
 %what value of bigM is needed?
-Sys.bigM=1e16;
+Sys.bigM=1e6;
 
 %modify solver options:
 solver = 'gurobi';  % gurobi, cplex, glpk

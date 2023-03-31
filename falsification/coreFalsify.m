@@ -5,7 +5,7 @@ py.importlib.import_module('autokoopman');
 
 %generate random initial set and input
 x0 = (model.R0.sup-model.R0.inf)*rand()+model.R0.inf;
-u = [linspace(0,model.T-model.T/model.N,model.N)',((model.U.sup-model.U.inf).*rand(1,model.N)+model.U.inf)']; %check this
+u = [linspace(0,model.T-model.T/model.N,model.N)',((model.U.sup-model.U.inf).*rand(length(model.U),model.N)+model.U.inf)']; %check this
 
 trainset.X = {}; trainset.XU={}; trainset.t = {}; %empty cells to store states, inputs and times for training trajectories
 
@@ -38,7 +38,7 @@ while i < max_train_size && falsified==false
     if true %repeated_traj
         disp("repeated critical trajectory, generating a new random trajectory")
         x0 = (model.R0.sup-model.R0.inf)*rand()+model.R0.inf;
-        u = [linspace(0,model.T-model.T/model.N,model.N)',((model.U.sup-model.U.inf).*rand(1,model.N)+model.U.inf)']; %check this
+        u = [linspace(0,model.T-model.T/model.N,model.N)',((model.U.sup-model.U.inf).*rand(length(model.U),model.N)+model.U.inf)']; %check this
     else
         x0=crit_x(1,:)';
         u=crit_u;
@@ -50,6 +50,7 @@ while i < max_train_size && falsified==false
         if strcmp(model.spec(j,1).type,'unsafeSet')
             check = any(model.spec(j,1).set.contains(crit_x'));
         elseif strcmp(model.spec(j,1).type,'logic')
+            robustness = computeRobustness(model.spec(j,1).set,crit_x,vpa(linspace(0,model.T,size(crit_x,1)')))
             check = ~checkStl(model.spec(j,1).set,crit_x,vpa(linspace(0,model.T,size(crit_x,1)')));
         end
         if check 
