@@ -43,7 +43,7 @@ while i < max_train_size && falsified==false
         x0=crit_x(1,:)';
         u=crit_u;
     end
-    disp(crit_u)
+%     disp(crit_u)
 
     for j = 1:size(model.spec,1)
     % different types of specifications

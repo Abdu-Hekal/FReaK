@@ -51,7 +51,6 @@ function R = reachKoopman(A,B,g,R0,U,tFinal,dt)
 n = dim(R0);
 tay = taylm(R0);
 tay = g(tay);
-disp(tay)
 R0 = polyZonotope(tay);
 R0 = polyZonotope(R0.c,R0.G,[],R0.expMat(1:n,:));
 
@@ -313,7 +312,7 @@ timeLimit = 2000;
 gapLimit = 0.01;
 gapAbsLimit = 0.1;
 solnLimit = Inf;
-verb = 2;
+verb = 0;
 Sys.solver_options = sdpsettings('verbose', verb,'solver', solver, ...
     'gurobi.TimeLimit', timeLimit, ...
     'gurobi.MIPGap', gapLimit, ...
