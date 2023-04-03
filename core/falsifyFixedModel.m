@@ -29,16 +29,16 @@ R = reachKoopman(A,B,g,R0,U,tFinal,dt);
 [x0,u] = falsifyingTrajectory(R0,U,set,alpha);
 
 %modification to test (delete me)
-    x = g(x0);
-    for i = 1:size(u,2)
-        x = [x, A*x(:,end) + B*u(:,i)];
-    end
-    figure; hold on; box on;
-    for i=1:size(u,2)
-        plot(R.zono{i})
-    end
-    plot(x(1,:),x(2,:),'r','LineWidth',2);
-    drawnow
+x = g(x0);
+for i = 1:size(u,2)
+    x = [x, A*x(:,end) + B*u(:,i)];
+end
+figure; hold on; box on;
+for i=1:size(u,2)
+    plot(R.zono{i})
+end
+plot(x(1,:),x(2,:),'r','LineWidth',2);
+drawnow
 end
 
 
@@ -135,7 +135,7 @@ for i = 1:size(spec,1)
         end
 
     elseif strcmp(spec(i,1).type,'logic')
-        %setup bluSTL 
+        %setup bluSTL
         Sys = setup_bluSTL(R,spec(i,1));
 
         % run bluSTL
@@ -187,17 +187,22 @@ else
     x0 = center(R0) + generators(R0)*alphaInit;
 end
 
-% determine most ctritical control input
-if ~isempty(set.Grest)
+%check if model has control input
+if ~isempty(U)
+    % determine most ctritical control input
+    if ~isempty(set.Grest)
 
-    alphaU = alpha(size(set.G,2)+1:end);
+        alphaU = alpha(size(set.G,2)+1:end);
 
-    U = zonotope(U); c_u = center(U); G_u = generators(U);
-    alphaU = reshape(alphaU,[size(G_u,2),length(alphaU)/size(G_u,2)]);
+        U = zonotope(U); c_u = center(U); G_u = generators(U);
+        alphaU = reshape(alphaU,[size(G_u,2),length(alphaU)/size(G_u,2)]);
 
-    u = c_u + G_u*alphaU;
+        u = c_u + G_u*alphaU;
+    else
+        u = center(U);
+    end
 else
-    u = center(U);
+    u = [];
 end
 end
 

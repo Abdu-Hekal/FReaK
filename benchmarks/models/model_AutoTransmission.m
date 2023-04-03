@@ -1,38 +1,25 @@
 function model = model_AutoTransmission()
-% model_vanderpol - model parameters for the vanderpol benchmark
+% model_AutoTransmission - model parameters for the Autotransmission benchmark
 %
 % Syntax:
-%       model = model_vanderpol()
+%       model = model_AutoTransmission()
 %
 % Description:
 %       Model parameters for the vanderpol benchmark.
 %
 % Output Arguments:
 %
-%       -model:             a koopman falsification model containing
-%                           following properties
-%
-%           -.name:         name of simulink model
-%           -.T:            time horizon for simulation
-%           -.R0:           initial set (CORA class interval)
-%           -.U:            set of admissible control inputs (class:
-%                           interval or Zonotope)
-%           -.N:            no. of (piecewise constant) inputs, 
-%                           set to 1 if no inputs
-%           -spec:          specification defined as an object of the CORA specification
-%                           class (includes safe sets, unsafe sets, and temporal logic)
+%       -model:             a koopman falsification model      
 %
 %------------------------------------------------------------------
     
-    % initalize training data and model specific information
-    % if U don't exist for the model, set as "interval(0,0)"
-    % N: no. of (piecewise constant) inputs, set to 1 if no inputs
-    % spec: specification of (unsafe) set
-    model.name = 'Autotrans_shift'; %name of the simulink model
-    model.T=30; 
+    model = KF_model('Autotrans_shift');
     model.R0 = interval([0;1000;1],[0;1000;1]); 
     model.U = interval([0;0],[100;325]); 
-    model.N=3000;
+
+    model.T=30; 
+    model.dt = 0.01;
+    model.cp=[3000 3000];
 
     x = stl('x',3);
     eq = globally(x(2) < 4750,interval(0,10));
