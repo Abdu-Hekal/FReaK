@@ -13,16 +13,6 @@ function [Sys, status] = Koopman_compute_input(Sys, controller)
 % :copyright: TBD
 % :license: TBD
 
-%% Stuff
-nu=Sys.nu;
-nx=Sys.nx;
-
-%% Time
-ts=Sys.ts; % sampling time
-L=Sys.L;  % horizon (# of steps)
-t_model = floor(Sys.time(Sys.system_data.time_index)/Sys.ts)+1;
-Sys.model_data.time = ((0:L)+max(t_model-L,0))*ts;
-
 %% call solver
 [sol_control, errorflag1] = controller{{}, []};
 if(errorflag1==0)
@@ -35,8 +25,6 @@ else
     disp(['Yalmip error: ' yalmiperror(errorflag1)]); % some other error
 end
 status = errorflag1;
-
-
 
 end
 

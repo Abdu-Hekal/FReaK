@@ -29,7 +29,7 @@ function [trainset, crit_x, crit_u] = symbolicRFF(model, trainset, x0, u)
     matlabFunction(g,'Vars',{xSym},'File',fullfile(path,'autokoopman'));
 
     g = @(x) autokoopman(x);
-    [crit_x0,crit_u] = falsifyFixedModel(A,B,g,dt,model.spec,model.R0,model.U,model.T,model.cp_bool);
+    [crit_x0,crit_u] = falsifyFixedModel(A,B,g,dt,model);
     all_steps = model.T/model.dt;
     crit_u = [crit_u';zeros(size(crit_u,1),all_steps-size(crit_u,2))'];
     crit_u = [linspace(0,model.T-model.dt,all_steps)',crit_u];

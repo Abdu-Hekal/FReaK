@@ -1,4 +1,4 @@
-function [x0,u] = falsifyFixedModel(A,B,g,dt,spec,R0,U,tFinal,cp_bool)
+function [x0,u] = falsifyFixedModel(A,B,g,model)
 % determine the most critical initial point and input trajectory of a
 % Koopman linearized model for the given trajectory
 %
@@ -8,18 +8,19 @@ function [x0,u] = falsifyFixedModel(A,B,g,dt,spec,R0,U,tFinal,cp_bool)
 %   -B:        input matrix for the Koopman linearized model
 %   -g:        function handle to the observable function for the Koopman
 %              linearized model
-%   -dt:       time step size for the Koopman lineaized model
-%   -spec:     specification defined as an object of the CORA specification
-%              class (includes safe sets, unsafe sets, and temporal logic)
-%   -R0:       initial set (CORA class interval)
-%   -U:        input set (CORA class interval or zonotope)
-%   -tFinal:   final time
-%   -cp: control points
+%   -model:    koopman falsification model
 %
 % Output arguments:
 %
 %   -x0:       initial state for the most critical trajectory
 %   -u:        piecewise constant inputs for the most critical trajectory
+
+dt=model.dt;
+spec=model.spec;
+R0=model.R0;
+U=model.U;
+tFinal=model.T;
+cp_bool=model.cp_bool;
 
 % compute reachable set for Koopman linearized model
 R = reachKoopman(A,B,g,R0,U,tFinal,dt,cp_bool);
@@ -65,7 +66,11 @@ set{1} = R0; time{1} = interval(-dt/2,dt/2);
 for i = 1:length(t)-1
     % AH edit to check if system has external input
     if B
-        cp_U = U.*cp_bool(i,:)';
+        if ~isempty(cp_bool)
+            cp_U = U.*cp_bool(i,:)';
+        else
+            cp_U=U;
+        end
         set{i+1} = A*set{i} + B*zonotope(cp_U);
     else
         set{i+1} = A*set{i};
@@ -140,6 +145,7 @@ for i = 1:size(spec,1)
         %setup bluSTL
         Sys = setup_bluSTL(R,spec(i,1));
 
+        %TODO: add constraints on alpha with model.cp
         % run bluSTL
         tic
         controller = get_controller(Sys);
@@ -194,10 +200,19 @@ if ~isempty(U)
     % determine most ctritical control input
     if ~isempty(set.Grest)
 
-%         alphaU = reshape(cp_bool,[],1);
-%         alphaU(find(alphaU)) = alpha(size(set.G,2)+1:end);
-
-        alphaU = alpha(size(set.G,2)+1:end);
+        if ~isempty(cp_bool) %if pulse input
+            %initialise alpha to cp_bool
+            alphaU = reshape(cp_bool,[],1);
+            %input alpha returned by milp optimizernon
+            allAlpha = alpha(size(set.G,2)+1:end);
+            %find all nonzero elements in the relevant time horizon
+            nonzero = find(alphaU,length(allAlpha));
+            alphaU(nonzero) = allAlpha;
+            %set all nonrelevant inputs after to zero
+            alphaU(nonzero(end)+1:end)=0;
+        else
+            alphaU = alpha(size(set.G,2)+1:end);
+        end
 
         U = zonotope(U); c_u = center(U); G_u = generators(U);
         alphaU = reshape(alphaU,[size(G_u,2),length(alphaU)/size(G_u,2)]);

@@ -58,7 +58,14 @@ x0 = randPoint(model.R0);
 if ~isempty(model.U)
     all_steps = model.T/model.dt;
     u = randPoint(model.U,all_steps)';
-    u = u.*model.cp_bool;
+    if model.pulse_input
+        u = u.*model.cp_bool;
+    else %piecewise constant input
+        for k=1:length(model.cp)
+            uk = model.cp(k);
+            u(:,k) = repelem(u(1:uk,k),length(u(:,k))/uk);
+        end
+    end
     u = [linspace(0,model.T-model.dt,all_steps)',u];
 
 else
@@ -84,12 +91,18 @@ if ~isempty(model.U) %check if simulink model has inputs
 
     all_steps = model.T/model.dt;
     assert(floor(all_steps)==all_steps,'Time step (dt) must be a factor of Time horizon (T)')
-    model.cp_bool = zeros(all_steps,length(model.U));
-    for k=1:length(model.cp)
-        step = (model.T/model.dt)/model.cp(k);
-        assert(floor(step)==step,'number of control points (cp) must be a factor of T/dt')
-        model.cp_bool(1:step:end,k) = 1;
+
+    if model.pulse_input
+        model.cp_bool = zeros(all_steps,length(model.U));
+        for k=1:length(model.cp)
+            step = (model.T/model.dt)/model.cp(k);
+            assert(floor(step)==step,'number of control points (cp) must be a factor of T/dt')
+            model.cp_bool(1:step:end,k) = 1;
+        end
     end
 end
+
+%create empty dict to store soln for each spec
+model.spec_soln = dictionary(model.spec,{{}});
 end
 
