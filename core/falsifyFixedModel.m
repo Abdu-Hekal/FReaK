@@ -1,4 +1,4 @@
-function [x0,u] = falsifyFixedModel(A,B,g,dt,spec,R0,U,tFinal)
+function [x0,u] = falsifyFixedModel(A,B,g,dt,spec,R0,U,tFinal,cp_bool)
 % determine the most critical initial point and input trajectory of a
 % Koopman linearized model for the given trajectory
 %
@@ -14,6 +14,7 @@ function [x0,u] = falsifyFixedModel(A,B,g,dt,spec,R0,U,tFinal)
 %   -R0:       initial set (CORA class interval)
 %   -U:        input set (CORA class interval or zonotope)
 %   -tFinal:   final time
+%   -cp: control points
 %
 % Output arguments:
 %
@@ -21,12 +22,12 @@ function [x0,u] = falsifyFixedModel(A,B,g,dt,spec,R0,U,tFinal)
 %   -u:        piecewise constant inputs for the most critical trajectory
 
 % compute reachable set for Koopman linearized model
-R = reachKoopman(A,B,g,R0,U,tFinal,dt);
+R = reachKoopman(A,B,g,R0,U,tFinal,dt,cp_bool);
 % determine most critical reachable set and specification
 [set,alpha] = mostCriticalReachSet(R,spec);
 
 % extract most critical initial state and input signal
-[x0,u] = falsifyingTrajectory(R0,U,set,alpha);
+[x0,u] = falsifyingTrajectory(R0,U,set,alpha,cp_bool);
 
 %modification to test (delete me)
 x = g(x0);
@@ -44,7 +45,7 @@ end
 
 % Auxiliary Functions -----------------------------------------------------
 
-function R = reachKoopman(A,B,g,R0,U,tFinal,dt)
+function R = reachKoopman(A,B,g,R0,U,tFinal,dt,cp_bool)
 % compute reachable set for Koopman linearized model
 
 % compute initial set using Taylor model arithmetic
@@ -55,7 +56,7 @@ R0 = polyZonotope(tay);
 R0 = polyZonotope(R0.c,R0.G,[],R0.expMat(1:n,:));
 
 % compute reachable set
-t = 0:dt:ceil(tFinal/dt)*dt; U = zonotope(U);
+t = 0:dt:ceil(tFinal/dt)*dt;
 
 set = cell(length(t),1); time = set; zono = set;
 
@@ -64,7 +65,8 @@ set{1} = R0; time{1} = interval(-dt/2,dt/2);
 for i = 1:length(t)-1
     % AH edit to check if system has external input
     if B
-        set{i+1} = A*set{i} + B*zonotope(U);
+        cp_U = U.*cp_bool(i,:)';
+        set{i+1} = A*set{i} + B*zonotope(cp_U);
     else
         set{i+1} = A*set{i};
     end
@@ -159,7 +161,7 @@ for i = 1:size(spec,1)
 end
 end
 
-function [x0,u] = falsifyingTrajectory(R0,U,set,alpha)
+function [x0,u] = falsifyingTrajectory(R0,U,set,alpha, cp_bool)
 % extract the most critical initial state and input signal from the most
 % critical reachable set and specification
 
@@ -191,6 +193,9 @@ end
 if ~isempty(U)
     % determine most ctritical control input
     if ~isempty(set.Grest)
+
+%         alphaU = reshape(cp_bool,[],1);
+%         alphaU(find(alphaU)) = alpha(size(set.G,2)+1:end);
 
         alphaU = alpha(size(set.G,2)+1:end);
 

@@ -10,11 +10,16 @@ classdef KF_model
         cp %control points for each input signal. needs to be an array of length equal to number of inputs. Needs to be a factor of T/dt
 
         spec %specification defined as an object of the CORA specification class (safe/unsafe sets)
+
+        pulse_input %boolean, set to true if the inputs are pulse inputs, otherwise input is piecewise-constant
+        cp_bool %internal property that is used to set control inputs of  (do not change)
+
     end
     methods
         % Constructor
         function model = KF_model(sim)
             model.sim=sim;
+            model.pulse_input = false;
         end
     end
 end
