@@ -15,20 +15,13 @@ function [x0,u] = falsifyFixedModel(A,B,g,model)
 %   -x0:       initial state for the most critical trajectory
 %   -u:        piecewise constant inputs for the most critical trajectory
 
-dt=model.dt;
-spec=model.spec;
-R0=model.R0;
-U=model.U;
-tFinal=model.T;
-cp_bool=model.cp_bool;
-
 % compute reachable set for Koopman linearized model
-R = reachKoopman(A,B,g,R0,U,tFinal,dt,cp_bool);
+R = reachKoopman(A,B,g,model);
 % determine most critical reachable set and specification
-[set,alpha] = mostCriticalReachSet(R,spec);
+[set,alpha] = mostCriticalReachSet(R,model);
 
 % extract most critical initial state and input signal
-[x0,u] = falsifyingTrajectory(R0,U,set,alpha,cp_bool);
+[x0,u] = falsifyingTrajectory(set,alpha,model);
 
 %modification to test (delete me)
 x = g(x0);
@@ -46,8 +39,15 @@ end
 
 % Auxiliary Functions -----------------------------------------------------
 
-function R = reachKoopman(A,B,g,R0,U,tFinal,dt,cp_bool)
+function R = reachKoopman(A,B,g,model)
 % compute reachable set for Koopman linearized model
+
+%setup 
+dt=model.dt;
+R0=model.R0;
+U=model.U;
+tFinal=model.T;
+cp_bool=model.cp_bool;
 
 % compute initial set using Taylor model arithmetic
 n = dim(R0);
@@ -66,7 +66,7 @@ set{1} = R0; time{1} = interval(-dt/2,dt/2);
 for i = 1:length(t)-1
     % AH edit to check if system has external input
     if B
-        if ~isempty(cp_bool)
+        if model.pulse_input
             cp_U = U.*cp_bool(i,:)';
         else
             cp_U=U;
@@ -87,14 +87,18 @@ end
 R.set = set; R.time = time; R.zono = zono;
 end
 
-function [setCrit,alphaCrit] = mostCriticalReachSet(R,spec)
+function [setCrit,alphaCrit] = mostCriticalReachSet(R,model)
 % detemrine most critical reachable set and specification based on the
 % robustnes
 
 % loop over all specifications
+spec=model.spec;
 rob = inf;
 
 for i = 1:size(spec,1)
+
+    %struct for stored solution
+    soln = struct;
 
     % different types of specifications
     if strcmp(spec(i,1).type,'unsafeSet')
@@ -151,11 +155,18 @@ for i = 1:size(spec,1)
         controller = get_controller(Sys);
         setup_time = toc;
         tic
-        Sys.run_open_loop(controller);
+        model_data = Koopman_compute_input(controller);
         solve_time = toc;
-        alphaCrit = Sys.model_data.alpha';
-        rob = Sys.model_data.rob;
-        setCrit = R.set{end};
+        rob_ = model_data.rob;
+        alpha = model_data.alpha';
+        soln.x = model_data.X;
+
+        %TODO: how can we compare stl robustness and reachset robustness.
+        if rob_ < rob
+            alphaCrit = alpha;
+            setCrit = R.set{end};
+            rob = rob_;
+        end
 
         %print setup and runtime for milp solver
         fprintf('Setup time: %f seconds\n', setup_time);
@@ -164,12 +175,23 @@ for i = 1:size(spec,1)
     else
         error('This type of specification is not supported!');
     end
+
+    %store solution for this iteration for each spec.
+    soln.rob=rob_; soln.alpha=alpha;
+    solns = model.spec_soln(model.spec(i,1));
+    solns{1}{end+1} = soln;
+    model.spec_soln(model.spec(i,1)) = solns;
 end
 end
 
-function [x0,u] = falsifyingTrajectory(R0,U,set,alpha, cp_bool)
+function [x0,u] = falsifyingTrajectory(set,alpha,model)
 % extract the most critical initial state and input signal from the most
 % critical reachable set and specification
+
+%setup 
+R0=model.R0;
+U=model.U;
+cp_bool=model.cp_bool;
 
 % determine most critical initial state
 alphaInit = zeros(size(set.expMat,1),1);
@@ -200,7 +222,7 @@ if ~isempty(U)
     % determine most ctritical control input
     if ~isempty(set.Grest)
 
-        if ~isempty(cp_bool) %if pulse input
+        if model.pulse_input %if pulse input
             %initialise alpha to cp_bool
             alphaU = reshape(cp_bool,[],1);
             %input alpha returned by milp optimizernon
@@ -317,35 +339,11 @@ end
 function Sys = setup_bluSTL(R, spec)
 
 blu_stl = cora_blu_stl_convert(spec.set);
-Sys= Koopman_lti(R.zono);
+
+Sys=Koopman_lti(R.zono);
 
 dt = R.time{1}.volume;
-t1 = R.time{1}.center;
-tfinal = R.time{end}.center;
-
-Sys.time = t1:dt:tfinal;
 Sys.ts=dt;
-Sys.L=size(R.zono,1)-1;
-
 Sys.stl_list = {blu_stl};
-%what value of bigM is needed?
-Sys.bigM=1e6;
-
-%modify solver options:
-solver = 'gurobi';  % gurobi, cplex, glpk
-timeLimit = 2000;
-gapLimit = 0.01;
-gapAbsLimit = 0.1;
-solnLimit = Inf;
-verb = 0;
-Sys.solver_options = sdpsettings('verbose', verb,'solver', solver, ...
-    'gurobi.TimeLimit', timeLimit, ...
-    'gurobi.MIPGap', gapLimit, ...
-    'gurobi.MIPGapAbs', gapAbsLimit, ...
-    'gurobi.SolutionLimit', solnLimit,...
-    'cachesolvers',1,...
-    'gurobi.BarHomogeneous', 1,...
-    'gurobi.ScaleFlag', 2, ...
-    'gurobi.DualReductions', 0);
 
 end

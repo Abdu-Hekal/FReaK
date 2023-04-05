@@ -92,13 +92,11 @@ if ~isempty(model.U) %check if simulink model has inputs
     all_steps = model.T/model.dt;
     assert(floor(all_steps)==all_steps,'Time step (dt) must be a factor of Time horizon (T)')
 
-    if model.pulse_input
-        model.cp_bool = zeros(all_steps,length(model.U));
-        for k=1:length(model.cp)
-            step = (model.T/model.dt)/model.cp(k);
-            assert(floor(step)==step,'number of control points (cp) must be a factor of T/dt')
-            model.cp_bool(1:step:end,k) = 1;
-        end
+    model.cp_bool = zeros(all_steps,length(model.U));
+    for k=1:length(model.cp)
+        step = (model.T/model.dt)/model.cp(k);
+        assert(floor(step)==step,'number of control points (cp) must be a factor of T/dt')
+        model.cp_bool(1:step:end,k) = 1;
     end
 end
 

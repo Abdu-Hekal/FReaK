@@ -1,4 +1,4 @@
-function controller = reach_get_controller(Sys,~)
+function controller = reach_get_controller(Sys)
 % STLC_get_controller constructs the controller object for an STLC_lti instance
 %
 % Input:
@@ -17,7 +17,7 @@ L=Sys.L;   % horizon (# of steps)
 ts=Sys.ts; % sampling time
 
 %% System dimensions and variables
-nx=size(Sys.x0,1);
+nx=Sys.nx;
 % variables
 X = sdpvar(nx, L+1);
 Alpha = sdpvar(1, size(Sys.reach_zonos{end}.generators,2));
@@ -27,7 +27,7 @@ Fstl = [];
 Pstl = [];
 var = struct('X',X);
 
-stl_list= STLC_parse_stl_labels(Sys);
+stl_list= Koopman_parse_stl_labels(Sys);
 M = Sys.bigM;
 
 

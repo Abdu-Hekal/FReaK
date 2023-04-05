@@ -6,7 +6,6 @@ if contains(blu_stl,'U')
     error("bluSTL does not currently (correctly) support until operator")
 end
 
-
 blu_stl = replace(blu_stl,'G','alw_');
 blu_stl = replace(blu_stl,'F','ev_');
 blu_stl = replace(blu_stl,'&','and');
