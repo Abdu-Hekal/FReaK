@@ -1,6 +1,6 @@
 function [trainset, crit_x, crit_u] = symbolicRFF(model, trainset, x0, u)
 
-    [trainset.t{end+1}, x] = run_simulation(model.sim, model.T, x0, u);
+    [trainset.t{end+1}, x] = run_simulation(model.sim, model.T, model.dt, x0, u);
     trainset.X{end+1} = x';
     dt = trainset.t{1}(2) - trainset.t{1}(1);
     %append zeros at end to account for last time point (which has no
@@ -35,6 +35,6 @@ function [trainset, crit_x, crit_u] = symbolicRFF(model, trainset, x0, u)
     crit_u = [linspace(0,model.T-model.dt,all_steps)',crit_u];
 
     % run most critical input on the real system
-    [~, crit_x] = run_simulation(model.sim, model.T, crit_x0, crit_u);
+    [~, crit_x] = run_simulation(model.sim, model.T, model.dt, crit_x0, crit_u);
 
 end

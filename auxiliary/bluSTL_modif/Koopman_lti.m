@@ -2,13 +2,12 @@ classdef Koopman_lti
 
     % Koopman reachability properties
     properties
-        reach_zonos = []
-        plot = false %plot traces
+        reach_zonos = [] %reachable zonotopes
+        dt %time_step
+        cp_bool %boolean array representing cp points
 
         xlabel %default label name bluSTL
         nx %number of state variables
-
-        dt %time_step
         L %number of control points
         stl_list %stl_list to falsify
 
@@ -20,7 +19,6 @@ classdef Koopman_lti
         % Constructor
         function Sys = Koopman_lti(reach_zonos,dt)
             Sys.reach_zonos = reach_zonos;
-            assert(reach_zonos{1}.isInterval, "initial set must be an interval")
             Sys.dt=dt;
             Sys.nx=size(reach_zonos{1}.center,1);
             Sys.L=size(reach_zonos,1)-1;

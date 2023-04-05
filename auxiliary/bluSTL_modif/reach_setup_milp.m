@@ -12,15 +12,17 @@ function milp = reach_setup_milp(Sys)
 % :license: TBD
 
 
-%% Time
+%% setup
 L=Sys.L;   % horizon (# of steps)
 dt=Sys.dt; % sampling time
+cp_bool=Sys.cp_bool;
+reach_zonos=Sys.reach_zonos;
 
 %% System dimensions and variables
 nx=Sys.nx;
 % variables
 X = sdpvar(nx, L+1);
-Alpha = sdpvar(1, size(Sys.reach_zonos{end}.generators,2));
+Alpha = sdpvar(1, size(reach_zonos{end}.generators,2));
 
 %% STL formula
 Fstl = [];
@@ -43,25 +45,40 @@ end
 
 
 %% Reachset constraints
-Freach = [];
+Falpha = [];
 
 %constraints for Alpha
 for k=1:size(Alpha,2)
-    Freach = [Freach, -1 <= Alpha(k) <= 1];
+    Falpha = [Falpha, -1 <= Alpha(k) <= 1];
 end
 
-% Constraints for reachable set
+%constraint for control points
+if ~isempty(cp_bool) %piecewise constant signal
+    %first alpha corresponding to an input
+    k = size(reach_zonos{1}.generators,2)+1;
+    for col=1:size(cp_bool,2)
+        for row=1:size(cp_bool,1)
+            %if bool is zero constrain alpha to be same value as prev
+            if ~cp_bool(row,col)
+                Falpha=[Falpha, Alpha(k)==Alpha(k-1)];
+            end
+            k=k+1; %next alpha
+        end
+    end
+end
+
+% constraints for reachable set
+Freach = [];
 for k=1:L+1
     % x = c + G * \alpha, 
-    c = Sys.reach_zonos{k}.center;
-    G = Sys.reach_zonos{k}.generators;
+    c = reach_zonos{k}.center;
+    G = reach_zonos{k}.generators;
 
     Freach = [Freach, X(:,k) == (c+G*Alpha(1:size(G,2))')];
 end
 
 options = Sys.solver_options;
 output_controller =  {Alpha,X,Pstl};
-
 
 if numel(stl_list) == 0
     Pstl = sdpvar(1,1);
@@ -70,6 +87,6 @@ end
 %% Objective function, minimize robustness of stl formula
 obj = sum(sum(Pstl(:,1:end))); 
 
-milp = optimizer([Freach, Fstl],obj,options,[], output_controller);
+milp = optimizer([Fstl, Falpha, Freach],obj,options,[], output_controller);
 
 

@@ -14,7 +14,7 @@ classdef KF_model
         spec %specification defined as an object of the CORA specification class (safe/unsafe sets)
         spec_soln %internally defined property that stores the solutions for each spec (do not change)
 
-        pulse_input %boolean, set to true if the inputs are pulse inputs, otherwise input is piecewise-constant
+        pulse_input %boolean, set to true if the inputs are pulse inputs, otherwise input is piecewise-constant (default: false)
         cp_bool %internal property that is used to set control inputs for pulse inputs (do not change)
 
     end
@@ -22,7 +22,7 @@ classdef KF_model
         % Constructor
         function model = KF_model(sim)
             model.sim=sim;
-            model.pulse_input = true;
+            model.pulse_input = false;
         end
     end
 end

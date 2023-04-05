@@ -1,4 +1,4 @@
-function [tout, yout] = run_simulation(model_name, T, x0, u)
+function [tout, yout] = run_simulation(model_name, T, dt, x0, u)
     open_system(model_name,'loadonly');
     sim_mode = get_param(model_name,'SimulationMode');
     set_param(model_name,'SimulationMode','normal'); %need this to extract init state info, otherwise error is thrown if sim mode is not 'normal'
@@ -10,6 +10,7 @@ function [tout, yout] = run_simulation(model_name, T, x0, u)
     paramStruct.LoadInitialState = 'on';
     paramStruct.InitialState = 'xInitial';
     assignin('base','T',T);
+    assignin('base','dt',dt);
     assignin('base','xInitial',xInitial);
 
     if ~isempty(find_system(model_name,'BlockType','Inport')) %check if simulink model has inputs
@@ -19,6 +20,7 @@ function [tout, yout] = run_simulation(model_name, T, x0, u)
     end
 
     paramStruct.StopTime = 'T';
+    paramStruct.FixedStep = 'dt';
     paramStruct.SaveTime='on';
     paramStruct.TimeSaveName='tout';
     paramStruct.SaveOutput='on';

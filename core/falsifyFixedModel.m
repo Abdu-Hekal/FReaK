@@ -148,9 +148,13 @@ for i = 1:size(spec,1)
 
     elseif strcmp(spec(i,1).type,'logic')
         %setup bluSTL
-        Sys = setup_bluSTL(R.zono,spec(i,1),model.dt);
+        blu_stl = cora_blu_stl_convert(spec(i,1).set);
+        Sys=Koopman_lti(R.zono,model.dt);
+        Sys.stl_list = {blu_stl};
+        if ~model.pulse_input
+            Sys.cp_bool=model.cp_bool;
+        end
 
-        %TODO: add constraints on alpha with model.cp
         % run bluSTL
         tic
         milp = setup_milp(Sys);
@@ -335,13 +339,4 @@ else
         alpha = x(2*n+1:end);
     end
 end
-end
-
-function Sys = setup_bluSTL(reach_zonos, spec, dt)
-
-blu_stl = cora_blu_stl_convert(spec.set);
-
-Sys=Koopman_lti(reach_zonos,dt);
-Sys.stl_list = {blu_stl};
-
 end
