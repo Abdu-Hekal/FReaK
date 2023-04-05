@@ -1,4 +1,4 @@
-function [x0,u] = falsifyFixedModel(A,B,g,model)
+function [x0,u, specCrit, model] = falsifyFixedModel(A,B,g,model)
 % determine the most critical initial point and input trajectory of a
 % Koopman linearized model for the given trajectory
 %
@@ -18,10 +18,10 @@ function [x0,u] = falsifyFixedModel(A,B,g,model)
 % compute reachable set for Koopman linearized model
 R = reachKoopman(A,B,g,model);
 % determine most critical reachable set and specification
-[set,alpha] = mostCriticalReachSet(R,model);
+[setCrit,alphaCrit,specCrit, model] = mostCriticalReachSet(R,model);
 
 % extract most critical initial state and input signal
-[x0,u] = falsifyingTrajectory(set,alpha,model);
+[x0,u] = falsifyingTrajectory(setCrit,alphaCrit,model);
 
 %modification to test (delete me)
 x = g(x0);
@@ -42,7 +42,7 @@ end
 function R = reachKoopman(A,B,g,model)
 % compute reachable set for Koopman linearized model
 
-%setup 
+%setup
 dt=model.dt;
 R0=model.R0;
 U=model.U;
@@ -88,7 +88,7 @@ end
 R.set = set; R.time = time; R.zono = zono;
 end
 
-function [setCrit,alphaCrit] = mostCriticalReachSet(R,model)
+function [setCrit,alphaCrit,specCrit, model] = mostCriticalReachSet(R,model)
 % detemrine most critical reachable set and specification based on the
 % robustnes
 
@@ -119,6 +119,7 @@ for i = 1:size(spec,1)
                     alphaCrit = alpha;
                     setCrit = R.set{j};
                     rob = rob_;
+                    specCrit=spec(i,1);
                 end
             end
         end
@@ -142,26 +143,37 @@ for i = 1:size(spec,1)
                     alphaCrit = alpha;
                     setCrit = R.set{j};
                     rob = rob_;
+                    specCrit=spec(i,1);
                 end
             end
         end
 
     elseif strcmp(spec(i,1).type,'logic')
-        %setup bluSTL
+        %convert stl from CORA format to blustl
         blu_stl = cora_blu_stl_convert(spec(i,1).set);
-        Sys=Koopman_lti(R.zono,model.dt);
-        Sys.stl_list = {blu_stl};
-        if ~model.pulse_input
-            Sys.cp_bool=model.cp_bool;
-        end
-
-        % run bluSTL
+        %setup and run bluSTL
         tic
-        milp = setup_milp(Sys);
+        prev_sol = model.spec_soln(model.spec(i,1));
+        %if there was no prev soln, setup milp problem from scratch
+        if isempty(fieldnames(prev_sol))
+            Sys=Koopman_lti(R.zono,model.dt);
+            Sys.stl_list = {blu_stl};
+            if ~model.pulse_input
+                Sys.cp_bool=model.cp_bool;
+            end
+            Sys = setup_milp(Sys);
+            soln.lti=Sys; %store lti object with milp problem info
+        else %use previously setup milp problem
+            Sys=prev_sol.lti; %get previously setup milp problem
+            Sys.reach_zonos=R.zono; %update reach zonos with new
+        end
+        milp = reach_milp(Sys);
         setup_time = toc;
         tic
         model_data = Koopman_solve_milp(milp);
         solve_time = toc;
+
+        %get results
         rob_ = model_data.rob;
         alpha = model_data.alpha';
         soln.x = model_data.X;
@@ -171,6 +183,7 @@ for i = 1:size(spec,1)
             alphaCrit = alpha;
             setCrit = R.set{end};
             rob = rob_;
+            specCrit=spec(i,1);
         end
 
         %print setup and runtime for milp solver
@@ -183,9 +196,7 @@ for i = 1:size(spec,1)
 
     %store solution for this iteration for each spec.
     soln.rob=rob_; soln.alpha=alpha;
-    solns = model.spec_soln(model.spec(i,1));
-    solns{1}{end+1} = soln;
-    model.spec_soln(model.spec(i,1)) = solns;
+    model.spec_soln(model.spec(i,1)) = soln;
 end
 end
 
@@ -193,7 +204,7 @@ function [x0,u] = falsifyingTrajectory(set,alpha,model)
 % extract the most critical initial state and input signal from the most
 % critical reachable set and specification
 
-%setup 
+%setup
 R0=model.R0;
 U=model.U;
 cp_bool=model.cp_bool;

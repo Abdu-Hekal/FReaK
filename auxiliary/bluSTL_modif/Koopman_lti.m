@@ -13,6 +13,11 @@ classdef Koopman_lti
 
         bigM %
         solver_options %milp solver settings
+
+
+        Fstl
+        Falpha
+        output
     end
 
     methods
@@ -57,8 +62,12 @@ classdef Koopman_lti
             end
         end
 
-        function milp = setup_milp(Sys)
-            milp = reach_setup_milp(Sys);
+        function Sys = setup_milp(Sys)
+            Sys = koopman_setup_milp(Sys);
+        end
+        
+        function milp = reach_milp(Sys)
+            milp = koopman_reach_milp(Sys);
         end
     end
 end

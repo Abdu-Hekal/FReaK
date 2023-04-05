@@ -7,6 +7,7 @@ classdef KF_model
 
         T %time horizon for simulation
         dt %time step
+        %TODO: varying time control points.
         cp %control points for each input signal. needs to be an array of length equal to number of inputs. Needs to be a factor of T/dt
         %default is cp every dt. Note that values other than default are
         %currently only supported for spec of type stl formula.
@@ -24,5 +25,6 @@ classdef KF_model
             model.sim=sim;
             model.pulse_input = false;
         end
+
     end
 end

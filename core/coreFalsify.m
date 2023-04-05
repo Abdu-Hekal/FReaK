@@ -12,7 +12,7 @@ trainset.X = {}; trainset.XU={}; trainset.t = {}; %empty cells to store states, 
 falsified = false;
 train_iter = 0;
 while train_iter < max_train_size && falsified==false
-    [trainset, crit_x, crit_u] = symbolicRFF(model, trainset, x0, u);
+    [trainset, crit_x, crit_u, specCrit, model] = symbolicRFF(model, trainset, x0, u);
     %retrain with initial set & input as the critical values found in prev iteration.
     %If the critical values are the same as previous, generate new random
     %values
@@ -30,12 +30,15 @@ while train_iter < max_train_size && falsified==false
         x0=crit_x(1,:)';
         u=crit_u;
     end
-    disp(crit_u)
+    %     disp(crit_u)
 
+    %check for all spec, if by luck trace falsifies a different spec than crit spec ;)
     for j = 1:size(model.spec,1)
         % different types of specifications
         if strcmp(model.spec(j,1).type,'unsafeSet')
             check = any(model.spec(j,1).set.contains(crit_x'));
+        elseif strcmp(model.spec(j,1).type,'safeSet')
+            check = ~all(model.spec(j,1).set.contains(crit_x')); %check this
         elseif strcmp(model.spec(j,1).type,'logic')
             robustness = computeRobustness(model.spec(j,1).set,crit_x,vpa(linspace(0,model.T,size(crit_x,1)')))
             check = ~checkStl(model.spec(j,1).set,crit_x,vpa(linspace(0,model.T,size(crit_x,1)')));
@@ -100,7 +103,7 @@ if ~isempty(model.U) %check if model has inputs
     end
 end
 
-%create empty dict to store soln for each spec
-model.spec_soln = dictionary(model.spec,{{}});
+%create empty dict to store prev soln for each spec
+model.spec_soln = dictionary(model.spec,struct);
 end
 
