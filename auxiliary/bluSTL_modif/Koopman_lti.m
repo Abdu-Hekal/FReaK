@@ -48,9 +48,15 @@ classdef Koopman_lti
                 'gurobi.ScaleFlag', 2, ...
                 'gurobi.DualReductions', 0);
 
-            %default bigM
-            Sys.bigM=1e6;
-
+            %find suitable bigM based on zonotope boundaries
+            Sys.bigM=0;
+            for i=1:length(reach_zonos)
+                zono=reach_zonos{i};
+                if norm(zono,inf) > Sys.bigM
+                    order = ceil(log10(norm(zono)));
+                    Sys.bigM = 10^order;
+                end
+            end
         end
 
         function milp = setup_milp(Sys)

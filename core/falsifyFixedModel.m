@@ -82,6 +82,7 @@ end
 for i = 1:length(set)
     set{i} = project(set{i},1:n);
     zono{i} = zonotope(set{i});
+
 end
 
 R.set = set; R.time = time; R.zono = zono;
