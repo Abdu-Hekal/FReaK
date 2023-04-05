@@ -8,7 +8,7 @@ classdef Koopman_lti
         xlabel %default label name bluSTL
         nx %number of state variables
 
-        ts %time_step
+        dt %time_step
         L %number of control points
         stl_list %stl_list to falsify
 
@@ -18,9 +18,10 @@ classdef Koopman_lti
 
     methods
         % Constructor
-        function Sys = Koopman_lti(reach_zonos)
+        function Sys = Koopman_lti(reach_zonos,dt)
             Sys.reach_zonos = reach_zonos;
             assert(reach_zonos{1}.isInterval, "initial set must be an interval")
+            Sys.dt=dt;
             Sys.nx=size(reach_zonos{1}.center,1);
             Sys.L=size(reach_zonos,1)-1;
 
@@ -52,8 +53,8 @@ classdef Koopman_lti
 
         end
 
-        function controller = get_controller(Sys)
-            controller = reach_get_controller(Sys);
+        function milp = setup_milp(Sys)
+            milp = reach_setup_milp(Sys);
         end
     end
 end

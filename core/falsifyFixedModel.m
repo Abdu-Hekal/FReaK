@@ -147,15 +147,15 @@ for i = 1:size(spec,1)
 
     elseif strcmp(spec(i,1).type,'logic')
         %setup bluSTL
-        Sys = setup_bluSTL(R,spec(i,1));
+        Sys = setup_bluSTL(R.zono,spec(i,1),model.dt);
 
         %TODO: add constraints on alpha with model.cp
         % run bluSTL
         tic
-        controller = get_controller(Sys);
+        milp = setup_milp(Sys);
         setup_time = toc;
         tic
-        model_data = Koopman_compute_input(controller);
+        model_data = Koopman_solve_milp(milp);
         solve_time = toc;
         rob_ = model_data.rob;
         alpha = model_data.alpha';
@@ -336,14 +336,11 @@ else
 end
 end
 
-function Sys = setup_bluSTL(R, spec)
+function Sys = setup_bluSTL(reach_zonos, spec, dt)
 
 blu_stl = cora_blu_stl_convert(spec.set);
 
-Sys=Koopman_lti(R.zono);
-
-dt = R.time{1}.volume;
-Sys.ts=dt;
+Sys=Koopman_lti(reach_zonos,dt);
 Sys.stl_list = {blu_stl};
 
 end

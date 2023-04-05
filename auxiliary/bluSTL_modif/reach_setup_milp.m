@@ -1,4 +1,4 @@
-function controller = reach_get_controller(Sys)
+function milp = reach_setup_milp(Sys)
 % STLC_get_controller constructs the controller object for an STLC_lti instance
 %
 % Input:
@@ -14,7 +14,7 @@ function controller = reach_get_controller(Sys)
 
 %% Time
 L=Sys.L;   % horizon (# of steps)
-ts=Sys.ts; % sampling time
+dt=Sys.dt; % sampling time
 
 %% System dimensions and variables
 nx=Sys.nx;
@@ -34,8 +34,7 @@ M = Sys.bigM;
 for i = 1:numel(stl_list)
     phi = STLformula('phi', stl_list{i});
 
-    %what time steps to compute robustness for? does this work? why?
-    [Fphi, Pphi] = Koopman_MILP_robust(phi, 1, L+1, ts, var,M);
+    [Fphi, Pphi] = Koopman_MILP_robust(phi, 1, L+1, dt, var,M);
     
     Pstl = [Pstl; Pphi];
     Fstl = [Fstl Fphi];
@@ -68,9 +67,9 @@ if numel(stl_list) == 0
     Pstl = sdpvar(1,1);
 end
 
-%% Objective function
+%% Objective function, minimize robustness of stl formula
 obj = sum(sum(Pstl(:,1:end))); 
 
-controller = optimizer([Freach, Fstl],obj,options,[], output_controller);
+milp = optimizer([Freach, Fstl],obj,options,[], output_controller);
 
 

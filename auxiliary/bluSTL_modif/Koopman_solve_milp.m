@@ -1,4 +1,4 @@
-function [model_data, status] = Koopman_compute_input(controller)
+function [model_data, status] = Koopman_solve_milp(milp)
 % STLC_compute_input
 %
 % Input:
@@ -14,7 +14,7 @@ function [model_data, status] = Koopman_compute_input(controller)
 % :license: TBD
 
 %% call solver
-[sol_control, errorflag1] = controller{{}, []};
+[sol_control, errorflag1] = milp{{}, []};
 if(errorflag1==0)
     model_data.alpha = double(sol_control{1});
     model_data.X = double(sol_control{2});
