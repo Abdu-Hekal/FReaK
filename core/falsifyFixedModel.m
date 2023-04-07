@@ -156,21 +156,24 @@ for i = 1:size(spec,1)
         prev_sol = model.spec_soln(model.spec(i,1));
         %if there was no prev soln, setup milp problem from scratch
         if isempty(fieldnames(prev_sol))
+            disp("setting up")
             Sys=Koopman_lti(R.zono,model.dt);
             Sys.stl_list = {blu_stl};
             if ~model.pulse_input
                 Sys.cp_bool=model.cp_bool;
             end
             Sys = setup_milp(Sys);
-            soln.lti=Sys; %store lti object with milp problem info
+            disp("set up")
         else %use previously setup milp problem
             Sys=prev_sol.lti; %get previously setup milp problem
             Sys.reach_zonos=R.zono; %update reach zonos with new
         end
+        soln.lti=Sys; %store lti object with milp problem info
+        
         milp = reach_milp(Sys);
         setup_time = toc;
         tic
-        model_data = Koopman_solve_milp(milp);
+        model_data=solve_milp(Sys,milp);
         solve_time = toc;
 
         %get results

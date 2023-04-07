@@ -69,6 +69,10 @@ classdef Koopman_lti
         function milp = reach_milp(Sys)
             milp = koopman_reach_milp(Sys);
         end
+
+        function [model_data, status]=solve_milp(Sys,milp)
+            [model_data, status] = Koopman_solve_milp(Sys,milp);
+        end
     end
 end
 

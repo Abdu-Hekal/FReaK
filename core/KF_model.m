@@ -26,5 +26,16 @@ classdef KF_model
             model.pulse_input = false;
         end
 
+        %simulate function for model, a custom simulate function can be
+        %used for a subclass of this class. Ensure that the outputs are consistent 
+        function [tout, yout] = simulate(model, x0, u)
+            if isa(model.sim, 'string') || isa(model.sim,"char")
+                [tout, yout] = run_simulink(model.sim, model.T, model.dt, x0, u);
+            elseif isa(model.sim,'function_handle')
+                error('sim as a function handle not yet implemented')
+            else
+                error('sim not supported')
+            end
+        end
     end
 end

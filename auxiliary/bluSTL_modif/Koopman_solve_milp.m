@@ -1,4 +1,4 @@
-function [model_data, status] = Koopman_solve_milp(milp)
+function [model_data, status] = Koopman_solve_milp(Sys,milp)
 % STLC_compute_input
 %
 % Input:
@@ -13,8 +13,16 @@ function [model_data, status] = Koopman_solve_milp(milp)
 % :copyright: TBD
 % :license: TBD
 
+%setup parameters
+reach_zonos=Sys.reach_zonos;
+c = zeros(length(reach_zonos{end}.center),length(reach_zonos));
+for k=1:length(reach_zonos)
+    c(:,k)=reach_zonos{k}.center;
+end
+G=reach_zonos{end}.generators;
+
 %% call solver
-[sol_control, errorflag1] = milp{{}, []};
+[sol_control, errorflag1] = milp{{c,G}};
 if(errorflag1==0)
     model_data.alpha = double(sol_control{1});
     model_data.X = double(sol_control{2});

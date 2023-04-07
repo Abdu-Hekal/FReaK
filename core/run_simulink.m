@@ -1,4 +1,4 @@
-function [tout, yout] = run_simulation(model_name, T, dt, x0, u)
+function [tout, yout] = run_simulink(model_name, T, dt, x0, u)
     open_system(model_name,'loadonly');
     sim_mode = get_param(model_name,'SimulationMode');
     set_param(model_name,'SimulationMode','normal'); %need this to extract init state info, otherwise error is thrown if sim mode is not 'normal'
