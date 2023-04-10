@@ -3,16 +3,14 @@
 % py.importlib.import_module('autokoopman');
 
 model = model_AutoTransmission();
-max_train_size=20; %maximum number of training trajectories before quitting
 plot_vars = [1,2];
 
+[model,trainset] = falsify(model);
 
-[falsified, trainset, crit_x, train_iter] = coreFalsify(model, max_train_size);
-
-if falsified
+if model.soln.falsified
     disp(" ")
     disp("falsifying trace found!")
-    visualize_falsification(crit_x, trainset.t{1}, model.spec, plot_vars)
+    visualize_falsification(model.soln.x, trainset.t{1}, model.spec, plot_vars)
 else
     disp("No falsifying trace found!")
 end

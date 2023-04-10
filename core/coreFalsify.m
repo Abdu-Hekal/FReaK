@@ -1,57 +1,50 @@
-function [falsified, trainset, crit_x, train_iter] = coreFalsify(model, max_train_size)
+function [model,trainset] = coreFalsify(model)
 
-%Ensure that autokoopman is installed & imported in your python environment
-py.importlib.import_module('autokoopman');
 %initialization and init assertions
-model = initialize(model);
+[model, trainset] = initialize(model);
 %generate random initial point and inputs
 [x0,u] = getRandomXU(model);
 
-trainset.X = {}; trainset.XU={}; trainset.t = {}; %empty cells to store states, inputs and times for training trajectories
-
 falsified = false;
-train_iter = 0;
-while train_iter < max_train_size && falsified==false
-    [trainset, crit_x, crit_u, model] = symbolicRFF(model, trainset, x0, u);
-    %retrain with initial set & input as the critical values found in prev iteration.
-    %If the critical values are the same as previous, generate new random
-    %values
-    repeated_traj = false;
-    for r = 1:length(trainset.X)
-        if isequal(crit_x(1,:)',trainset.X{r}(:,1)) && isequal(crit_u(:,2:end),trainset.XU{r}(:,1:end-1)')
-            repeated_traj = true;
-            break
-        end
-    end
-    if true %repeated_traj
-        disp("repeated critical trajectory, generating a new random trajectory")
+trainIter = 0;
+while trainIter < model.maxTrainSize && falsified==false
+    [model, trainset] = symbolicRFF(model, trainset, x0, u);
+    critX=model.soln.x; critU=model.soln.u;
+
+    %if random trajectory setting selected or critical trajectory is
+    %repeated, train with random xu
+    if model.trainRand || checkRepeatedTraj(critX,critU)
         [x0,u] = getRandomXU(model);
     else
-        x0=crit_x(1,:)';
-        u=crit_u;
+        x0=critX(1,:)';
+        u=critU;
     end
-    %     disp(crit_u)
+    %     disp(critU)
 
     %check for all spec, if by luck trace falsifies a different spec than crit spec ;)
     for j = 1:size(model.spec,1)
         % different types of specifications
         if strcmp(model.spec(j,1).type,'unsafeSet')
-            check = any(model.spec(j,1).set.contains(crit_x'));
+            check = any(model.spec(j,1).set.contains(critX'));
         elseif strcmp(model.spec(j,1).type,'safeSet')
-            check = ~all(model.spec(j,1).set.contains(crit_x')); %check this
+            check = ~all(model.spec(j,1).set.contains(critX')); %check this
         elseif strcmp(model.spec(j,1).type,'logic')
-            robustness = computeRobustness(model.spec(j,1).set,crit_x,vpa(linspace(0,model.T,size(crit_x,1)')))
-            check = ~checkStl(model.spec(j,1).set,crit_x,vpa(linspace(0,model.T,size(crit_x,1)')));
+            robustness = computeRobustness(model.spec(j,1).set,critX,vpa(linspace(0,model.T,size(critX,1)')))
+            model.specSolns(model.spec(j,1)).realRob=robustness; %store real robustness value
+            check = ~checkStl(model.spec(j,1).set,critX,vpa(linspace(0,model.T,size(critX,1)')));
         end
         if check
             falsified = true;
         end
     end
-    train_iter=train_iter+1;
-    disp(['iteration completed: ',num2str(train_iter)])
+    trainIter=trainIter+1;
+    disp(['iteration completed: ',num2str(trainIter)])
 end
 %close simulink model
 close_system;
+%assign solution result
+model.soln.falsified=falsified;
+model.soln.trainIter=trainIter;
 end
 
 function [x0,u] = getRandomXU(model)
@@ -76,7 +69,22 @@ else
 end
 end
 
-function model = initialize(model)
+function repeatedTraj = checkRepeatedTraj(critX,critU)
+%check if critical initial set & input are the same as found before
+repeatedTraj = false;
+for r = 1:length(trainset.X)
+    if isequal(critX(1,:)',trainset.X{r}(:,1)) && isequal(critU(:,2:end),trainset.XU{r}(:,1:end-1)')
+        repeatedTraj = true;
+        disp("repeated critical trajectory, generating a new random trajectory")
+        break
+    end
+end
+end
+
+function [model, trainset] = initialize(model)
+%Ensure that autokoopman is installed & imported in your python environment
+py.importlib.import_module('autokoopman');
+
 assert(isa(model.sim, 'string') | isa(model.sim,"char")| isa(model.sim,'function_handle'), 'model.sim must be a (1)string: name of simulink model or a (2)function handle')
 assert(isa(model.R0, 'interval'), 'Initial set (model.R0) must be defined as an CORA interval')
 assert(~isempty(model.T) & isnumeric(model.T), 'Time horizon (model.T) must be defined as a numeric')
@@ -85,7 +93,6 @@ assert(isa(model.spec, 'specification'), 'Falsifying spec (model.spec) must be d
 
 % clear yalmip
 yalmip('clear')
-
 
 if ~isempty(model.U) %check if model has inputs
     assert(isa(model.U, 'interval'), 'Input (model.U) must be defined as an CORA interval')
@@ -110,5 +117,7 @@ end
 %create empty dict to store prev soln (and for each spec)
 model.soln=struct;
 model.specSolns = dictionary(model.spec,struct);
+ %empty cells to store states, inputs and times for training trajectories
+trainset.X = {}; trainset.XU={}; trainset.t = {};
 end
 

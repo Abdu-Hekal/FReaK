@@ -172,7 +172,6 @@ for i = 1:size(spec,1)
         %if there was no prev soln for this spec, setup stl
         try
             Sys=prevSpecSol.lti; %get previously setup milp problem with stl
-
         catch
             Sys.stlList = {bluStl};
             Sys=setupStl(Sys);

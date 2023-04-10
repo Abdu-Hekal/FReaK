@@ -41,17 +41,16 @@ for i = 1:size(requirements, 1)
 
     model.spec = specification(eq,'logic');
 
-    [falsified, trainset, crit_x, train_iter] = coreFalsify(model, max_train_size);
+    [model,trainset] = falsify(model);
 
-    if falsified
+    if model.soln.falsified
         disp(" ")
         fprintf("falsifying trace found! for requirement '%s'\n", name)
     else
         fprintf("No falsifying trace found! for requirement '%s'\n", name)
     end
-    visualize_falsification(crit_x, trainset.t{1}, model.spec, plot_vars)
-    disp(['training iterations: ',num2str(train_iter)])
+    visualize_falsification(model.soln.x, trainset.t{1}, model.spec, plot_vars)
+    disp(['training iterations: ',num2str(model.soln.trainIter)])
     visualize_train(trainset, plot_vars)
-    results = [falsified;train_iter];
 end
 
