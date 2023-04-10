@@ -1,5 +1,5 @@
-function [F,P] = Koopman_MILP_robust(phi,kList,kMax,ts,var,M)
-% Koopman_MILP_robust  constructs MILP constraints in YALMIP that compute
+function [F,P] = KoopmanMilpRobust(phi,kList,kMax,ts,var,M)
+% KoopmanMilpRobust  constructs MILP constraints in YALMIP that compute
 %                  the robustness of satisfaction for specification phi
 %
 % Input: 
@@ -49,28 +49,28 @@ function [F,P] = Koopman_MILP_robust(phi,kList,kMax,ts,var,M)
             [F,P] = pred(phi.st,kList,var,M);
                      
         case 'not'
-            [Frest,Prest] = Koopman_MILP_robust(phi.phi,kList,kMax,ts, var,M);
+            [Frest,Prest] = KoopmanMilpRobust(phi.phi,kList,kMax,ts, var,M);
             [Fnot, Pnot] = not(Prest);
             F = [F, Fnot, Frest];
             P = Pnot;
 
         case 'or'
-            [Fdis1,Pdis1] = Koopman_MILP_robust(phi.phi1,kList,kMax,ts, var,M);
-            [Fdis2,Pdis2] = Koopman_MILP_robust(phi.phi2,kList,kMax,ts, var,M);
+            [Fdis1,Pdis1] = KoopmanMilpRobust(phi.phi1,kList,kMax,ts, var,M);
+            [Fdis2,Pdis2] = KoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M);
             [For, Por] = or([Pdis1;Pdis2],M);
             F = [F, For, Fdis1, Fdis2];
             P = Por;
 
         case 'and'
-            [Fcon1,Pcon1] = Koopman_MILP_robust(phi.phi1,kList,kMax,ts, var,M);
-            [Fcon2,Pcon2] = Koopman_MILP_robust(phi.phi2,kList,kMax,ts, var,M);
+            [Fcon1,Pcon1] = KoopmanMilpRobust(phi.phi1,kList,kMax,ts, var,M);
+            [Fcon2,Pcon2] = KoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M);
             [Fand, Pand] = and([Pcon1;Pcon2],M);
             F = [F, Fand, Fcon1, Fcon2];
             P = Pand;
 
         case '=>'
-            [Fant,Pant] = Koopman_MILP_robust(phi.phi1,kList,kMax,ts,var,M);
-            [Fcons,Pcons] = Koopman_MILP_robust(phi.phi2,kList,kMax,ts, var,M);
+            [Fant,Pant] = KoopmanMilpRobust(phi.phi1,kList,kMax,ts,var,M);
+            [Fcons,Pcons] = KoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M);
             [Fnotant,Pnotant] = not(Pant);
             [Fimp, Pimp] = or([Pnotant;Pcons],M);
             F = [F, Fant, Fnotant, Fcons, Fimp];
@@ -78,7 +78,7 @@ function [F,P] = Koopman_MILP_robust(phi,kList,kMax,ts,var,M)
             
         case 'always'
             kListAlw = unique(cell2mat(arrayfun(@(k) {min(kMax,k + a): min(kMax,k + b)}, kList)));
-            [Frest,Prest] = Koopman_MILP_robust(phi.phi,kListAlw,kMax,ts, var,M);
+            [Frest,Prest] = KoopmanMilpRobust(phi.phi,kListAlw,kMax,ts, var,M);
             [Falw, Palw] = always(Prest,a,b,kList,kMax,M);
             F = [F, Falw];
             P = [Palw, P];
@@ -86,15 +86,15 @@ function [F,P] = Koopman_MILP_robust(phi,kList,kMax,ts,var,M)
 
         case 'eventually'
             kListEv = unique(cell2mat(arrayfun(@(k) {min(kMax,k + a): min(kMax,k + b)}, kList)));
-            [Frest,Prest] = Koopman_MILP_robust(phi.phi,kListEv,kMax,ts, var,M);
+            [Frest,Prest] = KoopmanMilpRobust(phi.phi,kListEv,kMax,ts, var,M);
             [Fev, Pev] = eventually(Prest,a,b,kList,kMax,M);
             F = [F, Fev];
             P = [Pev, P];
             F = [F, Frest];
           
         case 'until'
-            [Fp,Pp] = Koopman_MILP_robust(phi.phi1,kList,kMax,ts, var,M);
-            [Fq,Pq] = Koopman_MILP_robust(phi.phi2,kList,kMax,ts, var,M);
+            [Fp,Pp] = KoopmanMilpRobust(phi.phi1,kList,kMax,ts, var,M);
+            [Fq,Pq] = KoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M);
             [Funtil, Puntil] = until(Pp,Pq,a,b,kList,kMax,M);
             F = [F, Funtil, Fp, Fq];
             P = Puntil;

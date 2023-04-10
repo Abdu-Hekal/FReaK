@@ -1,4 +1,4 @@
-function [x0,u, specCrit, model] = falsifyFixedModel(A,B,g,model)
+function [x0,u, model] = falsifyFixedModel(A,B,g,model)
 % determine the most critical initial point and input trajectory of a
 % Koopman linearized model for the given trajectory
 %
@@ -18,10 +18,10 @@ function [x0,u, specCrit, model] = falsifyFixedModel(A,B,g,model)
 % compute reachable set for Koopman linearized model
 R = reachKoopman(A,B,g,model);
 % determine most critical reachable set and specification
-[setCrit,alphaCrit,specCrit, model] = mostCriticalReachSet(R,model);
+model = mostCriticalReachSet(R,model);
 
 % extract most critical initial state and input signal
-[x0,u] = falsifyingTrajectory(setCrit,alphaCrit,model);
+[x0,u] = falsifyingTrajectory(model);
 
 %modification to test (delete me)
 x = g(x0);
@@ -47,7 +47,7 @@ dt=model.dt;
 R0=model.R0;
 U=model.U;
 tFinal=model.T;
-cp_bool=model.cp_bool;
+cpBool=model.cpBool;
 
 % compute initial set using Taylor model arithmetic
 n = dim(R0);
@@ -66,8 +66,8 @@ set{1} = R0; time{1} = interval(-dt/2,dt/2);
 for i = 1:length(t)-1
     % AH edit to check if system has external input
     if B
-        if model.pulse_input
-            cp_U = U.*cp_bool(i,:)';
+        if model.pulseInput
+            cp_U = U.*cpBool(i,:)';
         else
             cp_U=U;
         end
@@ -88,7 +88,7 @@ end
 R.set = set; R.time = time; R.zono = zono;
 end
 
-function [setCrit,alphaCrit,specCrit, model] = mostCriticalReachSet(R,model)
+function model = mostCriticalReachSet(R,model)
 % detemrine most critical reachable set and specification based on the
 % robustnes
 
@@ -99,7 +99,8 @@ rob = inf;
 for i = 1:size(spec,1)
 
     %struct for stored solution
-    soln = struct;
+    soln=struct;
+    specSoln = struct;
 
     % different types of specifications
     if strcmp(spec(i,1).type,'unsafeSet')
@@ -150,36 +151,45 @@ for i = 1:size(spec,1)
 
     elseif strcmp(spec(i,1).type,'logic')
         %convert stl from CORA format to blustl
-        blu_stl = cora_blu_stl_convert(spec(i,1).set);
+        bluStl = coraBlustlConvert(spec(i,1).set);
+        %get prev solns
+        prevSol=model.soln;
+        prevSpecSol = model.specSolns(model.spec(i,1));
         %setup and run bluSTL
         tic
-        prev_sol = model.spec_soln(model.spec(i,1));
-        %if there was no prev soln, setup milp problem from scratch
-        if isempty(fieldnames(prev_sol))
-            disp("setting up")
+        %if there was no prev soln of type logic, setup milp problem from scratch
+        try
+            Sys=prevSol.lti; %get previously setup milp problem
+        catch %setup from scratch
             Sys=Koopman_lti(R.zono,model.dt);
-            Sys.stl_list = {blu_stl};
-            if ~model.pulse_input
-                Sys.cp_bool=model.cp_bool;
+            if ~model.pulseInput %if not pulse input, set cpBool
+                Sys.cpBool=model.cpBool;
             end
-            Sys = setup_milp(Sys);
-            disp("set up")
-        else %use previously setup milp problem
-            Sys=prev_sol.lti; %get previously setup milp problem
-            Sys.reach_zonos=R.zono; %update reach zonos with new
+            Sys = setupAlpha(Sys);
+            soln.lti=Sys; %store lti object with milp problem info
         end
-        soln.lti=Sys; %store lti object with milp problem info
-        
-        milp = reach_milp(Sys);
+
+        %if there was no prev soln for this spec, setup stl
+        try
+            Sys=prevSpecSol.lti; %get previously setup milp problem with stl
+
+        catch
+            Sys.stlList = {bluStl};
+            Sys=setupStl(Sys);
+            specSoln.lti=Sys;
+        end
+
+        Sys.reachZonos=R.zono; %update reach zonos with new
+        milp = setupReach(Sys);
         setup_time = toc;
         tic
-        model_data=solve_milp(Sys,milp);
+        model_data=KoopmanSolveMilp(milp);
         solve_time = toc;
 
         %get results
         rob_ = model_data.rob;
         alpha = model_data.alpha';
-        soln.x = model_data.X;
+        specSoln.x = model_data.X;
 
         %TODO: how can we compare stl robustness and reachset robustness.
         if rob_ < rob
@@ -198,19 +208,25 @@ for i = 1:size(spec,1)
     end
 
     %store solution for this iteration for each spec.
-    soln.rob=rob_; soln.alpha=alpha;
-    model.spec_soln(model.spec(i,1)) = soln;
+    specSoln.rob=rob_; specSoln.alpha=alpha;
+    model.specSolns(model.spec(i,1)) = specSoln;
 end
+%store solution for this iteration
+soln.rob=rob; soln.alpha=alphaCrit;
+soln.set=setCrit; soln.spec=specCrit;
+model.soln=soln;
 end
 
-function [x0,u] = falsifyingTrajectory(set,alpha,model)
+function [x0,u] = falsifyingTrajectory(model)
 % extract the most critical initial state and input signal from the most
 % critical reachable set and specification
 
 %setup
 R0=model.R0;
 U=model.U;
-cp_bool=model.cp_bool;
+cpBool=model.cpBool;
+set=model.soln.set;
+alpha=model.soln.alpha;
 
 % determine most critical initial state
 alphaInit = zeros(size(set.expMat,1),1);
@@ -241,9 +257,9 @@ if ~isempty(U)
     % determine most ctritical control input
     if ~isempty(set.Grest)
 
-        if model.pulse_input %if pulse input
-            %initialise alpha to cp_bool
-            alphaU = reshape(cp_bool,[],1);
+        if model.pulseInput %if pulse input
+            %initialise alpha to cpBool
+            alphaU = reshape(cpBool,[],1);
             %input alpha returned by milp optimizernon
             allAlpha = alpha(size(set.G,2)+1:end);
             %find all nonzero elements in the relevant time horizon

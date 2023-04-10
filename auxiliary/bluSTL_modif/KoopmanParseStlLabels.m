@@ -1,4 +1,4 @@
-function stl_list = Koopman_parse_stl_labels(Sys)
+function stlList = Koopman_parse_stl_labels(Sys)
 % STLC_parse_stl_labels     Parses the STL specifications of an STLC_lti 
 %                           instance and replaces state, output, input and 
 %                           disturbance labels with the corresponding indices 
@@ -8,7 +8,7 @@ function stl_list = Koopman_parse_stl_labels(Sys)
 %       Sys: an STLC_lti instance
 %
 % Output: 
-%       stl_list: STL specification over X, Y, U and W.
+%       stlList: STL specification over X, Y, U and W.
 %
 % :copyright: TBD
 % :license: TBD
@@ -16,9 +16,9 @@ function stl_list = Koopman_parse_stl_labels(Sys)
 labels = {'xlabel'};
 vars = {'X'};
 
-stl_list = Sys.stl_list;
-for istl = 1:numel(Sys.stl_list)
-    stl = Sys.stl_list{istl}; 
+stlList = Sys.stlList;
+for istl = 1:numel(Sys.stlList)
+    stl = Sys.stlList{istl}; 
     for ilabel = 1:numel(labels)
         var = vars{ilabel};
         for jlabel = 1:numel(Sys.(labels{ilabel}))
@@ -26,5 +26,5 @@ for istl = 1:numel(Sys.stl_list)
             stl = regexprep(stl,['\<' label '\(t\)'], [ var '(' num2str(jlabel) ',t)'] );             
         end
     end
-    stl_list{istl} = stl;
+    stlList{istl} = stl;
 end

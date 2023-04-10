@@ -1,32 +1,35 @@
 classdef Koopman_lti
-
-    % Koopman reachability properties
     properties
-        reach_zonos = [] %reachable zonotopes
+        reachZonos = [] %reachable zonotopes
         dt %time_step
-        cp_bool %boolean array representing cp points
 
         xlabel %default label name bluSTL
         nx %number of state variables
         L %number of control points
-        stl_list %stl_list to falsify
+        stlList %stl list to falsify
+        cpBool %boolean array representing cp points
 
-        bigM %
+        bigM %bigM value for milp
         solver_options %milp solver settings
 
-
-        Fstl
+        %milp sdpvars and constraints
         Falpha
-        output
+        Alpha
+        X
+        Fstl
+        Pstl
+
+        %optimizer object
+        milp
     end
 
     methods
         % Constructor
-        function Sys = Koopman_lti(reach_zonos,dt)
-            Sys.reach_zonos = reach_zonos;
+        function Sys = Koopman_lti(reachZonos,dt)
+            Sys.reachZonos = reachZonos;
             Sys.dt=dt;
-            Sys.nx=size(reach_zonos{1}.center,1);
-            Sys.L=size(reach_zonos,1)-1;
+            Sys.nx=size(reachZonos{1}.center,1);
+            Sys.L=size(reachZonos,1)-1;
 
             % default label names
             Sys.xlabel = cell(1,Sys.nx);
@@ -50,28 +53,32 @@ classdef Koopman_lti
                 'gurobi.BarHomogeneous', 1,...
                 'gurobi.ScaleFlag', 2, ...
                 'gurobi.DualReductions', 0);
+        end
 
+        function Sys = setupAlpha(Sys)
+            Sys = KoopmanSetupAlpha(Sys);
+        end
+
+        function Sys = setupStl(Sys)
+            Sys = koopmanSetupStl(Sys);
+        end
+
+        function milp = setupReach(Sys)
+            milp = KoopmanSetupReach(Sys);
+        end
+
+        %reach zonos setter, which also sets bigM value
+        function Sys=set.reachZonos(Sys,reachZonos)
+            Sys.reachZonos=reachZonos;
             %find suitable bigM based on zonotope boundaries
             Sys.bigM=0;
-            for i=1:length(reach_zonos)
-                zono=reach_zonos{i};
+            for i=1:length(reachZonos)
+                zono=reachZonos{i};
                 if norm(zono,inf) > Sys.bigM
                     order = ceil(log10(norm(zono)));
                     Sys.bigM = 10^order;
                 end
             end
-        end
-
-        function Sys = setup_milp(Sys)
-            Sys = koopman_setup_milp(Sys);
-        end
-        
-        function milp = reach_milp(Sys)
-            milp = koopman_reach_milp(Sys);
-        end
-
-        function [model_data, status]=solve_milp(Sys,milp)
-            [model_data, status] = Koopman_solve_milp(Sys,milp);
         end
     end
 end

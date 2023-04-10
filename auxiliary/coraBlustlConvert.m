@@ -1,4 +1,4 @@
-function blu_stl = cora_blu_stl_convert(cora_stl)
+function blu_stl = coraBlustlConvert(cora_stl)
 
 blu_stl = evalc('disp(cora_stl)');
 

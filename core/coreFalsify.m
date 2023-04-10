@@ -5,14 +5,14 @@ py.importlib.import_module('autokoopman');
 %initialization and init assertions
 model = initialize(model);
 %generate random initial point and inputs
-[x0,u] = gen_random_xu(model);
+[x0,u] = getRandomXU(model);
 
 trainset.X = {}; trainset.XU={}; trainset.t = {}; %empty cells to store states, inputs and times for training trajectories
 
 falsified = false;
 train_iter = 0;
 while train_iter < max_train_size && falsified==false
-    [trainset, crit_x, crit_u, specCrit, model] = symbolicRFF(model, trainset, x0, u);
+    [trainset, crit_x, crit_u, model] = symbolicRFF(model, trainset, x0, u);
     %retrain with initial set & input as the critical values found in prev iteration.
     %If the critical values are the same as previous, generate new random
     %values
@@ -25,7 +25,7 @@ while train_iter < max_train_size && falsified==false
     end
     if true %repeated_traj
         disp("repeated critical trajectory, generating a new random trajectory")
-        [x0,u] = gen_random_xu(model);
+        [x0,u] = getRandomXU(model);
     else
         x0=crit_x(1,:)';
         u=crit_u;
@@ -54,15 +54,15 @@ end
 close_system;
 end
 
-function [x0,u] = gen_random_xu(model)
+function [x0,u] = getRandomXU(model)
 %generate random initial set
 x0 = randPoint(model.R0);
 %generate random input if model has input.
 if ~isempty(model.U)
     all_steps = model.T/model.dt;
     u = randPoint(model.U,all_steps)';
-    if model.pulse_input
-        u = u.*model.cp_bool;
+    if model.pulseInput
+        u = u.*model.cpBool;
     else %piecewise constant input
         for k=1:length(model.cp)
             uk = model.cp(k);
@@ -99,15 +99,16 @@ if ~isempty(model.U) %check if model has inputs
     all_steps = model.T/model.dt;
     assert(floor(all_steps)==all_steps,'Time step (dt) must be a factor of Time horizon (T)')
 
-    model.cp_bool = zeros(all_steps,length(model.U));
+    model.cpBool = zeros(all_steps,length(model.U));
     for k=1:length(model.cp)
         step = (model.T/model.dt)/model.cp(k);
         assert(floor(step)==step,'number of control points (cp) must be a factor of T/dt')
-        model.cp_bool(1:step:end,k) = 1;
+        model.cpBool(1:step:end,k) = 1;
     end
 end
 
-%create empty dict to store prev soln for each spec
-model.spec_soln = dictionary(model.spec,struct);
+%create empty dict to store prev soln (and for each spec)
+model.soln=struct;
+model.specSolns = dictionary(model.spec,struct);
 end
 

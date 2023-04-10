@@ -1,14 +1,14 @@
-function [model_data, status] = Koopman_solve_milp(Sys,milp)
-% STLC_compute_input
+function [model_data, status] = KoopmanSolveMilp(milp)
+% KoopmanSolveMilp
 %
 % Input:
-%       Sys: an STLC_lti instance
-%       controller: a YALMIP optimizer object representing the system's
+%       Sys: a Koopman_lti instance
+%       milp: a YALMIP optimizer object representing the system's
 %                   optimization problem
 %
 % Output:
-%       Sys: modified with additional model_data
-%       params: controller data
+%       model_data: struct with results
+%       status: yalmip error flag
 %
 % :copyright: TBD
 % :license: TBD
@@ -23,7 +23,6 @@ else
     disp(['Yalmip error: ' yalmiperror(errorflag1)]); % some other error
 end
 status = errorflag1;
-
 end
 
 
