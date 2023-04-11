@@ -13,11 +13,12 @@ classdef Koopman_lti
         solver_options %milp solver settings
 
         %milp sdpvars and constraints
-        Falpha
+        Falpha %constraints on alpha
+        Fstl %constraints for stl
+        Freach %constraints states according to reachable sets
+        X %states optim var
         Alpha
-        X
-        Fstl
-        Pstl
+        Pstl %robustness of stl
 
         %optimizer object
         milp
@@ -52,6 +53,7 @@ classdef Koopman_lti
                 'cachesolvers',1,...
                 'gurobi.BarHomogeneous', 1,...
                 'gurobi.ScaleFlag', 2, ...
+                'usex0',1, ...
                 'gurobi.DualReductions', 0);
         end
 
@@ -63,8 +65,8 @@ classdef Koopman_lti
             Sys = koopmanSetupStl(Sys);
         end
 
-        function milp = setupReach(Sys)
-            milp = KoopmanSetupReach(Sys);
+        function Sys = setupReach(Sys)
+            Sys = KoopmanSetupReach(Sys);
         end
 
         %reach zonos setter, which also sets bigM value
@@ -80,7 +82,15 @@ classdef Koopman_lti
                 end
             end
         end
+
+        function diagnostics = optimize(Sys)
+            
+            constraints=[Sys.Falpha, Sys.Fstl, Sys.Freach];
+            objective=Sys.Pstl; %objective is to miniimize robustness
+            options=Sys.solver_options;
+            %% call solverarch
+            diagnostics = optimize(constraints,objective,options);
+        end
     end
 end
-
 

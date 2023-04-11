@@ -1,8 +1,6 @@
-function milp = KoopmanSetupReach(Sys)
+function Sys = KoopmanSetupReach(Sys)
 
-Fstl=Sys.Fstl; Falpha=Sys.Falpha;
-Alpha=Sys.Alpha; X=Sys.X; Pstl=Sys.Pstl;
-
+Alpha=Sys.Alpha; X=Sys.X;
 %% Reachset constraints
 Freach = [];
 % Constraints for reachable set
@@ -14,9 +12,6 @@ for k=1:Sys.L+1
     Freach = [Freach, X(:,k) == (c+G*Alpha(1:size(G,2))')];
 end
 
-
-%% Objective function, minimize robustness of stl formula
-obj = sum(sum(Pstl(:,1:end)));
-milp = optimizer([Fstl, Falpha, Freach],obj,Sys.solver_options,[], {Alpha,X,Pstl});
-
+%% Reachset constraints
+Sys.Freach=Freach;
 

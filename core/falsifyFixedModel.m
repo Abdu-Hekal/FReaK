@@ -24,21 +24,20 @@ model = mostCriticalReachSet(R,model);
 [x0,u] = falsifyingTrajectory(model);
 
 %modification to test (delete me)
-x = g(x0);
-for i = 1:size(u,2)
-    x = [x, A*x(:,end) + B*u(:,i)];
-end
-figure; hold on; box on;
-for i=1:size(u,2)
-    plot(R.zono{i})
-end
-plot(x(1,:),x(2,:),'r','LineWidth',2);
-drawnow
-end
+% x = g(x0);
+% for i = 1:size(u,2)
+%     x = [x, A*x(:,end) + B*u(:,i)];
+% end
+% figure; hold on; box on;
+% for i=1:size(u,2)
+%     plot(R.zono{i})
+% end
+% plot(x(1,:),x(2,:),'r','LineWidth',2);
+% drawnow
 
+end
 
 % Auxiliary Functions -----------------------------------------------------
-
 function R = reachKoopman(A,B,g,model)
 % compute reachable set for Koopman linearized model
 
@@ -166,8 +165,8 @@ for i = 1:size(spec,1)
                 Sys.cpBool=model.cpBool;
             end
             Sys = setupAlpha(Sys);
-            soln.lti=Sys; %store lti object with milp problem info
         end
+        soln.lti=Sys; %store lti object with alpha problem info
 
         %if there was no prev soln for this spec, setup stl
         try
@@ -175,24 +174,27 @@ for i = 1:size(spec,1)
         catch
             Sys.stlList = {bluStl};
             Sys=setupStl(Sys);
-            specSoln.lti=Sys;
         end
+        specSoln.lti=Sys; %store lti object with alpha & stl problem info
 
         Sys.reachZonos=R.zono; %update reach zonos with new
-        milp = setupReach(Sys);
+        Sys = setupReach(Sys);
         setup_time = toc;
         tic
-        model_data=KoopmanSolveMilp(milp);
+        optimize(Sys);
         solve_time = toc;
 
         %get results
-        rob_ = model_data.rob;
-        alpha = model_data.alpha';
-        specSoln.x = model_data.X;
+        rob_ = value(Sys.Pstl);
+        alpha = value(Sys.Alpha);
+
+        %clear solution from yalmip and assign only alpha for warmstarting
+        yalmip('clearsolution')
+        assign(Sys.Alpha,alpha)
 
         %TODO: how can we compare stl robustness and reachset robustness.
         if rob_ < rob
-            alphaCrit = alpha;
+            alphaCrit = alpha';
             setCrit = R.set{end};
             rob = rob_;
             specCrit=spec(i,1);
@@ -368,4 +370,7 @@ else
         alpha = x(2*n+1:end);
     end
 end
+function maxTime = maxStlTime(stl)
+end
+
 end
