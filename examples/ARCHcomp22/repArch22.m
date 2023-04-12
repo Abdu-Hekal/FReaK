@@ -54,18 +54,21 @@ for i = 1:size(requirements, 1)
             solns(name)={{model.soln}};
         else
             soln=solns(name);
-            soln{1}{end+1}=model.soln
+            soln{1}{end+1}=model.soln;
             solns(name)=soln;
         end
     end
+    avgRuntime=getAvg(soln,'runtime')
+    avgTrain=getAvg(soln,'trainIter')
+
 end
 end
 
-function avgTime = getAvgTime(soln)
-    avgTime=0;
+function avg = getAvg(soln,metric)
+    avg=0;
     for i=1:length(soln{1})
-        avgTime=avgTime+soln{1}{i}.runtime;
+        avg=avg+soln{1}{i}.(metric);
     end
-    avgTime=avgTime/i;
+    avg=avg/i;
 end
 
