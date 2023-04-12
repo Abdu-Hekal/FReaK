@@ -32,7 +32,7 @@ while trainIter < model.maxTrainSize && falsified==false
         elseif strcmp(model.spec(j,1).type,'logic')
             robustness = computeRobustness(model.spec(j,1).set,critX,vpa(linspace(0,model.T,size(critX,1)')))
             model.specSolns(model.spec(j,1)).realRob=robustness; %store real robustness value
-            check = ~checkStl(model.spec(j,1).set,critX,vpa(linspace(0,model.T,size(critX,1)')));
+            check = ~isreal(sqrt(robustness)); %sqrt of -ve values are imaginary
         end
         if check
             falsified = true;
