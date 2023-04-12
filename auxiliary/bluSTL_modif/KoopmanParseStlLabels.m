@@ -1,4 +1,4 @@
-function stlList = Koopman_parse_stl_labels(Sys)
+function stlList = KoopmanParseStlLabels(Sys)
 % STLC_parse_stl_labels     Parses the STL specifications of an STLC_lti 
 %                           instance and replaces state, output, input and 
 %                           disturbance labels with the corresponding indices 

@@ -6,6 +6,15 @@ if contains(blu_stl,'U')
     error("bluSTL does not currently (correctly) support until operator")
 end
 
+if contains(blu_stl,'X')
+    error("bluSTL does not currently support next operator")
+end
+
+if contains(blu_stl,'R')
+    error("bluSTL does not currently support release operator")
+end
+
+
 blu_stl = replace(blu_stl,'G','alw_');
 blu_stl = replace(blu_stl,'F','ev_');
 blu_stl = replace(blu_stl,'&','and');

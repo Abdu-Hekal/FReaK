@@ -98,7 +98,6 @@ rob = inf;
 for i = 1:size(spec,1)
 
     %struct for stored solution
-    soln=struct;
     specSoln = struct;
 
     % different types of specifications
@@ -149,6 +148,9 @@ for i = 1:size(spec,1)
         end
 
     elseif strcmp(spec(i,1).type,'logic')
+        %compute max time required to falsify stl and use it if less than
+        %sim time (avoids unnecessary optim variables)
+        maxStlSteps = min(maxStlTime(spec(i,1).set)/model.dt,length(R.zono));
         %convert stl from CORA format to blustl
         bluStl = coraBlustlConvert(spec(i,1).set);
         %get prev solns
@@ -156,28 +158,21 @@ for i = 1:size(spec,1)
         prevSpecSol = model.specSolns(model.spec(i,1));
         %setup and run bluSTL
         tic
-        %if there was no prev soln of type logic, setup milp problem from scratch
+        %if no prev soln for this spec, setup alpha & stl milp vars/constrs
         try
-            Sys=prevSol.lti; %get previously setup milp problem
-        catch %setup from scratch
-            Sys=Koopman_lti(R.zono,model.dt);
+            Sys=prevSpecSol.lti; %get previously setup milp problem with stl
+        catch
+            Sys=Koopman_lti(R.zono(1:maxStlSteps),model.dt);
             if ~model.pulseInput %if not pulse input, set cpBool
                 Sys.cpBool=model.cpBool;
             end
             Sys = setupAlpha(Sys);
-        end
-        soln.lti=Sys; %store lti object with alpha problem info
-
-        %if there was no prev soln for this spec, setup stl
-        try
-            Sys=prevSpecSol.lti; %get previously setup milp problem with stl
-        catch
             Sys.stlList = {bluStl};
             Sys=setupStl(Sys);
         end
         specSoln.lti=Sys; %store lti object with alpha & stl problem info
 
-        Sys.reachZonos=R.zono; %update reach zonos with new
+        Sys.reachZonos=R.zono(1:maxStlSteps); %update reach zonos with new
         Sys = setupReach(Sys);
         setup_time = toc;
         tic
@@ -213,9 +208,8 @@ for i = 1:size(spec,1)
     model.specSolns(model.spec(i,1)) = specSoln;
 end
 %store solution for this iteration
-soln.rob=rob; soln.alpha=alphaCrit;
-soln.set=setCrit; soln.spec=specCrit;
-model.soln=soln;
+model.soln.rob=rob; model.soln.alpha=alphaCrit;
+model.soln.set=setCrit; model.soln.spec=specCrit;
 end
 
 function [x0,u] = falsifyingTrajectory(model)
@@ -370,7 +364,20 @@ else
         alpha = x(2*n+1:end);
     end
 end
-function maxTime = maxStlTime(stl)
-end
+    function maxTime = maxStlTime(stl)
+        maxTime=0;
+        timedOp = {'finally', 'globally', 'release', 'until'};
+        isMember = ismember(stl.type, timedOp);
+
+        if isMember
+            maxTime=maxTime+obj.to;
+        end
+        if ~isempty(obj.lhs)
+            maxTime=maxTime(obj.lhs)
+        end
+        if ~isempty(obj.rhs)
+            maxTime=maxTime(obj.rhs)
+        end
+    end
 
 end

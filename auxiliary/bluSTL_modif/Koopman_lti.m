@@ -4,12 +4,9 @@ classdef Koopman_lti
         dt %time_step
 
         xlabel %default label name bluSTL
-        nx %number of state variables
-        L %number of control points
         stlList %stl list to falsify
         cpBool %boolean array representing cp points
 
-        bigM %bigM value for milp
         solver_options %milp solver settings
 
         %milp sdpvars and constraints
@@ -23,14 +20,17 @@ classdef Koopman_lti
         %optimizer object
         milp
     end
+    properties (Dependent)
+        bigM %bigM value for milp
+        nx %number of state variables
+        L %number of control points
+    end
 
     methods
         % Constructor
         function Sys = Koopman_lti(reachZonos,dt)
             Sys.reachZonos = reachZonos;
             Sys.dt=dt;
-            Sys.nx=size(reachZonos{1}.center,1);
-            Sys.L=size(reachZonos,1)-1;
 
             % default label names
             Sys.xlabel = cell(1,Sys.nx);
@@ -69,22 +69,28 @@ classdef Koopman_lti
             Sys = KoopmanSetupReach(Sys);
         end
 
-        %reach zonos setter, which also sets bigM value
-        function Sys=set.reachZonos(Sys,reachZonos)
-            Sys.reachZonos=reachZonos;
+        function value = get.nx(Sys)
+            value=size(Sys.reachZonos{1}.center,1);
+        end
+
+        function value = get.L(Sys)
+            value=size(Sys.reachZonos,1)-1;
+        end
+
+        function value = get.bigM(Sys)
             %find suitable bigM based on zonotope boundaries
-            Sys.bigM=0;
-            for i=1:length(reachZonos)
-                zono=reachZonos{i};
-                if norm(zono,inf) > Sys.bigM
+            value=0;
+            for i=1:length(Sys.reachZonos)
+                zono=Sys.reachZonos{i};
+                if norm(zono,inf) > value
                     order = ceil(log10(norm(zono)));
-                    Sys.bigM = 10^order;
+                    value = 10^order;
                 end
             end
         end
 
         function diagnostics = optimize(Sys)
-            
+
             constraints=[Sys.Falpha, Sys.Fstl, Sys.Freach];
             objective=Sys.Pstl; %objective is to miniimize robustness
             options=Sys.solver_options;

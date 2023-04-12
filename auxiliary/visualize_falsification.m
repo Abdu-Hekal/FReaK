@@ -154,7 +154,6 @@ function res = reverseHalfspaceConstraints(poly)
 end
 
 function plotUnsafeCell(unsafeCell,plot_vars)
-    disp(length(unsafeCell))
     for k=1:length(unsafeCell)
         try
             plot(unsafeCell{k},plot_vars, 'FaceColor','red','FaceAlpha',.05,'DisplayName','spec')

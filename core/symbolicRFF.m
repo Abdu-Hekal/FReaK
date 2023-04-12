@@ -9,12 +9,15 @@ function [model, trainset] = symbolicRFF(model, trainset, x0, u)
 
     % AutoKoopman settings and run
     param_dict = struct("samp_period", dt, "obs_type", "rff", "n_obs",100, "grid_param_slices", 5);
-    if ~isempty(find_system(model.sim,'BlockType','Inport')) %check if simulink model has inputs
+    if ~isempty(model.U) %check if model has inputs
         inputs_list = trainset.XU;
     else
         inputs_list = string(missing);
-    end    
+    end 
+    tic
     pyrunfile("run_autokoopman.py",'koopman_model',times=trainset.t,trajectories=trainset.X, param_dict=param_dict,inputs_list=inputs_list);
+    koopTime=toc;
+    fprintf('Koopman time: %f seconds\n', koopTime);
     load("autokoopman_model.mat", "A","B","u","w")
 
     % create observables function

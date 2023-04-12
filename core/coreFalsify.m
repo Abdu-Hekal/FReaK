@@ -1,5 +1,6 @@
 function [model,trainset] = coreFalsify(model)
 
+runtime=tic;
 %initialization and init assertions
 [model, trainset] = initialize(model);
 %generate random initial point and inputs
@@ -45,6 +46,7 @@ close_system;
 %assign solution result
 model.soln.falsified=falsified;
 model.soln.trainIter=trainIter;
+model.soln.runtime=toc(runtime); %record runtime
 end
 
 function [x0,u] = getRandomXU(model)
