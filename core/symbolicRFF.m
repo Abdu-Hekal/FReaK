@@ -16,8 +16,7 @@ function [model, trainset] = symbolicRFF(model, trainset, x0, u)
     end 
     tic
     pyrunfile("run_autokoopman.py",'koopman_model',times=trainset.t,trajectories=trainset.X, param_dict=param_dict,inputs_list=inputs_list);
-    koopTime=toc;
-    fprintf('Koopman time: %f seconds\n', koopTime);
+    model.soln.koopTime= model.soln.koopTime+toc;
     load("autokoopman_model.mat", "A","B","u","w")
 
     % create observables function

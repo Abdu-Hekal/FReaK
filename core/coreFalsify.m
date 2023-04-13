@@ -30,7 +30,7 @@ while trainIter < model.maxTrainSize && falsified==false
         elseif strcmp(model.spec(j,1).type,'safeSet')
             check = ~all(model.spec(j,1).set.contains(critX')); %check this
         elseif strcmp(model.spec(j,1).type,'logic')
-            robustness = computeRobustness(model.spec(j,1).set,critX,vpa(linspace(0,model.T,size(critX,1)')))
+            robustness = computeRobustness(model.spec(j,1).set,critX,vpa(linspace(0,model.T,size(critX,1)')));
             model.specSolns(model.spec(j,1)).realRob=robustness; %store real robustness value
             check = ~isreal(sqrt(robustness)); %sqrt of -ve values are imaginary
         end
@@ -39,7 +39,6 @@ while trainIter < model.maxTrainSize && falsified==false
         end
     end
     trainIter=trainIter+1;
-    disp(['iteration completed: ',num2str(trainIter)])
 end
 %close simulink model
 close_system;
@@ -118,6 +117,7 @@ end
 
 %create empty dict to store prev soln (and for each spec)
 model.soln=struct;
+model.soln.koopTime=0; model.soln.milpSetupTime=0; model.soln.milpSolvTime=0;
 model.specSolns = dictionary(model.spec,struct);
  %empty cells to store states, inputs and times for training trajectories
 trainset.X = {}; trainset.XU={}; trainset.t = {};

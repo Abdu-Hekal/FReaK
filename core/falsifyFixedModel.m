@@ -174,10 +174,10 @@ for i = 1:size(spec,1)
 
         Sys.reachZonos=R.zono(1:maxStlSteps); %update reach zonos with new
         Sys = setupReach(Sys);
-        setup_time = toc;
+        model.soln.milpSetupTime = model.soln.milpSetupTime+toc;
         tic
         optimize(Sys);
-        solve_time = toc;
+        model.soln.milpSolvTime =model.soln.milpSolvTime+toc;
 
         %get results
         rob_ = value(Sys.Pstl);
@@ -194,11 +194,6 @@ for i = 1:size(spec,1)
             rob = rob_;
             specCrit=spec(i,1);
         end
-
-        %print setup and runtime for milp solver
-        fprintf('Setup time: %f seconds\n', setup_time);
-        fprintf('Solve time: %f seconds\n', solve_time);
-
     else
         error('This type of specification is not supported!');
     end
