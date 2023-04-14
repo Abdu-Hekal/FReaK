@@ -19,14 +19,17 @@ function repArch22()
 
 %------------- BEGIN CODE --------------
 model = model_AutoTransmission();
-
+model.trainRand=2;      
 x = stl('x',3);
 requirements = {; ...
-    %     "AT1", globally(x(1) < 120,interval(0,20)); ...
-    "AT2", globally(x(2) < 4750,interval(0,10)); ...
+%         "AT1", globally(x(1) < 120,interval(0,20)); ...
+%     "AT2", globally(x(2) < 4750,interval(0,10)); ...
     %     "testAT2", globally(x(2) <= 4750,interval(0,10)); ...
-%         "AT51", globally(implies(x(3)>=2 & finally(x(3)>=1 & x(3)<=1,interval(0.001,0.1)),finally(globally(x(3)>=1 & x(3)<=1,interval(0,2.5)),interval(0.001,0.1))),interval(0,30)); ...
-    %      "AT6a", implies(globally(x(2)<3000,interval(0,30)),globally(x(1)<35,interval(0,4))); ...
+%         "AT51", globally(implies(~(x(3)<=1 & x(3)>=1) & finally(x(3)>=1 & x(3)<=1,interval(0.001,0.1)),finally(globally(x(3)>=1 & x(3)<=1,interval(0,2.5)),interval(0.001,0.1))),interval(0,30)); ...
+         "AT6a", implies(globally(x(2)<3000,interval(0,30)),globally(x(1)<35,interval(0,4))); ...
+%          "AT6b", implies(globally(x(2)<3000,interval(0,30)),globally(x(1)<50,interval(0,8))); ...
+%          "AT6c", implies(globally(x(2)<3000,interval(0,30)),globally(x(1)<65,interval(0,20))); ...
+
     %         "test", globally(x(1)<50 | x(1)>60,interval(10,30)),...
     %      "testAT6a", implies(globally(x(2)<3000,interval(0,4)),globally(x(1)<35,interval(0,4))); ...
 
@@ -34,7 +37,7 @@ requirements = {; ...
 
 solns=dictionary(string.empty,cell.empty);
 for i = 1:size(requirements, 1)
-    for j = 1:1
+    for j = 1:10
         disp("--------------------------------------------------------")
         name = requirements{i, 1};
         eq = requirements{i, 2};
@@ -50,12 +53,15 @@ for i = 1:size(requirements, 1)
             solns(name)=soln;
         end
     end
-    avgKoopTime=getAvg(solns(name),'koopTime');
-    avgMilpSetupTime=getAvg(solns(name),'milpSetupTime');
-    avgMilpSolveTime=getAvg(solns(name),'milpSolvTime');
-    avgRuntime=getAvg(solns(name),'runtime');
-    avgTrain=getAvg(solns(name),'trainIter');
-    avgFalsified=getAvg(solns(name),'falsified');
+    avgKoopTime=mean(getMetrics(solns(name),'koopTime'));
+    avgMilpSetupTime=mean(getMetrics(solns(name),'milpSetupTime'));
+    avgMilpSolveTime=mean(getMetrics(solns(name),'milpSolvTime'));
+    avgRuntime=mean(getMetrics(solns(name),'runtime'));
+    avgTrain=mean(getMetrics(solns(name),'trainIter'));
+    sims=getMetrics(solns(name),'sims');
+    avgSims=mean(sims);
+    medianSims=median(sims);
+    avgFalsified=sum(getMetrics(solns(name),'falsified'));
     %print info
     fprintf('Benchmark: %s\n', name);
     fprintf('Number of runs: %d\n', j);
@@ -64,17 +70,18 @@ for i = 1:size(requirements, 1)
     fprintf('Avg milp solve time: %.2f seconds\n', avgMilpSolveTime);
     fprintf('Avg total runtime: %.2f seconds\n', avgRuntime);
     fprintf('Avg training iterations: %.2f\n', avgTrain);
-    [n,d] = numden(sym(avgFalsified));
-    fprintf('Number of successful falsified traces: %d/%d\n', n,d);
+    fprintf('Avg Number of simulations: %.2f\n', avgSims);
+    fprintf('Median Number of simulations: %.2f\n', medianSims);
+    fprintf('Number of successful falsified traces: %d/%d\n', avgFalsified,j);
 
 end
+save("solns.mat","solns")
 end
 
-function avg = getAvg(solns,metric)
-    avg=0;
+function list = getMetrics(solns,metric)
+    list=[];
     for i=1:length(solns{1})
-        avg=avg+solns{1}{i}.(metric);
+        list=[list,solns{1}{i}.(metric)];
     end
-    avg=avg/i;
 end
 

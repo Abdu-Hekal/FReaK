@@ -18,7 +18,7 @@ classdef KF_model
 
         %settings
         maxTrainSize %maximum number of simulations for training before terminating (default: 100)
-        trainRand %boolean, set to true to train with random trajectory or false to train with previously found crit trajectory (default: true)
+        trainRand %int, set to 2 to train with random trajectory or 0 to train with previously found crit trajectory or 1 to alternate. (default: 1)
         pulseInput %boolean, set to true if the inputs are pulse inputs, otherwise input is piecewise-constant (default: false)
 
     end
@@ -27,13 +27,13 @@ classdef KF_model
         function model = KF_model(sim)
             model.sim=sim;
             model.maxTrainSize=100;
-            model.trainRand=true;
+            model.trainRand=1;
             model.pulseInput = false;
         end
 
         %simulate function for model, a custom simulate function can be
         %used for a subclass of this class. Ensure that the outputs are consistent
-        function [tout, yout] = simulate(model, x0, u)
+        function [tout, yout, model] = simulate(model, x0, u)
             if isa(model.sim, 'string') || isa(model.sim,"char")
                 [tout, yout] = run_simulink(model.sim, model.T, model.dt, x0, u);
             elseif isa(model.sim,'function_handle')
@@ -41,7 +41,9 @@ classdef KF_model
             else
                 error('sim not supported')
             end
+            model.soln.sims = model.soln.sims+1;
         end
+
         function [model,trainset]=falsify(model)
             [model,trainset] = coreFalsify(model);
         end

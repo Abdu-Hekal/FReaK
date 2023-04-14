@@ -11,7 +11,8 @@ M = Sys.bigM;
 for i = 1:numel(stlList)
     phi = STLformula('phi', stlList{i});
 
-    [Fphi, Pphi] = KoopmanMilpRobust(phi, 1, Sys.L+1, Sys.dt, var,M);
+%     [Fphi, Pphi] = KoopmanMilpRobust(phi, 1, Sys.L+1, Sys.dt, var,M);
+    [Fphi, Pphi] = orig_KoopmanMilpRobust(phi, 1, Sys.L+1, Sys.dt, var,M);
     
     Pstl = [Pstl; Pphi];
     Fstl = [Fstl Fphi];

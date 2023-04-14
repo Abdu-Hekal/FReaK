@@ -14,10 +14,10 @@ while trainIter < model.maxTrainSize && falsified==false
 
     %if random trajectory setting selected or critical trajectory is
     %repeated, train with random xu
-    if model.trainRand || checkRepeatedTraj(critX,critU)
+    if model.trainRand==2 || ( model.trainRand==1 && rem(trainIter, 2) == 0) || checkRepeatedTraj(critX,critU, trainset)
         [x0,u] = getRandomXU(model);
     else
-        x0=critX(1,:)';
+        x0=critX; %pass x0 as full x to avoid simulation again
         u=critU;
     end
     %     disp(critU)
@@ -30,9 +30,11 @@ while trainIter < model.maxTrainSize && falsified==false
         elseif strcmp(model.spec(j,1).type,'safeSet')
             check = ~all(model.spec(j,1).set.contains(critX')); %check this
         elseif strcmp(model.spec(j,1).type,'logic')
-            robustness = computeRobustness(model.spec(j,1).set,critX,vpa(linspace(0,model.T,size(critX,1)')));
+            robustness = computeRobustness(model.spec(j,1).set,critX,vpa(linspace(0,model.T,size(critX,1)')))
+%             breachRob = bReachRob(model.spec,model.soln.x,model.soln.t)
             model.specSolns(model.spec(j,1)).realRob=robustness; %store real robustness value
             check = ~isreal(sqrt(robustness)); %sqrt of -ve values are imaginary
+%             check= ~isreal(sqrt(breachRob));
         end
         if check
             falsified = true;
@@ -45,6 +47,7 @@ close_system;
 %assign solution result
 model.soln.falsified=falsified;
 model.soln.trainIter=trainIter;
+model.soln.sims=model.soln.sims-1; %last sim that finds critical trace not counted?
 model.soln.runtime=toc(runtime); %record runtime
 end
 
@@ -70,7 +73,7 @@ else
 end
 end
 
-function repeatedTraj = checkRepeatedTraj(critX,critU)
+function repeatedTraj = checkRepeatedTraj(critX,critU, trainset)
 %check if critical initial set & input are the same as found before
 repeatedTraj = false;
 for r = 1:length(trainset.X)
@@ -115,9 +118,11 @@ if ~isempty(model.U) %check if model has inputs
     end
 end
 
-%create empty dict to store prev soln (and for each spec)
+%create empty struct to store prev soln
 model.soln=struct;
 model.soln.koopTime=0; model.soln.milpSetupTime=0; model.soln.milpSolvTime=0;
+model.soln.sims=0;
+%create empty dict to store prev soln for each spec
 model.specSolns = dictionary(model.spec,struct);
  %empty cells to store states, inputs and times for training trajectories
 trainset.X = {}; trainset.XU={}; trainset.t = {};

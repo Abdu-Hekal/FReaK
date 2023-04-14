@@ -153,43 +153,34 @@ end
 % TEMPORAL OPERATIONS
 
 function [F,P_alw] = always(P, a,b,kList,kMax,M)
-F = [];
-k = size(kList,2);
-P_alw = sdpvar(1,k);
-kListAlw = unique(cell2mat(arrayfun(@(k) {min(kMax,k + a) : min(kMax,k + b)}, kList)));
-
-for i = 1:k
-    [ia, ib] = getIndices(kList(i),a,b,kMax);
-    ia_real = find(kListAlw==ia);
-    ib_real = find(kListAlw==ib);
-    [F0,P0] = and(P(ia_real:ib_real)',M);
-    F = [F;F0,P_alw(i)==P0];
-end
-
+    F = [];
+    k = size(kList,2);
+    P_alw = sdpvar(1,k);
+    kListAlw = unique(cell2mat(arrayfun(@(k) {min(kMax,k + a) : min(kMax,k + b)}, kList)));
+    
+    for i = 1:k
+        [ia, ib] = getIndices(kList(i),a,b,kMax);
+        ia_real = find(kListAlw==ia);
+        ib_real = find(kListAlw==ib);
+        [F0,P0] = and(P(ia_real:ib_real)',M);
+        F = [F;F0,P_alw(i)==P0];
+    end
 end
 
 
 function [F,P_ev] = eventually(P, a,b,kList,kMax,M)
-F = [];
-k = size(kList,2);
-P_ev = sdpvar(1,k);
-kListEv = unique(cell2mat(arrayfun(@(k) {min(kMax,k + a) : min(kMax,k + b)}, kList)));
-
-for i = 1:k
-    [ia, ib] = getIndices(i,a,b,kMax);
-    ia_real = find(kListEv==ia);
-    ib_real = find(kListEv==ib);
-    [F0,P0] = or(P(ia_real:ib_real)',M);
-    F = [F;F0,P_ev(i)==P0];
-end
-
-% [ia, ib] = getIndices(1:k,a,b,kMax);
-% ia_real = arrayfun(@(x) find(kListEv==x, 1, 'first'), ia);
-% ib_real = arrayfun(@(x) find(kListEv==x, 1, 'first'), ib);
-% P
-% [F0,P0] = or(P(ia_real:ib_real)',M);
-% F = [F;F0,P_ev(i)==P0];
-
+    F = [];
+    k = size(kList,2);
+    P_ev = sdpvar(1,k);
+    kListEv = unique(cell2mat(arrayfun(@(k) {min(kMax,k + a) : min(kMax,k + b)}, kList)));
+    
+    for i = 1:k
+        [ia, ib] = getIndices(i,a,b,kMax);
+        ia_real = find(kListEv==ia);
+        ib_real = find(kListEv==ib);
+        [F0,P0] = or(P(ia_real:ib_real)',M);
+        F = [F;F0,P_ev(i)==P0];
+    end
 end
 
 
@@ -242,7 +233,6 @@ z = binvar(m,k);
 F = [sum(z,1) == ones(1,k)];
 
 repP=repmat(P,m,1);
-
 F = [F, repP >= p_list];
 F = [F, p_list - (1-z)*M <= repP <= p_list + (1-z)*M];
 

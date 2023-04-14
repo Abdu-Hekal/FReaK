@@ -1,6 +1,11 @@
 function [model, trainset] = symbolicRFF(model, trainset, x0, u)
 
-    [trainset.t{end+1}, x] = simulate(model, x0, u);
+    if size(x0,2) > 1
+        x=x0; %x0 passed is infact the full critical trajectory
+        trainset.t{end+1} = trainset.t{end}; %time step is same anyway
+    else
+        [trainset.t{end+1}, x, model] = simulate(model, x0, u);
+    end
     trainset.X{end+1} = x';
     dt = trainset.t{1}(2) - trainset.t{1}(1);
     %append zeros at end to account for last time point (which has no
@@ -37,6 +42,7 @@ function [model, trainset] = symbolicRFF(model, trainset, x0, u)
     model.soln.u = [linspace(0,model.T-model.dt,all_steps)',crit_u];
 
     % run most critical input on the real system
-    [~, model.soln.x] = simulate(model, crit_x0, model.soln.u);
-
+    [t, x, model] = simulate(model, crit_x0, model.soln.u);
+    model.soln.t=t;
+    model.soln.x=x;
 end
