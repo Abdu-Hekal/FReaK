@@ -16,7 +16,6 @@ while trainIter < model.maxTrainSize && falsified==false
     %repeated, train with random xu
     if model.trainRand==2 || ( model.trainRand==1 && rem(trainIter, 2) == 0) || checkRepeatedTraj(critX,critU, trainset)
         [x0,u] = getRandomXU(model);
-        u
     else
         x0=critX; %pass x0 as full x to avoid simulation again
         u=critU;

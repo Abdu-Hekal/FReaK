@@ -154,7 +154,6 @@ for i = 1:size(spec,1)
         %convert stl from CORA format to blustl
         bluStl = coraBlustlConvert(spec(i,1).set);
         %get prev solns
-        prevSol=model.soln;
         prevSpecSol = model.specSolns(model.spec(i,1));
         %setup and run bluSTL
         tic
