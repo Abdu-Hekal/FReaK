@@ -3,13 +3,9 @@ classdef Koopman_lti
         reachZonos = [] %reachable zonotopes
         dt %time_step
 
-        xlabel %default label name bluSTL
-        nx %number of state variables
-        L %number of control points
         stlList %stl list to falsify
         cpBool %boolean array representing cp points
 
-        bigM %bigM value for milp
         solver_options %milp solver settings
 
         %milp sdpvars and constraints
@@ -24,19 +20,18 @@ classdef Koopman_lti
         milp
     end
 
+    properties (Dependent)
+        bigM %bigM value for milp
+        xlabel %default label name bluSTL
+        nx %number of state variables
+        L %number of control points
+    end
+
     methods
         % Constructor
         function Sys = Koopman_lti(reachZonos,dt)
             Sys.reachZonos = reachZonos;
             Sys.dt=dt;
-            Sys.nx=size(reachZonos{1}.center,1);
-            Sys.L=size(reachZonos,1)-1;
-
-            % default label names
-            Sys.xlabel = cell(1,Sys.nx);
-            for iX = 1:Sys.nx
-                Sys.xlabel{iX} = ['x' num2str(iX)];
-            end
 
             %default solver options:
             solver = 'gurobi';  % gurobi, cplex, glpk
@@ -70,27 +65,39 @@ classdef Koopman_lti
             Sys = KoopmanSetupReach(Sys);
         end
 
-        %reach zonos setter, which also sets bigM value
-        function Sys=set.reachZonos(Sys,reachZonos)
-            Sys.reachZonos=reachZonos;
-            %find suitable bigM based on zonotope boundaries
-            Sys.bigM=0;
-            for i=1:length(reachZonos)
-                zono=reachZonos{i};
-                if norm(zono,inf) > Sys.bigM
-                    order = ceil(log10(norm(zono)));
-                    Sys.bigM = 10^order;
-                end
-            end
-        end
-
         function diagnostics = optimize(Sys)
-            
+
             constraints=[Sys.Falpha, Sys.Fstl, Sys.Freach];
             objective=Sys.Pstl; %objective is to miniimize robustness
             options=Sys.solver_options;
             %% call solverarch
             diagnostics = optimize(constraints,objective,options);
+        end
+        %getters for dependent properties
+        function bigM = get.bigM(Sys)
+            %find suitable bigM based on zonotope boundaries
+            bigM=0;
+            for i=1:length(Sys.reachZonos)
+                zono=Sys.reachZonos{i};
+                if norm(zono,inf) > bigM
+                    order = ceil(log10(norm(zono)));
+                    bigM = 10^order;
+                end
+            end
+        end
+        function nx = get.nx(Sys)
+            nx=size(Sys.reachZonos{1}.center,1);
+        end
+        function L=get.L(Sys)
+            L=size(Sys.reachZonos,1)-1;
+
+        end
+        function xlabel=get.xlabel(Sys)
+            % default label names
+            xlabel = cell(1,Sys.nx);
+            for iX = 1:Sys.nx
+                xlabel{iX} = ['x' num2str(iX)];
+            end
         end
     end
 end

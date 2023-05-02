@@ -17,9 +17,9 @@ for i = 1:numel(stlList)
     Pstl = [Pstl; Pphi];
     Fstl = [Fstl Fphi];
 
-    for j = 1:size(Pphi,2)
-        Fstl = [Fstl Pphi(:,j)>= 0]; % TODO this is specific to alw (phi), what about ev, until...
-    end
+%     for j = 1:size(Pphi,2)
+%         Fstl = [Fstl Pphi(:,j)>= 0]; % TODO this is specific to alw (phi), what about ev, until...
+%     end
 
 end
 
