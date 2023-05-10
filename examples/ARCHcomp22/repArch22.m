@@ -19,7 +19,7 @@ function repArch22()
 
 %------------- BEGIN CODE --------------
 model = model_AutoTransmission();
-model.trainRand=2;      
+model.trainRand=0;      
 x = stl('x',3);
 requirements = {; ...
 %         "AT1", globally(x(1) < 120,interval(0,20)); ...
@@ -37,7 +37,7 @@ requirements = {; ...
 
 solns=dictionary(string.empty,cell.empty);
 for i = 1:size(requirements, 1)
-    for j = 1:10
+    for j = 1:1
         disp("--------------------------------------------------------")
         name = requirements{i, 1};
         eq = requirements{i, 2};

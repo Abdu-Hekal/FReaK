@@ -24,16 +24,16 @@ model = mostCriticalReachSet(R,model);
 [x0,u] = falsifyingTrajectory(model);
 
 %modification to test (delete me)
-% x = g(x0);
-% for i = 1:size(u,2)
-%     x = [x, A*x(:,end) + B*u(:,i)];
-% end
-% figure; hold on; box on;
-% for i=1:size(u,2)
-%     plot(R.zono{i})
-% end
-% plot(x(1,:),x(2,:),'r','LineWidth',2);
-% drawnow
+x = g(x0);
+for i = 1:400 %size(u,2)
+    x = [x, A*x(:,end) + B*u(:,i)];
+end
+figure; hold on; box on;
+for i=1:400 %size(u,2)
+    plot(R.zono{i})
+end
+plot(x(1,:),x(2,:),'r','LineWidth',2);
+drawnow
 
 end
 
@@ -151,8 +151,6 @@ for i = 1:size(spec,1)
         %compute max time required to falsify stl and use it if less than
         %sim time (avoids unnecessary optim variables)
         maxStlSteps = min(maxStlTime(spec(i,1).set)/model.dt,length(R.zono));
-        %convert stl from CORA format to blustl
-        bluStl = coraBlustlConvert(spec(i,1).set);
         %get prev solns
         prevSpecSol = model.specSolns(model.spec(i,1));
         %setup and run bluSTL
@@ -161,6 +159,12 @@ for i = 1:size(spec,1)
         try
             Sys=prevSpecSol.lti; %get previously setup milp problem with stl
         catch
+            %convert stl from CORA format to blustl
+            bluStl = coraBlustlConvert(spec(i,1).set);
+            %test
+            x = stl('x',3);
+            bluStl = coraBlustlConvert(implies(globally(x(2)<2000,interval(0,30)),globally(x(1)<35,interval(0,4))))
+%             bluStl= 'alw_[0,30](x2(t)<2500) and not (alw_[0,4](x1(t)<35))'
             Sys=Koopman_lti(R.zono(1:maxStlSteps),model.dt);
             if ~model.pulseInput %if not pulse input, set cpBool
                 Sys.cpBool=model.cpBool;
@@ -183,8 +187,8 @@ for i = 1:size(spec,1)
         alpha = value(Sys.Alpha);
 
         %clear solution from yalmip and assign only alpha for warmstarting
-        yalmip('clearsolution')
-        assign(Sys.Alpha,alpha)
+%         yalmip('clearsolution')
+%         assign(Sys.Alpha,alpha)
 
         %TODO: how can we compare stl robustness and reachset robustness.
         if rob_ < rob

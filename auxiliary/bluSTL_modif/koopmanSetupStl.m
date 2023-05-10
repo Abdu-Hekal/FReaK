@@ -11,14 +11,14 @@ M = Sys.bigM;
 for i = 1:numel(stlList)
     phi = STLformula('phi', stlList{i});
 
-    %     [Fphi, Pphi] = KoopmanMilpRobust(phi, 1, Sys.L+1, Sys.dt, var,M);
+%     [Fphi, Pphi] = KoopmanMilpRobust(phi, 1, Sys.L+1, Sys.dt, var,M);
     [Fphi, Pphi] = orig_KoopmanMilpRobust(phi, 1, Sys.L+1, Sys.dt, var,M);
 
     Pstl = [Pstl; Pphi];
     Fstl = [Fstl Fphi];
 
 %     for j = 1:size(Pphi,2)
-%         Fstl = [Fstl Pphi(:,j)>= 0]; % TODO this is specific to alw (phi), what about ev, until...
+%         Fstl = [Fstl Pphi(:,j)>= 0]; % TODO this is only for overall robustness, do we need to pass klist for every point?
 %     end
 
 end

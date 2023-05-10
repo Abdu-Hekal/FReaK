@@ -25,6 +25,7 @@ classdef Koopman_lti
         xlabel %default label name bluSTL
         nx %number of state variables
         L %number of control points
+        normz %normalization values based on boundaries of reachable sets
     end
 
     methods
@@ -36,8 +37,8 @@ classdef Koopman_lti
             %default solver options:
             solver = 'gurobi';  % gurobi, cplex, glpk
             timeLimit = 2000;
-            gapLimit = 0.01;
-            gapAbsLimit = 0.1;
+            gapLimit = 100; %0.01;
+            gapAbsLimit = 1000; %0.1;
             solnLimit = Inf;
             verb = 1;
             Sys.solver_options = sdpsettings('verbose', verb,'solver', solver, ...
@@ -50,7 +51,10 @@ classdef Koopman_lti
                 'gurobi.CrossoverBasis',-1,...
                 'gurobi.ScaleFlag', 2, ...
                 'gurobi.DualReductions', 0,...
-                'usex0',1);
+                'usex0',0 ...
+);
+%                             'gurobi.Method',2, ...
+%                 'gurobi.MIPFocus',2
         end
 
         function Sys = setupAlpha(Sys)
@@ -68,7 +72,7 @@ classdef Koopman_lti
         function diagnostics = optimize(Sys)
 
             constraints=[Sys.Falpha, Sys.Fstl, Sys.Freach];
-            objective=Sys.Pstl; %objective is to miniimize robustness
+            objective = Sys.Pstl; %objective is to minimize robustness of stl formula (falsification)
             options=Sys.solver_options;
             %% call solverarch
             diagnostics = optimize(constraints,objective,options);
@@ -98,6 +102,22 @@ classdef Koopman_lti
             for iX = 1:Sys.nx
                 xlabel{iX} = ['x' num2str(iX)];
             end
+        end
+        function normz = get.normz(Sys)
+            nx=Sys.nx;
+            minBound=inf(nx,1);
+            maxBound=-inf(nx,1);
+            for i=1:length(Sys.reachZonos)
+                zono=Sys.reachZonos{i};
+                for k=1:nx
+                    supFun=zeros(1,nx);
+                    supFun(k)=-1;
+                    minBound(k) = min(minBound(k),-supportFunc(zono,supFun));
+                    supFun(k)=1;
+                    maxBound(k) = max(maxBound(k),supportFunc(zono,supFun));
+                end
+            end
+            normz = maxBound-minBound;
         end
     end
 end
