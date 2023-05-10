@@ -162,8 +162,8 @@ for i = 1:size(spec,1)
             %convert stl from CORA format to blustl
             bluStl = coraBlustlConvert(spec(i,1).set);
             %test
-            x = stl('x',3);
-            bluStl = coraBlustlConvert(implies(globally(x(2)<2000,interval(0,30)),globally(x(1)<35,interval(0,4))))
+%             x = stl('x',3);
+%             bluStl = coraBlustlConvert(implies(globally(x(2)<2000,interval(0,30)),globally(x(1)<35,interval(0,4))))
 %             bluStl= 'alw_[0,30](x2(t)<2500) and not (alw_[0,4](x1(t)<35))'
             Sys=Koopman_lti(R.zono(1:maxStlSteps),model.dt);
             if ~model.pulseInput %if not pulse input, set cpBool
@@ -187,8 +187,11 @@ for i = 1:size(spec,1)
         alpha = value(Sys.Alpha);
 
         %clear solution from yalmip and assign only alpha for warmstarting
-%         yalmip('clearsolution')
-%         assign(Sys.Alpha,alpha)
+        yalmip('clearsolution')
+        assign(Sys.Alpha,alpha)
+        
+%         assign(Sys.Pstl,rob_)
+
 
         %TODO: how can we compare stl robustness and reachset robustness.
         if rob_ < rob

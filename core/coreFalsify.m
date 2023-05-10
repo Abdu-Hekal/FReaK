@@ -33,6 +33,7 @@ while trainIter < model.maxTrainSize && falsified==false
             plot(critX(1:400,1),critX(1:400,2),'g','LineWidth',2)
             drawnow;
             robustness = computeRobustness(model.spec(j,1).set,critX,vpa(linspace(0,model.T,size(critX,1)')))
+%             breachRob = bReachRob(model.spec,model.soln.x,model.soln.t)
             model.specSolns(model.spec(j,1)).realRob=robustness; %store real robustness value
             check = ~isreal(sqrt(robustness)); %sqrt of -ve values are imaginary
 %             check= ~isreal(sqrt(breachRob));
@@ -98,6 +99,9 @@ assert(isa(model.spec, 'specification'), 'Falsifying spec (model.spec) must be d
 
 % clear yalmip
 yalmip('clear')
+
+% initialize seed
+rng(0)
 
 if ~isempty(model.U) %check if model has inputs
     assert(isa(model.U, 'interval'), 'Input (model.U) must be defined as an CORA interval')

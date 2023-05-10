@@ -79,7 +79,7 @@ elseif strcmp(obj.type,'>')
 elseif strcmp(obj.type,'<=')
 
     lhs = recursive(obj.lhs,x,t,vars);
-    rho = obj.rhs-lhs + eps;
+    rho = obj.rhs-lhs - eps;
 
 elseif strcmp(obj.type,'>=')
 
@@ -146,7 +146,6 @@ elseif strcmp(obj.type,'globally')
             ind = ind(ind <= length(t));
             rho(cnt) = min(lhs(ind));
             cnt = cnt + 1; ind = ind + 1;
-
         end
     end
 
