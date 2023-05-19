@@ -25,14 +25,14 @@ model = mostCriticalReachSet(R,model);
 
 %modification to test (delete me)
 x = g(x0);
-for i = 1:400 %size(u,2)
+for i = 1:size(u,2)
     x = [x, A*x(:,end) + B*u(:,i)];
 end
 figure; hold on; box on;
-for i=1:400 %size(u,2)
+for i=1:size(u,2)
     plot(R.zono{i})
 end
-plot(x(1,:),x(2,:),'r','LineWidth',2);
+plot(x(1,1:400),x(2,1:400),'r','LineWidth',2);
 drawnow
 
 end
@@ -159,24 +159,25 @@ for i = 1:size(spec,1)
         try
             Sys=prevSpecSol.lti; %get previously setup milp problem with stl
         catch
-            %convert stl from CORA format to blustl
-            bluStl = coraBlustlConvert(spec(i,1).set);
-            %test
-%             x = stl('x',3);
-%             bluStl = coraBlustlConvert(implies(globally(x(2)<2000,interval(0,30)),globally(x(1)<35,interval(0,4))))
-%             bluStl= 'alw_[0,30](x2(t)<2500) and not (alw_[0,4](x1(t)<35))'
             Sys=Koopman_lti(R.zono(1:maxStlSteps),model.dt);
             if ~model.pulseInput %if not pulse input, set cpBool
                 Sys.cpBool=model.cpBool;
             end
             Sys = setupAlpha(Sys);
-            Sys.stlList = {bluStl};
-            Sys=setupStl(Sys);
         end
-        specSoln.lti=Sys; %store lti object with alpha & stl problem info
+        specSoln.lti=Sys; %store lti object with alpha problem info
 
         Sys.reachZonos=R.zono(1:maxStlSteps); %update reach zonos with new
         Sys = setupReach(Sys);
+
+        %convert stl from CORA format to blustl
+        bluStl = coraBlustlConvert(spec(i,1).set);
+        %test
+        %             x = stl('x',3);
+        %             bluStl = coraBlustlConvert(implies(globally(x(2)<2000,interval(0,30)),globally(x(1)<35,interval(0,4))))
+        Sys.stlList = {bluStl};
+        Sys=setupStl(Sys);
+        
         model.soln.milpSetupTime = model.soln.milpSetupTime+toc;
         tic
         optimize(Sys);
@@ -187,11 +188,8 @@ for i = 1:size(spec,1)
         alpha = value(Sys.Alpha);
 
         %clear solution from yalmip and assign only alpha for warmstarting
-        yalmip('clearsolution')
-        assign(Sys.Alpha,alpha)
-        
-%         assign(Sys.Pstl,rob_)
-
+        %         yalmip('clearsolution')
+        %         assign(Sys.Alpha,alpha)
 
         %TODO: how can we compare stl robustness and reachset robustness.
         if rob_ < rob

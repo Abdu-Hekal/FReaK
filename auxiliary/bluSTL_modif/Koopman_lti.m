@@ -11,6 +11,7 @@ classdef Koopman_lti
         %milp sdpvars and constraints
         Falpha %constraints on alpha
         Fstl %constraints for stl
+        normFstl % normalized constraints for stl
         Freach %constraints states according to reachable sets
         X %states optim var
         Alpha
@@ -37,23 +38,25 @@ classdef Koopman_lti
             %default solver options:
             solver = 'gurobi';  % gurobi, cplex, glpk
             timeLimit = 2000; %2000;
-            gapLimit = 0.00001; %0.01;
-            gapAbsLimit = inf; %0.1;
+            gapLimit = 0.01; %0.01;
+            gapAbsLimit = 0.1; %0.1;
             solnLimit = Inf;
-            verb = 1;
+            verb = 2;
             Sys.solver_options = sdpsettings('verbose', verb,'solver', solver, ...
                 'gurobi.TimeLimit', timeLimit, ...
                 'gurobi.MIPGap', gapLimit, ...
                 'gurobi.MIPGapAbs', gapAbsLimit, ...
                 'gurobi.SolutionLimit', solnLimit,...
-                'usex0', 1 ...
-);
-%                 'gurobi.ScaleFlag', 2,...
-%                 'gurobi.BarHomogeneous', 1,...
-%                 'gurobi.CrossoverBasis',-1,...
-%                 'gurobi.DualReductions', 0,...
-%                'cachesolvers',1,...
-%                 'gurobi.InputFile', 'alpha.sol' ... 
+                'usex0', 0 ...
+                );
+            %                 'gurobi.MIPFocus',3,...
+
+            %                 'gurobi.ScaleFlag', 2,...
+            %                 'gurobi.BarHomogeneous', 1,...
+            %                 'gurobi.CrossoverBasis',-1,...
+            %                 'gurobi.DualReductions', 0,...
+            %                'cachesolvers',1,...
+            %                 'gurobi.InputFile', 'alpha.sol' ...
 
         end
 
@@ -67,6 +70,28 @@ classdef Koopman_lti
 
         function Sys = setupReach(Sys)
             Sys = KoopmanSetupReach(Sys);
+        end
+
+        function Sys = normStl(Sys)
+            F = Sys.Fstl
+            normz = Sys.normz;
+            normFstl=[];
+            for i = 1:length(F)
+                predTag = tag(F(i));
+                if contains(predTag, 'pred')
+                    idxs=split(predTag,',');
+                    normVal=0;
+                    for j=2:length(idxs)
+                        idx=str2double(idxs(j));
+                        normVal = normVal + normz(idx);
+                    end
+                    normFstl=[normFstl,[sdpvar(F(i))/normVal >= 0]:predTag];
+                else
+                    normFstl=[normFstl,F(i)]; 
+                end
+            end
+            Sys.normFstl = normFstl;
+            normFstl
         end
 
         function diagnostics = optimize(Sys)

@@ -12,7 +12,8 @@ classdef KF_model
         %default is cp every dt. Note that values other than default are
         %currently only supported for spec of type stl formula.
 
-        soln %internally defined property that stores the solutions for last iteration (do not change)
+        soln %internally defined property that stores the solution for last iteration (do not change)
+        bestSoln %internally defined property that stores the best solution (do not change)
         specSolns %internally defined property that stores the solutions for each spec for last iteration (do not change)
         cpBool %internal property that is used to set control inputs for pulse inputs (do not change)
 

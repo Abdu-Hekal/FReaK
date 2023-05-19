@@ -4,7 +4,15 @@ runtime=tic;
 %initialization and init assertions
 [model, trainset] = initialize(model);
 %generate random initial point and inputs
-[x0,u] = getRandomXU(model);
+[x0,u] = getSampleXU(model);
+
+%test: pretrain with n traj
+% for i=1:400
+%     [x0,u] = getSampleXU(model);
+%     [trainset.t{end+1}, x, model] = simulate(model, x0, u);
+%     trainset.X{end+1} = x';
+%     trainset.XU{end+1} = [u(:,2:end)', zeros(size(u,2)-1,1)];
+% end
 
 falsified = false;
 trainIter = 0;
@@ -15,7 +23,7 @@ while trainIter < model.maxTrainSize && falsified==false
     %if random trajectory setting selected or critical trajectory is
     %repeated, train with random xu
     if model.trainRand==2 || ( model.trainRand==1 && rem(trainIter, 2) == 0) || checkRepeatedTraj(critX,critU, trainset)
-        [x0,u] = getRandomXU(model);
+        [x0,u] = getSampleXU(model);
     else
         x0=critX; %pass x0 as full x to avoid simulation again
         u=critU;
@@ -33,10 +41,19 @@ while trainIter < model.maxTrainSize && falsified==false
             plot(critX(1:400,1),critX(1:400,2),'g','LineWidth',2)
             drawnow;
             robustness = computeRobustness(model.spec(j,1).set,critX,vpa(linspace(0,model.T,size(critX,1)')))
+            if robustness < model.bestSoln.rob
+                model.bestSoln.rob = robustness;
+                model.bestSoln.x=critX;
+                model.bestSoln.u=critU;
+            else
+                %remove last entry because it is not improving the model
+                trainset.X(end) = []; trainset.XU(end)=[]; trainset.t(end) = [];
+            end
+            disp(model.bestSoln.rob)
 %             breachRob = bReachRob(model.spec,model.soln.x,model.soln.t)
             model.specSolns(model.spec(j,1)).realRob=robustness; %store real robustness value
             check = ~isreal(sqrt(robustness)); %sqrt of -ve values are imaginary
-%             check= ~isreal(sqrt(breachRob));
+            %             check= ~isreal(sqrt(breachRob));
         end
         if check
             falsified = true;
@@ -51,28 +68,6 @@ model.soln.falsified=falsified;
 model.soln.trainIter=trainIter;
 model.soln.sims=model.soln.sims-1; %last sim that finds critical trace not counted?
 model.soln.runtime=toc(runtime); %record runtime
-end
-
-function [x0,u] = getRandomXU(model)
-%generate random initial set
-x0 = randPoint(model.R0);
-%generate random input if model has input.
-if ~isempty(model.U)
-    all_steps = model.T/model.dt;
-    u = randPoint(model.U,all_steps)';
-    if model.pulseInput
-        u = u.*model.cpBool;
-    else %piecewise constant input
-        for k=1:length(model.cp)
-            uk = model.cp(k);
-            u(:,k) = repelem(u(1:uk,k),length(u(:,k))/uk);
-        end
-    end
-    u = [linspace(0,model.T-model.dt,all_steps)',u];
-
-else
-    u = [];
-end
 end
 
 function repeatedTraj = checkRepeatedTraj(critX,critU, trainset)
@@ -127,9 +122,11 @@ end
 model.soln=struct;
 model.soln.koopTime=0; model.soln.milpSetupTime=0; model.soln.milpSolvTime=0;
 model.soln.sims=0;
+%create empty struct to store best soln
+model.bestSoln=struct; model.bestSoln.rob=inf;
 %create empty dict to store prev soln for each spec
 model.specSolns = dictionary(model.spec,struct);
- %empty cells to store states, inputs and times for training trajectories
+%empty cells to store states, inputs and times for training trajectories
 trainset.X = {}; trainset.XU={}; trainset.t = {};
 end
 
