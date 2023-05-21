@@ -13,7 +13,7 @@ function [model, trainset] = symbolicRFF(model, trainset, x0, u)
     trainset.XU{end+1} = [u(:,2:end)', zeros(size(u,2)-1,1)];
 
     % AutoKoopman settings and run
-    param_dict = struct("samp_period", dt, "obs_type", "rff", "n_obs",100, "grid_param_slices", 5);
+    param_dict = struct("samp_period", dt, "obs_type", "rff", "n_obs",20, "grid_param_slices", 5);
     if ~isempty(model.U) %check if model has inputs
         inputs_list = trainset.XU;
     else
@@ -26,7 +26,7 @@ function [model, trainset] = symbolicRFF(model, trainset, x0, u)
 
     % create observables function
     n = size(model.R0,1); %number of variables
-    g_ = @(x) sqrt(2/100)*cos(w*x + u');
+    g_ = @(x) sqrt(2/20)*cos(w*x + u');
     g = @(x) [x; g_(x)];
     xSym = sym('x',[n,1]);
     g = g(xSym);

@@ -22,7 +22,7 @@ while trainIter < model.maxTrainSize && falsified==false
 
     %if random trajectory setting selected or critical trajectory is
     %repeated, train with random xu
-    if model.trainRand==2 || ( model.trainRand==1 && rem(trainIter, 2) == 0) || checkRepeatedTraj(critX,critU, trainset)
+    if model.trainRand>=2 || ( model.trainRand==1 && rem(trainIter, 2) == 0) || checkRepeatedTraj(critX,critU, trainset)
         [x0,u] = getSampleXU(model);
     else
         x0=critX; %pass x0 as full x to avoid simulation again
@@ -38,22 +38,24 @@ while trainIter < model.maxTrainSize && falsified==false
         elseif strcmp(model.spec(j,1).type,'safeSet')
             check = ~all(model.spec(j,1).set.contains(critX')); %check this
         elseif strcmp(model.spec(j,1).type,'logic')
+            %test plot: delete me
             plot(critX(1:400,1),critX(1:400,2),'g','LineWidth',2)
             drawnow;
             robustness = computeRobustness(model.spec(j,1).set,critX,vpa(linspace(0,model.T,size(critX,1)')))
-            if robustness < model.bestSoln.rob
-                model.bestSoln.rob = robustness;
-                model.bestSoln.x=critX;
-                model.bestSoln.u=critU;
-            else
-                %remove last entry because it is not improving the model
-                trainset.X(end) = []; trainset.XU(end)=[]; trainset.t(end) = [];
+            if model.trainRand==2
+                if robustness < model.bestSoln.rob
+                    model.bestSoln.rob = robustness;
+                    model.bestSoln.x=critX;
+                    model.bestSoln.u=critU;
+                else
+                    %remove last entry because it is not improving the model
+                    trainset.X(end) = []; trainset.XU(end)=[]; trainset.t(end) = [];
+                end
+                disp(model.bestSoln.rob)
             end
-            disp(model.bestSoln.rob)
-%             breachRob = bReachRob(model.spec,model.soln.x,model.soln.t)
+%           breachRob = bReachRob(model.spec,model.soln.x,model.soln.t)
             model.specSolns(model.spec(j,1)).realRob=robustness; %store real robustness value
             check = ~isreal(sqrt(robustness)); %sqrt of -ve values are imaginary
-            %             check= ~isreal(sqrt(breachRob));
         end
         if check
             falsified = true;

@@ -19,7 +19,7 @@ classdef KF_model
 
         %settings
         maxTrainSize %maximum number of simulations for training before terminating (default: 100)
-        trainRand %int, set to 2 to train with random trajectory or 0 to train with previously found crit trajectory or 1 to alternate. (default: 1)
+        trainRand %int, set to 3 to train with random trajectory, 2 to train with random neighborhood trajectory or 0 to train with previously found crit trajectory or 1 to alternate between prev and random. (default: 0)
         pulseInput %boolean, set to true if the inputs are pulse inputs, otherwise input is piecewise-constant (default: false)
 
     end
@@ -28,7 +28,7 @@ classdef KF_model
         function model = KF_model(sim)
             model.sim=sim;
             model.maxTrainSize=100;
-            model.trainRand=1;
+            model.trainRand=0;
             model.pulseInput = false;
         end
 

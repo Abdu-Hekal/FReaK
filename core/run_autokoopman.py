@@ -14,7 +14,7 @@ def run(times, trajectories, param_dict, inputs_list):
     if param_dict["obs_type"] == 'deep':
         opt = 'bopt'
     else:
-        opt = 'grid'
+        opt = 'monte-carlo'
         
     ids = np.arange(0, len(training_data)).tolist()
     training_data = traj.TrajectoriesData(dict(zip(ids, training_data)))

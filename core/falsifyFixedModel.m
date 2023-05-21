@@ -23,7 +23,7 @@ model = mostCriticalReachSet(R,model);
 % extract most critical initial state and input signal
 [x0,u] = falsifyingTrajectory(model);
 
-%modification to test (delete me)
+% %modification to test (delete me)
 x = g(x0);
 for i = 1:size(u,2)
     x = [x, A*x(:,end) + B*u(:,i)];

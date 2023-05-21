@@ -37,7 +37,7 @@ function [x0,u]=getDispSampleXU(model)
     u1 = size(u, 1);      % Number of time points
     u2 = size(u, 2);      % Number of inputs
     %displacement ratio
-    dispL=10.75;
+    dispL=0.75;
     % reshape u for size 1
     u = reshape(u,[],1);
     % Calculate normalized current sample
