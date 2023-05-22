@@ -19,7 +19,7 @@ function repArch22()
 
 %------------- BEGIN CODE --------------
 model = model_AutoTransmission();
-model.trainRand=2;      
+model.trainRand=0;      
 x = stl('x',3);
 requirements = {; ...
 %         "AT1", globally(x(1) < 120,interval(0,20)); ...

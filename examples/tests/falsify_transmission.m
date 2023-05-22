@@ -8,11 +8,11 @@ plot_vars = [1,2];
 [model,trainset] = falsify(model);
 
 if model.soln.falsified
-    disp(" ")
-    disp("falsifying trace found!")
     visualize_falsification(model.soln.x, trainset.t{1}, model.spec, plot_vars)
+    disp(['training iterations required: ',num2str(model.soln.trainIter)])
+    visualize_train(trainset, plot_vars)
 else
-    disp("No falsifying trace found!")
+    disp("No falsifiying trace found")
 end
-disp(['training iterations: ',num2str(train_iter)])
+
 visualize_train(trainset, plot_vars)
