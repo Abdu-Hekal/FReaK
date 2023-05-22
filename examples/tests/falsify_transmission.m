@@ -2,14 +2,14 @@
 % pyenv("Version",'/Users/b6062805/Documents/Koopman/autokoopman_vitualenv/bin/python','ExecutionMode','InProcess');
 % py.importlib.import_module('autokoopman');
 
-model = model_AutoTransmission();
+kfModel = model_AutoTransmission();
 plot_vars = [1,2];
 
-[model,trainset] = falsify(model);
+[kfModel,trainset] = falsify(kfModel);
 
-if model.soln.falsified
-    visualize_falsification(model.soln.x, trainset.t{1}, model.spec, plot_vars)
-    disp(['training iterations required: ',num2str(model.soln.trainIter)])
+if kfModel.soln.falsified
+    visualize_falsification(kfModel.soln.x, trainset.t{1}, kfModel.spec, plot_vars)
+    disp(['training iterations required: ',num2str(kfModel.soln.trainIter)])
     visualize_train(trainset, plot_vars)
 else
     disp("No falsifiying trace found")

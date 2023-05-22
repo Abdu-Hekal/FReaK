@@ -1,29 +1,29 @@
-function [model,trainset] = coreFalsify(model)
+function [kfModel,trainset] = coreFalsify(kfModel)
 
 runtime=tic;
 %initialization and init assertions
-[model, trainset] = initialize(model);
+[kfModel, trainset] = initialize(kfModel);
 %generate random initial point and inputs
-[x0,u] = getSampleXU(model);
+[x0,u] = getSampleXU(kfModel);
 
 %test: pretrain with n traj
 % for i=1:400
-%     [x0,u] = getSampleXU(model);
-%     [trainset.t{end+1}, x, model] = simulate(model, x0, u);
+%     [x0,u] = getSampleXU(kfModel);
+%     [trainset.t{end+1}, x, kfModel] = simulate(kfModel, x0, u);
 %     trainset.X{end+1} = x';
 %     trainset.XU{end+1} = [u(:,2:end)', zeros(size(u,2)-1,1)];
 % end
 
 falsified = false;
 trainIter = 0;
-while trainIter < model.maxTrainSize && falsified==false
-    [model, trainset] = symbolicRFF(model, trainset, x0, u);
-    critX=model.soln.x; critU=model.soln.u;
+while trainIter < kfModel.maxTrainSize && falsified==false
+    [kfModel, trainset] = symbolicRFF(kfModel, trainset, x0, u);
+    critX=kfModel.soln.x; critU=kfModel.soln.u;
 
     %if random trajectory setting selected or critical trajectory is
     %repeated, train with random xu
-    if model.trainRand>=2 || ( model.trainRand==1 && rem(trainIter, 2) == 0) || checkRepeatedTraj(critX,critU, trainset)
-        [x0,u] = getSampleXU(model);
+    if kfModel.trainRand>=2 || ( kfModel.trainRand==1 && rem(trainIter, 2) == 0) || checkRepeatedTraj(critX,critU, trainset)
+        [x0,u] = getSampleXU(kfModel);
     else
         x0=critX; %pass x0 as full x to avoid simulation again
         u=critU;
@@ -31,30 +31,30 @@ while trainIter < model.maxTrainSize && falsified==false
     %     disp(critU)
 
     %check for all spec, if by luck trace falsifies a different spec than crit spec ;)
-    for j = 1:size(model.spec,1)
+    for j = 1:size(kfModel.spec,1)
         % different types of specifications
-        if strcmp(model.spec(j,1).type,'unsafeSet')
-            check = any(model.spec(j,1).set.contains(critX'));
-        elseif strcmp(model.spec(j,1).type,'safeSet')
-            check = ~all(model.spec(j,1).set.contains(critX')); %check this
-        elseif strcmp(model.spec(j,1).type,'logic')
+        if strcmp(kfModel.spec(j,1).type,'unsafeSet')
+            check = any(kfModel.spec(j,1).set.contains(critX'));
+        elseif strcmp(kfModel.spec(j,1).type,'safeSet')
+            check = ~all(kfModel.spec(j,1).set.contains(critX')); %check this
+        elseif strcmp(kfModel.spec(j,1).type,'logic')
             %test plot: delete me
             plot(critX(1:400,1),critX(1:400,2),'g','LineWidth',2)
             drawnow;
-            robustness = computeRobustness(model.spec(j,1).set,critX,vpa(linspace(0,model.T,size(critX,1)')))
-            if model.trainRand==2
-                if robustness < model.bestSoln.rob
-                    model.bestSoln.rob = robustness;
-                    model.bestSoln.x=critX;
-                    model.bestSoln.u=critU;
+            robustness = computeRobustness(kfModel.spec(j,1).set,critX,vpa(linspace(0,kfModel.T,size(critX,1)')))
+            if kfModel.trainRand==2
+                if robustness < kfModel.bestSoln.rob
+                    kfModel.bestSoln.rob = robustness;
+                    kfModel.bestSoln.x=critX;
+                    kfModel.bestSoln.u=critU;
                 else
-                    %remove last entry because it is not improving the model
+                    %remove last entry because it is not improving the kfModel
                     trainset.X(end) = []; trainset.XU(end)=[]; trainset.t(end) = [];
                 end
-                disp(model.bestSoln.rob)
+                disp(kfModel.bestSoln.rob)
             end
-%           breachRob = bReachRob(model.spec,model.soln.x,model.soln.t)
-            model.specSolns(model.spec(j,1)).realRob=robustness; %store real robustness value
+%           breachRob = bReachRob(kfModel.spec,kfModel.soln.x,kfModel.soln.t)
+            kfModel.specSolns(kfModel.spec(j,1)).realRob=robustness; %store real robustness value
             check = ~isreal(sqrt(robustness)); %sqrt of -ve values are imaginary
         end
         if check
@@ -63,13 +63,13 @@ while trainIter < model.maxTrainSize && falsified==false
     end
     trainIter=trainIter+1;
 end
-%close simulink model
+%close simulink kfModel
 close_system;
 %assign solution result
-model.soln.falsified=falsified;
-model.soln.trainIter=trainIter;
-model.soln.sims=model.soln.sims-1; %last sim that finds critical trace not counted?
-model.soln.runtime=toc(runtime); %record runtime
+kfModel.soln.falsified=falsified;
+kfModel.soln.trainIter=trainIter;
+kfModel.soln.sims=kfModel.soln.sims-1; %last sim that finds critical trace not counted?
+kfModel.soln.runtime=toc(runtime); %record runtime
 end
 
 function repeatedTraj = checkRepeatedTraj(critX,critU, trainset)
@@ -84,15 +84,20 @@ for r = 1:length(trainset.X)
 end
 end
 
-function [model, trainset] = initialize(model)
+function [kfModel, trainset] = initialize(kfModel)
 %Ensure that autokoopman is installed & imported in your python environment
 py.importlib.import_module('autokoopman');
 
-assert(isa(model.sim, 'string') | isa(model.sim,"char")| isa(model.sim,'function_handle'), 'model.sim must be a (1)string: name of simulink model or a (2)function handle')
-assert(isa(model.R0, 'interval'), 'Initial set (model.R0) must be defined as an CORA interval')
-assert(~isempty(model.T) & isnumeric(model.T), 'Time horizon (model.T) must be defined as a numeric')
-assert(~isempty(model.dt) & isnumeric(model.dt), 'Time step (model.dt) must be defined as a numeric')
-assert(isa(model.spec, 'specification'), 'Falsifying spec (model.spec) must be defined as a CORA specification')
+assert(isa(kfModel.model, 'string') | isa(kfModel.model,"char")| isa(kfModel.model,'function_handle'), 'kfModel.model must be a (1)string: name of simulink kfModel or a (2)function handle')
+assert(isa(kfModel.R0, 'interval'), 'Initial set (kfModel.R0) must be defined as an CORA interval')
+assert(~isempty(kfModel.T) & isnumeric(kfModel.T), 'Time horizon (kfModel.T) must be defined as a numeric')
+assert(~isempty(kfModel.dt) & isnumeric(kfModel.dt), 'Time step (kfModel.dt) must be defined as a numeric')
+assert(isa(kfModel.spec, 'specification'), 'Falsifying spec (kfModel.spec) must be defined as a CORA specification')
+
+%add dt to autokoopman settings as well
+kfModel.ak.dt=kfModel.dt;
+% ensure that autokoopman rank is an integer
+kfModel.ak.rank=int64(kfModel.ak.rank);
 
 % clear yalmip
 yalmip('clear')
@@ -100,34 +105,34 @@ yalmip('clear')
 % initialize seed
 rng(0)
 
-if ~isempty(model.U) %check if model has inputs
-    assert(isa(model.U, 'interval'), 'Input (model.U) must be defined as an CORA interval')
+if ~isempty(kfModel.U) %check if kfModel has inputs
+    assert(isa(kfModel.U, 'interval'), 'Input (kfModel.U) must be defined as an CORA interval')
     %if no control points defined, set as control point at every step dt
-    if isempty(model.cp)
-        model.cp=model.T/model.dt*ones(1,length(model.U));
+    if isempty(kfModel.cp)
+        kfModel.cp=kfModel.T/kfModel.dt*ones(1,length(kfModel.U));
     end
 
-    assert(length(model.U)==length(model.cp),'Number of control points (model.cp) must be equal to number of inputs (model.U)')
+    assert(length(kfModel.U)==length(kfModel.cp),'Number of control points (kfModel.cp) must be equal to number of inputs (kfModel.U)')
 
-    all_steps = model.T/model.dt;
+    all_steps = kfModel.T/kfModel.dt;
     assert(floor(all_steps)==all_steps,'Time step (dt) must be a factor of Time horizon (T)')
 
-    model.cpBool = zeros(all_steps,length(model.U));
-    for k=1:length(model.cp)
-        step = (model.T/model.dt)/model.cp(k);
+    kfModel.cpBool = zeros(all_steps,length(kfModel.U));
+    for k=1:length(kfModel.cp)
+        step = (kfModel.T/kfModel.dt)/kfModel.cp(k);
         assert(floor(step)==step,'number of control points (cp) must be a factor of T/dt')
-        model.cpBool(1:step:end,k) = 1;
+        kfModel.cpBool(1:step:end,k) = 1;
     end
 end
 
 %create empty struct to store prev soln
-model.soln=struct;
-model.soln.koopTime=0; model.soln.milpSetupTime=0; model.soln.milpSolvTime=0;
-model.soln.sims=0;
+kfModel.soln=struct;
+kfModel.soln.koopTime=0; kfModel.soln.milpSetupTime=0; kfModel.soln.milpSolvTime=0;
+kfModel.soln.sims=0;
 %create empty struct to store best soln
-model.bestSoln=struct; model.bestSoln.rob=inf;
+kfModel.bestSoln=struct; kfModel.bestSoln.rob=inf;
 %create empty dict to store prev soln for each spec
-model.specSolns = dictionary(model.spec,struct);
+kfModel.specSolns = dictionary(kfModel.spec,struct);
 %empty cells to store states, inputs and times for training trajectories
 trainset.X = {}; trainset.XU={}; trainset.t = {};
 end

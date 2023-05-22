@@ -1,7 +1,7 @@
 classdef KF_model
     %Koopman falsification model
     properties
-        sim %name of the simulink model. TODO: blackbox function handle
+        model %name of the simulink model. TODO: blackbox function handle
         R0 %initial set (CORA class interval)
         U %set of admissible control inputs (class:interval or Zonotope)
         spec %specification defined as an object of the CORA specification class (safe/unsafe sets)
@@ -12,41 +12,57 @@ classdef KF_model
         %default is cp every dt. Note that values other than default are
         %currently only supported for spec of type stl formula.
 
+        %settings
+        maxTrainSize %maximum number of simulations for training before terminating (default: 100)
+        trainRand %int, set to 3 to train with random trajectory, 2 to train with random neighborhood trajectory, 0 to train with previously found crit trajectory or 1 to alternate between prev and random. (default: 0)
+        pulseInput %boolean, set to true if the inputs are pulse inputs, otherwise input is piecewise-constant (default: false)
+
+        %autokoopman settings (struct)
+        ak
+        %         .obsType: type of observables (default="rff")
+        %         .nObs: number of observables (default=100)
+        %         .gridSlices: number of slices for grid parameter search (default=5)
+        %         .opt: tuner of type "grid", "bopt", or "monte-carlo" (default=grid)
+        %         .rank: set of ranks to try of DMD rank parameter (default=[1,200,20]) 
+
+        %internal properties
         soln %internally defined property that stores the solution for last iteration (do not change)
         bestSoln %internally defined property that stores the best solution (do not change)
         specSolns %internally defined property that stores the solutions for each spec for last iteration (do not change)
         cpBool %internal property that is used to set control inputs for pulse inputs (do not change)
 
-        %settings
-        maxTrainSize %maximum number of simulations for training before terminating (default: 100)
-        trainRand %int, set to 3 to train with random trajectory, 2 to train with random neighborhood trajectory or 0 to train with previously found crit trajectory or 1 to alternate between prev and random. (default: 0)
-        pulseInput %boolean, set to true if the inputs are pulse inputs, otherwise input is piecewise-constant (default: false)
-
     end
     methods
         % Constructor
-        function model = KF_model(sim)
-            model.sim=sim;
-            model.maxTrainSize=100;
-            model.trainRand=0;
-            model.pulseInput = false;
+        function obj = KF_model(model)
+            obj.model=model;
+            obj.maxTrainSize=100;
+            obj.trainRand=0;
+            obj.pulseInput = false;
+
+            % autokoopman settings
+            obj.ak.obsType="rff";
+            obj.ak.nObs=100;
+            obj.ak.gridSlices=5;
+            obj.ak.opt="grid";
+            obj.ak.rank=[1,200,20];
         end
 
         %simulate function for model, a custom simulate function can be
         %used for a subclass of this class. Ensure that the outputs are consistent
-        function [tout, yout, model] = simulate(model, x0, u)
-            if isa(model.sim, 'string') || isa(model.sim,"char")
-                [tout, yout] = run_simulink(model.sim, model.T, model.dt, x0, u);
-            elseif isa(model.sim,'function_handle')
+        function [tout, yout, obj] = simulate(obj, x0, u)
+            if isa(obj.model, 'string') || isa(obj.model,"char")
+                [tout, yout] = run_simulink(obj.model, obj.T, obj.dt, x0, u);
+            elseif isa(obj.model,'function_handle')
                 error('sim as a function handle not yet implemented')
             else
                 error('sim not supported')
             end
-            model.soln.sims = model.soln.sims+1;
+            obj.soln.sims = obj.soln.sims+1;
         end
 
-        function [model,trainset]=falsify(model)
-            [model,trainset] = coreFalsify(model);
+        function [obj,trainset]=falsify(obj)
+            [obj,trainset] = coreFalsify(obj);
         end
     end
 end

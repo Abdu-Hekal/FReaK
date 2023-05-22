@@ -1,4 +1,4 @@
-function [x0,u, model] = falsifyFixedModel(A,B,g,model)
+function [x0,u, kfModel] = falsifyFixedModel(A,B,g,kfModel)
 % determine the most critical initial point and input trajectory of a
 % Koopman linearized model for the given trajectory
 %
@@ -16,12 +16,12 @@ function [x0,u, model] = falsifyFixedModel(A,B,g,model)
 %   -u:        piecewise constant inputs for the most critical trajectory
 
 % compute reachable set for Koopman linearized model
-R = reachKoopman(A,B,g,model);
+R = reachKoopman(A,B,g,kfModel);
 % determine most critical reachable set and specification
-model = mostCriticalReachSet(R,model);
+kfModel = mostCriticalReachSet(R,kfModel);
 
 % extract most critical initial state and input signal
-[x0,u] = falsifyingTrajectory(model);
+[x0,u] = falsifyingTrajectory(kfModel);
 
 % %modification to test (delete me)
 x = g(x0);
@@ -38,15 +38,15 @@ drawnow
 end
 
 % Auxiliary Functions -----------------------------------------------------
-function R = reachKoopman(A,B,g,model)
+function R = reachKoopman(A,B,g,kfModel)
 % compute reachable set for Koopman linearized model
 
 %setup
-dt=model.dt;
-R0=model.R0;
-U=model.U;
-tFinal=model.T;
-cpBool=model.cpBool;
+dt=kfModel.dt;
+R0=kfModel.R0;
+U=kfModel.U;
+tFinal=kfModel.T;
+cpBool=kfModel.cpBool;
 
 % compute initial set using Taylor model arithmetic
 n = dim(R0);
@@ -65,7 +65,7 @@ set{1} = R0; time{1} = interval(-dt/2,dt/2);
 for i = 1:length(t)-1
     % AH edit to check if system has external input
     if B
-        if model.pulseInput
+        if kfModel.pulseInput
             cp_U = U.*cpBool(i,:)';
         else
             cp_U=U;
@@ -87,12 +87,12 @@ end
 R.set = set; R.time = time; R.zono = zono;
 end
 
-function model = mostCriticalReachSet(R,model)
+function kfModel = mostCriticalReachSet(R,kfModel)
 % detemrine most critical reachable set and specification based on the
 % robustnes
 
 % loop over all specifications
-spec=model.spec;
+spec=kfModel.spec;
 rob = inf;
 
 for i = 1:size(spec,1)
@@ -150,18 +150,18 @@ for i = 1:size(spec,1)
     elseif strcmp(spec(i,1).type,'logic')
         %compute max time required to falsify stl and use it if less than
         %sim time (avoids unnecessary optim variables)
-        maxStlSteps = min(maxStlTime(spec(i,1).set)/model.dt,length(R.zono));
+        maxStlSteps = min(maxStlTime(spec(i,1).set)/kfModel.dt,length(R.zono));
         %get prev solns
-        prevSpecSol = model.specSolns(model.spec(i,1));
+        prevSpecSol = kfModel.specSolns(kfModel.spec(i,1));
         %setup and run bluSTL
         tic
         %if no prev soln for this spec, setup alpha & stl milp vars/constrs
         try
             Sys=prevSpecSol.lti; %get previously setup milp problem with stl
         catch
-            Sys=Koopman_lti(R.zono(1:maxStlSteps),model.dt);
-            if ~model.pulseInput %if not pulse input, set cpBool
-                Sys.cpBool=model.cpBool;
+            Sys=Koopman_lti(R.zono(1:maxStlSteps),kfModel.dt);
+            if ~kfModel.pulseInput %if not pulse input, set cpBool
+                Sys.cpBool=kfModel.cpBool;
             end
             Sys = setupAlpha(Sys);
         end
@@ -178,10 +178,10 @@ for i = 1:size(spec,1)
         Sys.stlList = {bluStl};
         Sys=setupStl(Sys);
         
-        model.soln.milpSetupTime = model.soln.milpSetupTime+toc;
+        kfModel.soln.milpSetupTime = kfModel.soln.milpSetupTime+toc;
         tic
         optimize(Sys);
-        model.soln.milpSolvTime =model.soln.milpSolvTime+toc;
+        kfModel.soln.milpSolvTime =kfModel.soln.milpSolvTime+toc;
 
         %get results
         rob_ = value(Sys.Pstl);
@@ -204,23 +204,23 @@ for i = 1:size(spec,1)
 
     %store solution for this iteration for each spec.
     specSoln.rob=rob_; specSoln.alpha=alpha;
-    model.specSolns(model.spec(i,1)) = specSoln;
+    kfModel.specSolns(kfModel.spec(i,1)) = specSoln;
 end
 %store solution for this iteration
-model.soln.rob=rob; model.soln.alpha=alphaCrit;
-model.soln.set=setCrit; model.soln.spec=specCrit;
+kfModel.soln.rob=rob; kfModel.soln.alpha=alphaCrit;
+kfModel.soln.set=setCrit; kfModel.soln.spec=specCrit;
 end
 
-function [x0,u] = falsifyingTrajectory(model)
+function [x0,u] = falsifyingTrajectory(kfModel)
 % extract the most critical initial state and input signal from the most
 % critical reachable set and specification
 
 %setup
-R0=model.R0;
-U=model.U;
-cpBool=model.cpBool;
-set=model.soln.set;
-alpha=model.soln.alpha;
+R0=kfModel.R0;
+U=kfModel.U;
+cpBool=kfModel.cpBool;
+set=kfModel.soln.set;
+alpha=kfModel.soln.alpha;
 
 % determine most critical initial state
 alphaInit = zeros(size(set.expMat,1),1);
@@ -246,12 +246,12 @@ else
     x0 = center(R0) + generators(R0)*alphaInit;
 end
 
-%check if model has control input
+%check if kfModel has control input
 if ~isempty(U)
     % determine most ctritical control input
     if ~isempty(set.Grest)
 
-        if model.pulseInput %if pulse input
+        if kfModel.pulseInput %if pulse input
             %initialise alpha to cpBool
             alphaU = reshape(cpBool,[],1);
             %input alpha returned by milp optimizernon

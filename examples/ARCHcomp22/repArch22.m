@@ -1,6 +1,6 @@
 function repArch22()
 % arch22ModelTransmission - runs all requirement formula for the
-%  model transmission benchmark of the ARCH'22 falsification Category
+%  Model transmission benchmark of the ARCH'22 falsification Category
 %
 % Syntax:
 %   results = repArch22()
@@ -18,8 +18,8 @@ function repArch22()
 % Last revision:---
 
 %------------- BEGIN CODE --------------
-model = model_AutoTransmission();
-model.trainRand=0;      
+kfModel = model_AutoTransmission();
+kfModel.trainRand=0;      
 x = stl('x',3);
 requirements = {; ...
 %         "AT1", globally(x(1) < 120,interval(0,20)); ...
@@ -43,14 +43,14 @@ for i = 1:size(requirements, 1)
         name = requirements{i, 1};
         eq = requirements{i, 2};
 
-        model.spec = specification(eq,'logic');
-        [model,~] = falsify(model);
+        kfModel.spec = specification(eq,'logic');
+        [kfModel,~] = falsify(kfModel);
 
         if j==1
-            solns(name)={{model.soln}};
+            solns(name)={{kfModel.soln}};
         else
             soln=solns(name);
-            soln{1}{end+1}=model.soln;
+            soln{1}{end+1}=kfModel.soln;
             solns(name)=soln;
         end
     end

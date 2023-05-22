@@ -1,6 +1,6 @@
 function arch22ModelTransmission()
 % arch22ModelTransmission - runs all requirement formula for the  
-%  model transmission benchmark of the ARCH'22 falsification Category
+%  Model transmission benchmark of the ARCH'22 falsification Category
 %
 % Syntax:
 %   results = arch22ModelTransmission()
@@ -18,7 +18,7 @@ function arch22ModelTransmission()
 % Last revision:---
 
 %------------- BEGIN CODE --------------
-model = model_AutoTransmission();
+kfModel = model_AutoTransmission();
 
 x = stl('x',3);
 requirements = {; ...
@@ -39,18 +39,18 @@ for i = 1:size(requirements, 1)
     eq = requirements{i, 2};
     plot_vars = requirements{i, 3};
 
-    model.spec = specification(eq,'logic');
+    kfModel.spec = specification(eq,'logic');
 
-    [model,trainset] = falsify(model);
+    [kfModel,trainset] = falsify(kfModel);
 
-    if model.soln.falsified
+    if kfModel.soln.falsified
         disp(" ")
         fprintf("falsifying trace found! for requirement '%s'\n", name)
     else
         fprintf("No falsifying trace found! for requirement '%s'\n", name)
     end
-    visualize_falsification(model.soln.x, trainset.t{1}, model.spec, plot_vars)
-    disp(['training iterations required: ',num2str(model.soln.trainIter)])
+    visualize_falsification(kfModel.soln.x, trainset.t{1}, kfModel.spec, plot_vars)
+    disp(['training iterations required: ',num2str(kfModel.soln.trainIter)])
     visualize_train(trainset, plot_vars)
 end
 

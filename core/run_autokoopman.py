@@ -10,25 +10,21 @@ def run(times, trajectories, param_dict, inputs_list):
     for i, (time, trajectory) in enumerate(zip(times, trajectories)):
         inputs = np.asarray(inputs_list[i]).T if inputs_list else None
         training_data.append(traj.Trajectory(np.asarray(time), np.asarray(trajectory).T, inputs))
-    
-    if param_dict["obs_type"] == 'deep':
-        opt = 'bopt'
-    else:
-        opt = 'monte-carlo'
         
     ids = np.arange(0, len(training_data)).tolist()
     training_data = traj.TrajectoriesData(dict(zip(ids, training_data)))
 
+    print(param_dict)
     experiment_results = auto_koopman(
         training_data,  # list of trajectories
-        sampling_period=param_dict["samp_period"],  # sampling period of trajectory snapshots
-        obs_type=param_dict["obs_type"],  # use Random Fourier Features Observables
-        opt=opt,  # grid search to find best hyperparameters
-        n_obs=int(param_dict["n_obs"]),  # maximum number of observables to try
+        sampling_period=param_dict["dt"],  # sampling period of trajectory snapshots
+        obs_type=param_dict["obsType"],  # use Random Fourier Features Observables
+        opt=param_dict["opt"],  # grid search to find best hyperparameters
+        n_obs=int(param_dict["nObs"]),  # maximum number of observables to try
         max_opt_iter=200,  # maximum number of optimization iterations
-        grid_param_slices=int(param_dict["grid_param_slices"]),
+        grid_param_slices=int(param_dict["gridSlices"]),
         # for grid search, number of slices for each parameter
-        rank=(1,200,20), # rank range (start, stop, step) DMD hyperparameter
+        rank=tuple(param_dict["rank"]), # rank range (start, stop, step) DMD hyperparameter
         verbose= False,
     )
     
