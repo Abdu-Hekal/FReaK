@@ -180,7 +180,7 @@ for i = 1:size(spec,1)
         
         kfModel.soln.milpSetupTime = kfModel.soln.milpSetupTime+toc;
         tic
-        optimize(Sys);
+        optimize(Sys,kfModel.solverOpts);
         kfModel.soln.milpSolvTime =kfModel.soln.milpSolvTime+toc;
 
         %get results

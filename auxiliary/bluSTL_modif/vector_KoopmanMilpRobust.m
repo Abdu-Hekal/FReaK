@@ -121,15 +121,15 @@ if strfind(st, '>')
     st= [ '(' tokens{1}{1} ')-(' tokens{1}{2} ')' ];    
 end
 %AH: Normalize
-% matches = regexp(st, 'X\((\d+),', 'tokens');
-% tag = 'pred';
-% normVal=0;
-% for i=1:length(matches)
-%     idx = str2double(matches{i});
-%     tag = strcat(tag,',',num2str(idx));
-%     normVal = normVal + normz(idx);
-% end
-% st = strcat(st,'/',num2str(normVal));
+matches = regexp(st, 'X\((\d+),', 'tokens');
+tag = 'pred';
+normVal=0;
+for i=1:length(matches)
+    idx = str2double(matches{i});
+    tag = strcat(tag,',',num2str(idx));
+    normVal = normVal + normz(idx);
+end
+st = strcat(st,'/',num2str(normVal));
 
 %AH: set up tags for normalization and weighting
 % matches = regexp(st, 'X\((\d+),', 'tokens');

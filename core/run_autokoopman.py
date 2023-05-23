@@ -14,7 +14,6 @@ def run(times, trajectories, param_dict, inputs_list):
     ids = np.arange(0, len(training_data)).tolist()
     training_data = traj.TrajectoriesData(dict(zip(ids, training_data)))
 
-    print(param_dict)
     experiment_results = auto_koopman(
         training_data,  # list of trajectories
         sampling_period=param_dict["dt"],  # sampling period of trajectory snapshots

@@ -25,6 +25,9 @@ classdef KF_model
         %         .opt: tuner of type "grid", "bopt", or "monte-carlo" (default=grid)
         %         .rank: set of ranks to try of DMD rank parameter (default=[1,200,20]) 
 
+        %solver (optimizer) options (sdpsettings)
+        solverOpts
+
         %internal properties
         soln %internally defined property that stores the solution for last iteration (do not change)
         bestSoln %internally defined property that stores the best solution (do not change)
@@ -42,10 +45,32 @@ classdef KF_model
 
             % autokoopman settings
             obj.ak.obsType="rff";
-            obj.ak.nObs=100;
+            obj.ak.nObs=20;
             obj.ak.gridSlices=5;
             obj.ak.opt="grid";
             obj.ak.rank=[1,200,20];
+
+            %default optimizer options
+            solver = 'gurobi';  % gurobi, cplex, glpk
+            timeLimit = 2000; %2000;
+            gapLimit = 100; %0.01;
+            gapAbsLimit = inf; %0.1;
+            solnLimit = Inf;
+            verb = 2;
+            obj.solverOpts = sdpsettings('verbose', verb,'solver', solver, ...
+                'gurobi.TimeLimit', timeLimit, ...
+                'gurobi.MIPGap', gapLimit, ...
+                'gurobi.MIPGapAbs', gapAbsLimit, ...
+                'gurobi.SolutionLimit', solnLimit,...
+                'usex0', 0 ...
+                );
+            %                 'gurobi.MIPFocus',3,...
+            %                 'gurobi.ScaleFlag', 2,...
+            %                 'gurobi.BarHomogeneous', 1,...
+            %                 'gurobi.CrossoverBasis',-1,...
+            %                 'gurobi.DualReductions', 0,...
+            %                'cachesolvers',1,...
+            %                 'gurobi.InputFile', 'alpha.sol' ...
         end
 
         %simulate function for model, a custom simulate function can be

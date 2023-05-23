@@ -6,8 +6,6 @@ classdef Koopman_lti
         stlList %stl list to falsify
         cpBool %boolean array representing cp points
 
-        solver_options %milp solver settings
-
         %milp sdpvars and constraints
         Falpha %constraints on alpha
         Fstl %constraints for stl
@@ -34,29 +32,6 @@ classdef Koopman_lti
         function Sys = Koopman_lti(reachZonos,dt)
             Sys.reachZonos = reachZonos;
             Sys.dt=dt;
-
-            %default solver options:
-            solver = 'gurobi';  % gurobi, cplex, glpk
-            timeLimit = 2000; %2000;
-            gapLimit = 0.01; %0.01;
-            gapAbsLimit = 0.1; %0.1;
-            solnLimit = Inf;
-            verb = 2;
-            Sys.solver_options = sdpsettings('verbose', verb,'solver', solver, ...
-                'gurobi.TimeLimit', timeLimit, ...
-                'gurobi.MIPGap', gapLimit, ...
-                'gurobi.MIPGapAbs', gapAbsLimit, ...
-                'gurobi.SolutionLimit', solnLimit,...
-                'usex0', 0 ...
-                );
-            %                 'gurobi.MIPFocus',3,...
-
-            %                 'gurobi.ScaleFlag', 2,...
-            %                 'gurobi.BarHomogeneous', 1,...
-            %                 'gurobi.CrossoverBasis',-1,...
-            %                 'gurobi.DualReductions', 0,...
-            %                'cachesolvers',1,...
-            %                 'gurobi.InputFile', 'alpha.sol' ...
 
         end
 
@@ -94,11 +69,10 @@ classdef Koopman_lti
             normFstl
         end
 
-        function diagnostics = optimize(Sys)
+        function diagnostics = optimize(Sys,options)
 
             constraints=[Sys.Falpha, Sys.Fstl, Sys.Freach];
             objective = Sys.Pstl; %objective is to minimize robustness of stl formula (falsification)
-            options=Sys.solver_options;
             %% call solverarch
             diagnostics = optimize(constraints,objective,options);
         end
