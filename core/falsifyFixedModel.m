@@ -173,8 +173,8 @@ for i = 1:size(spec,1)
         %convert stl from CORA format to blustl
         bluStl = coraBlustlConvert(spec(i,1).set);
         %test
-        %             x = stl('x',3);
-        %             bluStl = coraBlustlConvert(implies(globally(x(2)<2000,interval(0,30)),globally(x(1)<35,interval(0,4))))
+%         x = stl('x',3);
+%         bluStl = coraBlustlConvert(implies(globally(x(2)<2000,interval(0,30)),globally(x(1)<35,interval(0,4))))
         Sys.stlList = {bluStl};
         Sys=setupStl(Sys);
         

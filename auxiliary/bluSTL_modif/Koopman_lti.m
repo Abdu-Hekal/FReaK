@@ -66,7 +66,6 @@ classdef Koopman_lti
                 end
             end
             Sys.normFstl = normFstl;
-            normFstl
         end
 
         function diagnostics = optimize(Sys,options)
