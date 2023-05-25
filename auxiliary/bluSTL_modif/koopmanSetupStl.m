@@ -8,13 +8,16 @@ var = struct('X',Sys.X);
 stlList= KoopmanParseStlLabels(Sys);
 M = Sys.bigM;
 normz = Sys.normz;
-
+offset=Sys.offset;
+offsetCount=Sys.offsetCount;
 for i = 1:numel(stlList)
     phi = STLformula('phi', stlList{i});
 
 %     [Fphi, Pphi] = KoopmanMilpRobust(phi, 1, Sys.L+1, Sys.dt, var,M);
 %     [Fphi, Pphi] = orig_KoopmanMilpRobust(phi, 1, Sys.L+1, Sys.dt, var,M);
-    [Fphi, Pphi] = vector_KoopmanMilpRobust(phi, 1, Sys.L+1, Sys.dt, var,M, normz);
+    global vkmrCount %globl count to track wihch subpred to offset in milp
+    vkmrCount=0;
+    [Fphi, Pphi] = vector_KoopmanMilpRobust(phi, 1, Sys.L+1, Sys.dt, var,M, normz,offset,offsetCount);
 
 
     Pstl = [Pstl; Pphi];

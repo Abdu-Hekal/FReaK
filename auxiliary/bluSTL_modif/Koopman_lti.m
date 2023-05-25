@@ -39,7 +39,7 @@ classdef Koopman_lti
 
             %intitalise offset and count to zero
             Sys.offset=0;
-            Sys.offsetCount=0;
+            Sys.offsetCount=-1;
         end
 
         function Sys = setupAlpha(Sys)

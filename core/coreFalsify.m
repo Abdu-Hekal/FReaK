@@ -17,6 +17,8 @@ runtime=tic;
 falsified = false;
 trainIter = 0;
 while trainIter < kfModel.maxTrainSize && falsified==false
+
+    %run autkoopman and falsification and get critical trajectory
     [kfModel, trainset] = symbolicRFF(kfModel, trainset, x0, u);
     critX=kfModel.soln.x; critU=kfModel.soln.u;
 

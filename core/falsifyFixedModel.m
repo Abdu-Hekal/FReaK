@@ -159,7 +159,11 @@ for i = 1:size(spec,1)
         try
             Sys=prevSpecSol.lti; %get previously setup milp problem with stl
             %setup offset and offset count
-            Sys.offset=prevSpecSol.rob;
+            if Sys.offsetCount==prevSpecSol.offsetCount %same subset to offset, then concatanate offsets
+                Sys.offset=Sys.offset+prevSpecSol.realRob;
+            else
+            Sys.offset=prevSpecSol.realRob;
+            end
             Sys.offsetCount=prevSpecSol.offsetCount;
         catch
             Sys=Koopman_lti(R.zono(1:maxStlSteps),kfModel.dt);
@@ -173,8 +177,9 @@ for i = 1:size(spec,1)
         Sys.reachZonos=R.zono(1:maxStlSteps); %update reach zonos with new
         Sys = setupReach(Sys);
 
-        %convert stl from CORA format to blustl
-        bluStl = coraBlustlConvert(spec(i,1).set);
+        %convert disjunct stl from CORA format to blustl
+        disjSet = disjunctiveNormalForm(spec(i,1).set);
+        bluStl = coraBlustlConvert(disjSet);
         %test
 %         x = stl('x',3);
 %         bluStl = coraBlustlConvert(implies(globally(x(2)<2000,interval(0,30)),globally(x(1)<35,interval(0,4))))

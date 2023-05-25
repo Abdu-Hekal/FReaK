@@ -27,7 +27,7 @@ if abs(min(diff(t)) - max(diff(t))) > eps
         'Only uniformly sampled traces are supported!'));
 end
 
-%convert stl to disjunctive normal form
+%convert stl to disjunctive normal form ??
 obj = disjunctiveNormalForm(obj);
 % Compute the robustness of the formula on the trace using a recursive function
 global arCount
@@ -69,7 +69,6 @@ elseif strcmp(obj.type,'<')
     rho = obj.rhs-lhs;
     if arCount == iterCount
         rho = rho - offset;
-        disp(obj)
     end
 
 elseif strcmp(obj.type,'>')
@@ -79,7 +78,6 @@ elseif strcmp(obj.type,'>')
     rho = lhs - obj.rhs;
     if arCount == iterCount
         rho = rho - offset;
-        disp(obj)
     end
 
 elseif strcmp(obj.type,'<=')
@@ -89,7 +87,6 @@ elseif strcmp(obj.type,'<=')
     rho = obj.rhs-lhs - eps;
     if arCount == iterCount
         rho = rho - offset;
-        disp(obj)
     end
 
 elseif strcmp(obj.type,'>=')
@@ -99,7 +96,6 @@ elseif strcmp(obj.type,'>=')
     rho = lhs - obj.rhs + eps;
     if arCount == iterCount
         rho = rho - offset;
-        disp(obj)
     end
 
 elseif strcmp(obj.type,'+')
