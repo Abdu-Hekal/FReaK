@@ -32,16 +32,24 @@ while trainIter < kfModel.maxTrainSize && falsified==false
 
     %check for all spec, if by luck trace falsifies a different spec than crit spec ;)
     for j = 1:size(kfModel.spec,1)
+        spec=kfModel.spec(j,1);
         % different types of specifications
-        if strcmp(kfModel.spec(j,1).type,'unsafeSet')
-            check = any(kfModel.spec(j,1).set.contains(critX'));
-        elseif strcmp(kfModel.spec(j,1).type,'safeSet')
-            check = ~all(kfModel.spec(j,1).set.contains(critX')); %check this
-        elseif strcmp(kfModel.spec(j,1).type,'logic')
+        if strcmp(spec.type,'unsafeSet')
+            check = any(spec.set.contains(critX'));
+        elseif strcmp(spec.type,'safeSet')
+            check = ~all(spec.set.contains(critX')); %check this
+        elseif strcmp(spec.type,'logic')
             %test plot: delete me
             plot(critX(1:400,1),critX(1:400,2),'g','LineWidth',2)
             drawnow;
-            robustness = computeRobustness(kfModel.spec(j,1).set,critX,vpa(linspace(0,kfModel.T,size(critX,1)')))
+            robustness = computeRobustness(spec.set,critX,vpa(linspace(0,kfModel.T,size(critX,1)')))
+            %           breachRob = bReachRob(kfModel.spec,kfModel.soln.x,kfModel.soln.t)
+            kfModel.specSolns(spec).realRob=robustness; %store real robustness value
+            check = ~isreal(sqrt(robustness)); %sqrt of -ve values are imaginary
+            if ~check %not falsifed, robustness > 0
+                 kfModel.specSolns(spec).offsetCount = getRobOffset(spec.set,critX,vpa(linspace(0,kfModel.T,size(critX,1)')),robustness);
+            end
+  
             if kfModel.trainRand==2
                 if robustness < kfModel.bestSoln.rob
                     kfModel.bestSoln.rob = robustness;
@@ -53,9 +61,6 @@ while trainIter < kfModel.maxTrainSize && falsified==false
                 end
                 disp(kfModel.bestSoln.rob)
             end
-%           breachRob = bReachRob(kfModel.spec,kfModel.soln.x,kfModel.soln.t)
-            kfModel.specSolns(kfModel.spec(j,1)).realRob=robustness; %store real robustness value
-            check = ~isreal(sqrt(robustness)); %sqrt of -ve values are imaginary
         end
         if check
             falsified = true;

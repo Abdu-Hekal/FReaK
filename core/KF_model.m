@@ -45,16 +45,16 @@ classdef KF_model
 
             % autokoopman settings
             obj.ak.obsType="rff";
-            obj.ak.nObs=20;
+            obj.ak.nObs=200;
             obj.ak.gridSlices=5;
             obj.ak.opt="grid";
-            obj.ak.rank=[1,200,20];
+            obj.ak.rank=[0,400,40];
 
             %default optimizer options
             solver = 'gurobi';  % gurobi, cplex, glpk
             timeLimit = 2000; %2000;
-            gapLimit = 100; %0.01;
-            gapAbsLimit = inf; %0.1;
+            gapLimit = 0.01; %0.01;
+            gapAbsLimit = 0.1; %0.1;
             solnLimit = Inf;
             verb = 2;
             obj.solverOpts = sdpsettings('verbose', verb,'solver', solver, ...

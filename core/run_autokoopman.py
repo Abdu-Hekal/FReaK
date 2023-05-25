@@ -14,6 +14,8 @@ def run(times, trajectories, param_dict, inputs_list):
     ids = np.arange(0, len(training_data)).tolist()
     training_data = traj.TrajectoriesData(dict(zip(ids, training_data)))
 
+    n_splits = training_data.n_trajs if training_data.n_trajs>1 else None
+
     experiment_results = auto_koopman(
         training_data,  # list of trajectories
         sampling_period=param_dict["dt"],  # sampling period of trajectory snapshots
@@ -24,6 +26,7 @@ def run(times, trajectories, param_dict, inputs_list):
         grid_param_slices=int(param_dict["gridSlices"]),
         # for grid search, number of slices for each parameter
         rank=tuple(param_dict["rank"]), # rank range (start, stop, step) DMD hyperparameter
+        n_splits=n_splits,
         verbose= False,
     )
     

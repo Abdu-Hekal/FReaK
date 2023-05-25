@@ -17,6 +17,10 @@ classdef Koopman_lti
 
         %optimizer object
         milp
+
+        %offset and offset count to modify stl based on prev iterations
+        offset
+        offsetCount
     end
 
     properties (Dependent)
@@ -33,6 +37,9 @@ classdef Koopman_lti
             Sys.reachZonos = reachZonos;
             Sys.dt=dt;
 
+            %intitalise offset and count to zero
+            Sys.offset=0;
+            Sys.offsetCount=0;
         end
 
         function Sys = setupAlpha(Sys)
