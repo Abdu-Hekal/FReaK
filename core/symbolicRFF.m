@@ -24,7 +24,7 @@ function [kfModel, trainset] = symbolicRFF(kfModel, trainset, x0, u)
 
     % create observables function
     n = size(kfModel.R0,1); %number of variables
-    g_ = @(x) sqrt(2/20)*cos(w*x + u');
+    g_ = @(x) sqrt(2/kfModel.ak.nObs)*cos(w*x + u');
     g = @(x) [x; g_(x)];
     xSym = sym('x',[n,1]);
     g = g(xSym);
