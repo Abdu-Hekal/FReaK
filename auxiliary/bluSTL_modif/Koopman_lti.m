@@ -9,14 +9,14 @@ classdef Koopman_lti
         %milp sdpvars and constraints
         Falpha %constraints on alpha
         Fstl %constraints for stl
-        normFstl % normalized constraints for stl
         Freach %constraints states according to reachable sets
         X %states optim var
         Alpha
-        Pstl %robustness of stl
+        Pstl %spdvar storing robustness of stl
+        Ostl %spdvar parameters for offset of inequalities in stl
 
         %optimizer object
-        milp
+        optimizer
 
         %offset and offset count to modify stl based on prev iterations
         offset
@@ -54,34 +54,31 @@ classdef Koopman_lti
             Sys = KoopmanSetupReach(Sys);
         end
 
-        function Sys = normStl(Sys)
-            F = Sys.Fstl
-            normz = Sys.normz;
-            normFstl=[];
-            for i = 1:length(F)
-                predTag = tag(F(i));
-                if contains(predTag, 'pred')
-                    idxs=split(predTag,',');
-                    normVal=0;
-                    for j=2:length(idxs)
-                        idx=str2double(idxs(j));
-                        normVal = normVal + normz(idx);
-                    end
-                    normFstl=[normFstl,[sdpvar(F(i))/normVal >= 0]:predTag];
-                else
-                    normFstl=[normFstl,F(i)]; 
-                end
-            end
-            Sys.normFstl = normFstl;
-        end
-
-        function diagnostics = optimize(Sys,options)
-
+        function Sys = setupOptimizer(Sys,options)
             constraints=[Sys.Falpha, Sys.Fstl, Sys.Freach];
             objective = Sys.Pstl; %objective is to minimize robustness of stl formula (falsification)
-            %% call solverarch
-            diagnostics = optimize(constraints,objective,options);
+            output = {Sys.X,Sys.Alpha,Sys.Pstl};
+            % setup optimizer
+            Sys.optimizer = optimizer(constraints,objective,options,Sys.Ostl, output);
         end
+
+        function Sys = optimize(Sys)
+            param = zeros(1,length(Sys.Ostl));
+            if Sys.offsetCount>0 %we have an offset
+                param(Sys.offsetCount) = Sys.offset;
+            end
+            [sol_control, errorflag1] = Sys.optimizer{{param}}; %% call solver
+            if(errorflag1==0)
+                Sys.X = double(sol_control{1});
+                Sys.Alpha = double(sol_control{2});
+                Sys.Pstl = double(sol_control{3});
+            elseif (errorflag1==1 || errorflag1==15||errorflag1==12)  % some error, infeasibility or else
+                disp(['Yalmip error (disturbance too bad ?): ' yalmiperror(errorflag1)]); % probably there is no controller for this w
+            else
+                disp(['Yalmip error: ' yalmiperror(errorflag1)]); % some other error
+            end
+        end
+
         %getters for dependent properties
         function bigM = get.bigM(Sys)
             %find suitable bigM based on zonotope boundaries

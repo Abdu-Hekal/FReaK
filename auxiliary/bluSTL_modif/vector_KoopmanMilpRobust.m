@@ -1,4 +1,4 @@
-function [F,P] = vector_KoopmanMilpRobust(phi,kList,kMax,ts,var,M,normz,offset,offsetCount)
+function [F,P,O] = vector_KoopmanMilpRobust(phi,kList,kMax,ts,var,M,normz)
 % vector_KoopmanMilpRobust  constructs MILP constraints in YALMIP that compute
 %                  the robustness of satisfaction for specification phi
 %
@@ -10,14 +10,14 @@ function [F,P] = vector_KoopmanMilpRobust(phi,kList,kMax,ts,var,M,normz,offset,o
 %       var:    a dictionary mapping strings to variables
 %       M:   	a large positive constant used for big-M constraints
 %       normz:  normalization values based on boundaries of reachable sets
-%       offset- offset which is equal to robustness of trajectory on real stl
-%       offsetCount - count of subset of stl where rob==0
 %
 % Output:
 %       F:  YALMIP constraints
 %       P:  a struct containing YALMIP decision variables representing
 %           the quantitative satisfaction of phi over each time step in
 %           kList
+%       O:  a struct containing YALMIP parameter variables representing the
+%       offset for each inequality.
 %
 % :copyright: TBD
 % :license: TBD
@@ -28,6 +28,7 @@ end
 
 F = [];
 P = [];
+O = [];
 
 if ischar(phi.interval)
     interval = [str2num(phi.interval)];
@@ -46,64 +47,71 @@ if b==Inf
 end
 
 switch (phi.type)
-
     case 'predicate'
-        [F,P] = pred(phi.st,kList,var,normz,offset,offsetCount);
+        [F,P,O] = pred(phi.st,kList,var,normz);
 
     case 'not'
-        [Frest,Prest] = vector_KoopmanMilpRobust(phi.phi,kList,kMax,ts, var,M,normz,offset,offsetCount);
+        [Frest,Prest,Orest] = vector_KoopmanMilpRobust(phi.phi,kList,kMax,ts, var,M,normz);
         [Fnot, Pnot] = not(Prest);
         F = [F, Fnot, Frest];
         P = Pnot;
+        O = [O, Orest];
 
     case 'or'
-        [Fdis1,Pdis1] = vector_KoopmanMilpRobust(phi.phi1,kList,kMax,ts, var,M,normz,offset,offsetCount);
-        [Fdis2,Pdis2] = vector_KoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M,normz,offset,offsetCount);
+        [Fdis1,Pdis1,O1] = vector_KoopmanMilpRobust(phi.phi1,kList,kMax,ts, var,M,normz);
+        [Fdis2,Pdis2,O2] = vector_KoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M,normz);
         [For, Por] = or([Pdis1;Pdis2],M);
         F = [F, For, Fdis1, Fdis2];
         P = Por;
+        O = [O, O1, O2];
 
     case 'and'
-        [Fcon1,Pcon1] = vector_KoopmanMilpRobust(phi.phi1,kList,kMax,ts, var,M,normz,offset,offsetCount);
-        [Fcon2,Pcon2] = vector_KoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M,normz,offset,offsetCount);
+        [Fcon1,Pcon1,O1] = vector_KoopmanMilpRobust(phi.phi1,kList,kMax,ts, var,M,normz);
+        [Fcon2,Pcon2,O2] = vector_KoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M,normz);
         [Fand, Pand] = and([Pcon1;Pcon2],M);
         F = [F, Fand, Fcon1, Fcon2];
         P = Pand;
+        O = [O, O1, O2];
 
     case '=>'
-        [Fant,Pant] = vector_KoopmanMilpRobust(phi.phi1,kList,kMax,ts,var,M,normz,offset,offsetCount);
-        [Fcons,Pcons] = vector_KoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M,normz,offset,offsetCount);
+        [Fant,Pant,O1] = vector_KoopmanMilpRobust(phi.phi1,kList,kMax,ts,var,M,normz);
+        [Fcons,Pcons,O2] = vector_KoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M,normz);
         [Fnotant,Pnotant] = not(Pant);
         [Fimp, Pimp] = or([Pnotant;Pcons],M);
         F = [F, Fant, Fnotant, Fcons, Fimp];
         P = [Pimp,P];
+        O = [O, O1, O2];
 
     case 'always'
         kListAlw = unique(cell2mat(arrayfun(@(k) {min(kMax,k + a): min(kMax,k + b)}, kList)));
-        [Frest,Prest] = vector_KoopmanMilpRobust(phi.phi,kListAlw,kMax,ts, var,M,normz,offset,offsetCount);
+        [Frest,Prest,Orest] = vector_KoopmanMilpRobust(phi.phi,kListAlw,kMax,ts, var,M,normz);
         [Falw, Palw] = always(Prest,a,b,kList,kMax,M);
         F = [F, Falw];
         P = [Palw, P];
         F = [F, Frest];
+        O = [O, Orest];
 
     case 'eventually'
         kListEv = unique(cell2mat(arrayfun(@(k) {min(kMax,k + a): min(kMax,k + b)}, kList)));
-        [Frest,Prest] = vector_KoopmanMilpRobust(phi.phi,kListEv,kMax,ts, var,M,normz,offset,offsetCount);
+        [Frest,Prest,Orest] = vector_KoopmanMilpRobust(phi.phi,kListEv,kMax,ts, var,M,normz);
         [Fev, Pev] = eventually(Prest,a,b,kList,kMax,M);
         F = [F, Fev];
         P = [Pev, P];
         F = [F, Frest];
+        O = [O, Orest];
 
     case 'until'
-        [Fp,Pp] = vector_KoopmanMilpRobust(phi.phi1,kList,kMax,ts, var,M,normz,offset,offsetCount);
-        [Fq,Pq] = vector_KoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M,normz,offset,offsetCount);
+        [Fp,Pp,O1] = vector_KoopmanMilpRobust(phi.phi1,kList,kMax,ts, var,M,normz);
+        [Fq,Pq,O2] = vector_KoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M,normz);
         [Funtil, Puntil] = until(Pp,Pq,a,b,kList,kMax,M);
         F = [F, Funtil, Fp, Fq];
         P = Puntil;
+        O = [O, O1, O2];
+
 end
 end
 
-function [F,z] = pred(st,kList,var,normz,offset,offsetCount)
+function [F,z,robOffset] = pred(st,kList,var,normz)
 % Enforce constraints based on predicates
 % var is the variable dictionary
 fnames = fieldnames(var);
@@ -112,22 +120,15 @@ for ifield= 1:numel(fnames)
     eval([ fnames{ifield} '= var.' fnames{ifield} ';']);
 end
 
-global vkmrCount %globl count to track wihch subpred to offset in milp
-vkmrCount=vkmrCount+1; %increase count as pred found
-if vkmrCount == offsetCount
-    robOffset=offset;
-else
-    robOffset=0;
-end
-
+robOffset=sdpvar(1,1); %setup rob offset
 st = regexprep(st,'\[t\]','\(t\)'); % Breach compatibility
 if strfind(st, '<')
     tokens = regexp(st, '(.+)\s*<\s*(.+)','tokens');
-    st = ['-(' tokens{1}{1} '- (' tokens{1}{2} ')+' num2str(robOffset) ')'];
+    st = ['-(' tokens{1}{1} '- (' tokens{1}{2} ')+robOffset)'];
 end
 if strfind(st, '>')
     tokens = regexp(st, '(.+)\s*>\s*(.+)','tokens');
-    st= [ '(' tokens{1}{1} ')-(' tokens{1}{2} ')+' num2str(robOffset)];    
+    st= [ '(' tokens{1}{1} ')-(' tokens{1}{2} ')+robOffset' ];
 end
 %AH: Normalize
 % matches = regexp(st, 'X\((\d+),', 'tokens');

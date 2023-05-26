@@ -45,10 +45,10 @@ classdef KF_model
 
             % autokoopman settings
             obj.ak.obsType="rff";
-            obj.ak.nObs=20;
+            obj.ak.nObs=5;
             obj.ak.gridSlices=5;
             obj.ak.opt="grid";
-            obj.ak.rank=[0,200,20];
+            obj.ak.rank=[0,40,20];
 
             %default optimizer options
             solver = 'gurobi';  % gurobi, cplex, glpk
