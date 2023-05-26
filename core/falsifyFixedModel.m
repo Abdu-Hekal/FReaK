@@ -171,20 +171,16 @@ for i = 1:size(spec,1)
                 Sys.cpBool=kfModel.cpBool;
             end
             Sys = setupAlpha(Sys);
+            %convert disjunct stl from CORA format to blustl
+            disjSet = disjunctiveNormalForm(spec(i,1).set); %is this necassary?
+            bluStl = coraBlustlConvert(disjSet); %convert from cora syntax to blustl
+            Sys.stlList = {bluStl};
+            Sys=setupStl(Sys); %encode stl using milp
         end
         specSoln.lti=Sys; %store lti object with alpha problem info
 
         Sys.reachZonos=R.zono(1:maxStlSteps); %update reach zonos with new
         Sys = setupReach(Sys);
-
-        %convert disjunct stl from CORA format to blustl
-        disjSet = disjunctiveNormalForm(spec(i,1).set);
-        bluStl = coraBlustlConvert(disjSet);
-        %test
-%         x = stl('x',3);
-%         bluStl = coraBlustlConvert(implies(globally(x(2)<2000,interval(0,30)),globally(x(1)<35,interval(0,4))))
-        Sys.stlList = {bluStl};
-        Sys=setupStl(Sys);
         
         kfModel.soln.milpSetupTime = kfModel.soln.milpSetupTime+toc;
         tic
