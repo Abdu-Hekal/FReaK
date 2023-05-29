@@ -180,8 +180,8 @@ figure; hold on; box on;
 for i=1:size(drawu,2)
     plot(R.zono{i})
 end
-plot(x(1,1:400),x(2,1:400),'r','LineWidth',2);
-plot(critX(1:400,1),critX(1:400,2),'g','LineWidth',2)
+plot(x(1,1:800),x(2,1:800),'r','LineWidth',2);
+plot(critX(1:800,1),critX(1:800,2),'g','LineWidth',2)
 drawnow;
 end
 
