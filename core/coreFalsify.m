@@ -14,6 +14,7 @@ runtime=tic;
 
 falsified = false;
 trainIter = 0;
+epsilon = eps; %epsilon value to add to offset
 while trainIter <= kfModel.maxTrainSize && falsified==false
 
     %if first iter, random trajectory setting selected, or critical trajectory is
@@ -36,7 +37,7 @@ while trainIter <= kfModel.maxTrainSize && falsified==false
     kfModel = critAlpha(R,kfModel);
 
     refineIter = 0;
-    while refineIter <=kfModel.refineIter && falsified==false %refine once if not falsified
+    while refineIter <=kfModel.refine && falsified==false %refine once if not falsified
         [critX0, critU] = falsifyingTrajectory(kfModel);
         % run most critical inputs on the real system
         [t, critX, kfModel] = simulate(kfModel, critX0, critU);
@@ -55,12 +56,24 @@ while trainIter <= kfModel.maxTrainSize && falsified==false
             kfModel.specSolns(spec).realRob=robustness; %store real robustness value
             falsified = ~isreal(sqrt(robustness)); %sqrt of -ve values are imaginary
 
-            if ~falsified && refineIter < kfModel.refineIter %not falsifed, robustness > 0: re-solve with offset
+            if ~falsified && kfModel.refine %not falsifed yet and refine mode selected by user
                 Sys=kfModel.specSolns(spec).lti;
-                Sys.offset = robustness;
-                Sys.offsetCount = getRobOffset(spec.set,critX,vpa(linspace(0,kfModel.T,size(critX,1)')),robustness);
-                Sys=optimize(Sys);
-                kfModel.soln.alpha = value(Sys.Alpha); %new alpha value after offset
+                if refineIter < kfModel.refine %if not yet offset and refine set to true, re-solve with offset
+                    Sys.offset = robustness + epsilon;
+                    disp(Sys.offset)
+                    Sys.offsetCount = getRobOffset(spec.set,critX,vpa(linspace(0,kfModel.T,size(critX,1)')),robustness); %TODO: speedup
+                    Sys=optimize(Sys);
+                    kfModel.soln.alpha = value(Sys.Alpha); %new alpha value after offset
+                    % TODO: if offset gives better val of robustness, should we pass
+                    % it as training data instead? should we pass both?
+                else %if already offset and failed to falsify, increase epsilon
+                    %check first if same offset count as b4 offset (i.e. same inequality)
+                    if Sys.offsetCount == getRobOffset(spec.set,critX,vpa(linspace(0,kfModel.T,size(critX,1)')),robustness)
+                        epsilon = epsilon + robustness; 
+                    else
+                        epsilon = robustness; 
+                    end
+                end
             end
             refineIter = refineIter+1;
 
@@ -169,6 +182,6 @@ for i=1:size(drawu,2)
 end
 plot(x(1,1:400),x(2,1:400),'r','LineWidth',2);
 plot(critX(1:400,1),critX(1:400,2),'g','LineWidth',2)
-drawnow; 
+drawnow;
 end
 

@@ -154,7 +154,6 @@ try
     z_eval = eval(t_st);
 end
 zl = sdpvar(1,size(z_eval,2));
-% F = [zl == z_eval]:tag;
 F = zl == z_eval;
 z = zl;
 end
