@@ -24,12 +24,13 @@ kfModel = mostCriticalReachSet(R,kfModel);
 [x0,u] = falsifyingTrajectory(kfModel);
 
 % %modification to test (delete me)
+drawu=u(:,2:end)';
 x = g(x0);
-for i = 1:size(u,2)
-    x = [x, A*x(:,end) + B*u(:,i)];
+for i = 1:size(drawu,2)
+    x = [x, A*x(:,end) + B*drawu(:,i)];
 end
 figure; hold on; box on;
-for i=1:size(u,2)
+for i=1:size(drawu,2)
     plot(R.zono{i})
 end
 plot(x(1,1:400),x(2,1:400),'r','LineWidth',2);
@@ -158,13 +159,9 @@ for i = 1:size(spec,1)
         %if no prev soln for this spec, setup alpha & stl milp vars/constrs
         try
             Sys=prevSpecSol.lti; %get previously setup milp problem with stl
-            %setup offset and offset count
-            if Sys.offsetCount==prevSpecSol.offsetCount %same subset to offset, then concatanate offsets
-                Sys.offset=Sys.offset+prevSpecSol.realRob;
-            else
-            Sys.offset=prevSpecSol.realRob;
-            end
-            Sys.offsetCount=prevSpecSol.offsetCount;
+            %reset offset and offset count
+            Sys.offset=0;
+            Sys.offsetCount=-1;
         catch
             Sys=Koopman_lti(R.zono(1:maxStlSteps),kfModel.dt);
             if ~kfModel.pulseInput %if not pulse input, set cpBool
@@ -177,14 +174,14 @@ for i = 1:size(spec,1)
             Sys.stlList = {bluStl};
             Sys=setupStl(Sys); %encode stl using milp
         end
-        specSoln.lti=Sys; %store lti object with alpha problem info
 
         Sys.reachZonos=R.zono(1:maxStlSteps); %update reach zonos with new
         Sys = setupReach(Sys);
-        
         kfModel.soln.milpSetupTime = kfModel.soln.milpSetupTime+toc;
+        
         tic
         Sys = setupOptimizer(Sys,kfModel.solverOpts);
+        specSoln.lti=Sys; %store lti object with setcup optimizer 
         Sys=optimize(Sys);
         kfModel.soln.milpSolvTime =kfModel.soln.milpSolvTime+toc;
 
@@ -214,72 +211,6 @@ end
 %store solution for this iteration
 kfModel.soln.rob=rob; kfModel.soln.alpha=alphaCrit;
 kfModel.soln.set=setCrit; kfModel.soln.spec=specCrit;
-end
-
-function [x0,u] = falsifyingTrajectory(kfModel)
-% extract the most critical initial state and input signal from the most
-% critical reachable set and specification
-
-%setup
-R0=kfModel.R0;
-U=kfModel.U;
-cpBool=kfModel.cpBool;
-set=kfModel.soln.set;
-alpha=kfModel.soln.alpha;
-
-% determine most critical initial state
-alphaInit = zeros(size(set.expMat,1),1);
-
-temp = prod(ones(size(set.expMat))-mod(set.expMat,2),1);
-expMat = set.expMat(:,temp == 0);
-
-ind = find(sum(expMat,1) == 1);
-
-for i = 1:size(set.expMat,1)
-    for j = ind
-        if expMat(i,j) == 1
-            alphaInit(i) = alpha(j);
-        end
-    end
-end
-
-R0 = zonotope(R0);
-%AH modification, checks if R0 is not exact, to avoid error
-if isempty(generators(R0))
-    x0 = center(R0);
-else
-    x0 = center(R0) + generators(R0)*alphaInit;
-end
-
-%check if kfModel has control input
-if ~isempty(U)
-    % determine most ctritical control input
-    if ~isempty(set.Grest)
-
-        if kfModel.pulseInput %if pulse input
-            %initialise alpha to cpBool
-            alphaU = reshape(cpBool,[],1);
-            %input alpha returned by milp optimizernon
-            allAlpha = alpha(size(set.G,2)+1:end);
-            %find all nonzero elements in the relevant time horizon
-            nonzero = find(alphaU,length(allAlpha));
-            alphaU(nonzero) = allAlpha;
-            %set all nonrelevant inputs after to zero
-            alphaU(nonzero(end)+1:end)=0;
-        else
-            alphaU = alpha(size(set.G,2)+1:end);
-        end
-
-        U = zonotope(U); c_u = center(U); G_u = generators(U);
-        alphaU = reshape(alphaU,[size(G_u,2),length(alphaU)/size(G_u,2)]);
-
-        u = c_u + G_u*alphaU;
-    else
-        u = center(U);
-    end
-else
-    u = [];
-end
 end
 
 function [r,alpha] = robustness(P,Z)

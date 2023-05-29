@@ -1,4 +1,4 @@
-function [kfModel, trainset] = symbolicRFF(kfModel, trainset, x0, u)
+function [kfModel, trainset, A, B,g] = symbolicRFF(kfModel, trainset, x0, u)
 
     if size(x0,2) > 1
         x=x0; %x0 passed is infact the full critical trajectory
@@ -34,13 +34,4 @@ function [kfModel, trainset] = symbolicRFF(kfModel, trainset, x0, u)
     matlabFunction(g,'Vars',{xSym},'File',fullfile(path,'autokoopman'));
 
     g = @(x) autokoopman(x);
-    [crit_x0,crit_u, kfModel] = falsifyFixedModel(A,B,g,kfModel);
-    all_steps = kfModel.T/kfModel.dt;
-    crit_u = [crit_u';zeros(size(crit_u,1),all_steps-size(crit_u,2))'];
-    kfModel.soln.u = [linspace(0,kfModel.T-kfModel.dt,all_steps)',crit_u];
-
-    % run most critical input on the real system
-    [t, x, kfModel] = simulate(kfModel, crit_x0, kfModel.soln.u);
-    kfModel.soln.t=t;
-    kfModel.soln.x=x;
 end

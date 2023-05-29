@@ -16,42 +16,49 @@ runtime=tic;
 
 falsified = false;
 trainIter = 0;
-while trainIter < kfModel.maxTrainSize && falsified==false
+while trainIter <= kfModel.maxTrainSize && falsified==false
 
-    %run autkoopman and falsification and get critical trajectory
-    [kfModel, trainset] = symbolicRFF(kfModel, trainset, x0, u);
-    critX=kfModel.soln.x; critU=kfModel.soln.u;
+    %run autokoopman and learn linearized model
+    [kfModel, trainset, A, B, g] = symbolicRFF(kfModel, trainset, x0, u);
+    % finf predicted falsifying initial set and inputs
+    [critX0, critU, kfModel] = falsifyFixedModel(A,B,g,kfModel);
 
-    %if random trajectory setting selected or critical trajectory is
-    %repeated, train with random xu
-    if kfModel.trainRand>=2 || ( kfModel.trainRand==1 && rem(trainIter, 2) == 0) || checkRepeatedTraj(critX,critU, trainset)
-        [x0,u] = getSampleXU(kfModel);
-    else
-        x0=critX; %pass x0 as full x to avoid simulation again
-        u=critU;
-    end
-    %     disp(critU)
+    refineIter = 0;
+    while refineIter <= 1 && falsified==false %refine once if not falsified
+        % run most critical inputs on the real system
+        [t, critX, kfModel] = simulate(kfModel, critX0, critU);
 
-    %check for all spec, if by luck trace falsifies a different spec than crit spec ;)
-    for j = 1:size(kfModel.spec,1)
-        spec=kfModel.spec(j,1);
+        spec=kfModel.soln.spec; %critical spec found with best value of robustness
         % different types of specifications
         if strcmp(spec.type,'unsafeSet')
-            check = any(spec.set.contains(critX'));
+            falsified = any(spec.set.contains(critX'));
         elseif strcmp(spec.type,'safeSet')
-            check = ~all(spec.set.contains(critX')); %check this
+            falsified = ~all(spec.set.contains(critX')); %check this
         elseif strcmp(spec.type,'logic')
             %test plot: delete me
             plot(critX(1:400,1),critX(1:400,2),'g','LineWidth',2)
             drawnow;
             robustness = computeRobustness(spec.set,critX,vpa(linspace(0,kfModel.T,size(critX,1)')))
-            %           breachRob = bReachRob(kfModel.spec,kfModel.soln.x,kfModel.soln.t)
+            %  breachRob = bReachRob(kfModel.spec,kfModel.soln.x,kfModel.soln.t)
             kfModel.specSolns(spec).realRob=robustness; %store real robustness value
-            check = ~isreal(sqrt(robustness)); %sqrt of -ve values are imaginary
-            if ~check %not falsifed, robustness > 0
-                 kfModel.specSolns(spec).offsetCount = getRobOffset(spec.set,critX,vpa(linspace(0,kfModel.T,size(critX,1)')),robustness);
+            falsified = ~isreal(sqrt(robustness)); %sqrt of -ve values are imaginary
+
+            if ~falsified %not falsifed, robustness > 0: re-solve with offset
+                disp("reached here")
+                disp(refineIter)
+                Sys=kfModel.specSolns(spec).lti;
+                Sys.offset = robustness;
+                Sys.offsetCount = getRobOffset(spec.set,critX,vpa(linspace(0,kfModel.T,size(critX,1)')),robustness);
+                disp("offset")
+                disp(Sys.offset)
+                Sys=optimize(Sys);
+                kfModel.soln.alpha = value(Sys.Alpha); %new alpha value after offset
+                [critX0, critU] = falsifyingTrajectory(kfModel);
+
+                refineIter = refineIter+1;
             end
-  
+
+            %training with best neighborhood trajectories
             if kfModel.trainRand==2
                 if robustness < kfModel.bestSoln.rob
                     kfModel.bestSoln.rob = robustness;
@@ -64,15 +71,24 @@ while trainIter < kfModel.maxTrainSize && falsified==false
                 disp(kfModel.bestSoln.rob)
             end
         end
-        if check
-            falsified = true;
-        end
     end
     trainIter=trainIter+1;
+
+    %retrain: if random trajectory setting selected or critical trajectory is
+    %repeated, retrain with random xu else retrain with prev traj
+    if kfModel.trainRand>=2 || ( kfModel.trainRand==1 && rem(trainIter, 2) == 0) || checkRepeatedTraj(critX,critU, trainset)
+        [x0,u] = getSampleXU(kfModel);
+    else
+        x0=critX; %pass x0 as full x to avoid simulation again
+        u=critU;
+    end
 end
 %close simulink kfModel
 close_system;
 %assign solution result
+kfModel.soln.t=t;
+kfModel.soln.x=critX;
+kfModel.soln.u = critU;
 kfModel.soln.falsified=falsified;
 kfModel.soln.trainIter=trainIter;
 kfModel.soln.sims=kfModel.soln.sims-1; %last sim that finds critical trace not counted?
