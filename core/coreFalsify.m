@@ -27,10 +27,12 @@ while trainIter <= kfModel.maxTrainSize && falsified==false
     kfModel = critAlpha(R,kfModel);
 
     refineIter = 0;
-    while refineIter <= 1 && falsified==false %refine once if not falsified
+    while refineIter <=kfModel.refineIter && falsified==false %refine once if not falsified
         [critX0, critU] = falsifyingTrajectory(kfModel);
         % run most critical inputs on the real system
         [t, critX, kfModel] = simulate(kfModel, critX0, critU);
+
+        testDraw(critU,critX,A,B,g,R); %test plot: delete me
 
         spec=kfModel.soln.spec; %critical spec found with best value of robustness
         % different types of specifications
@@ -39,15 +41,12 @@ while trainIter <= kfModel.maxTrainSize && falsified==false
         elseif strcmp(spec.type,'safeSet')
             falsified = ~all(spec.set.contains(critX')); %check this
         elseif strcmp(spec.type,'logic')
-            %test plot: delete me
-            plot(critX(1:400,1),critX(1:400,2),'g','LineWidth',2)
-            drawnow;
             robustness = computeRobustness(spec.set,critX,vpa(linspace(0,kfModel.T,size(critX,1)')))
             %  breachRob = bReachRob(kfModel.spec,kfModel.soln.x,kfModel.soln.t)
             kfModel.specSolns(spec).realRob=robustness; %store real robustness value
             falsified = ~isreal(sqrt(robustness)); %sqrt of -ve values are imaginary
 
-            if ~falsified && refineIter < 1 %not falsifed, robustness > 0: re-solve with offset
+            if ~falsified && refineIter < kfModel.refineIter %not falsifed, robustness > 0: re-solve with offset
                 Sys=kfModel.specSolns(spec).lti;
                 Sys.offset = robustness;
                 Sys.offsetCount = getRobOffset(spec.set,critX,vpa(linspace(0,kfModel.T,size(critX,1)')),robustness);
@@ -156,5 +155,20 @@ kfModel.bestSoln=struct; kfModel.bestSoln.rob=inf;
 kfModel.specSolns = dictionary(kfModel.spec,struct);
 %empty cells to store states, inputs and times for training trajectories
 trainset.X = {}; trainset.XU={}; trainset.t = {};
+end
+
+function testDraw(critU,critX,A,B,g,R)
+drawu=critU(:,2:end)';
+x = g(x0);
+for i = 1:size(drawu,2)
+    x = [x, A*x(:,end) + B*drawu(:,i)];
+end
+figure; hold on; box on;
+for i=1:size(drawu,2)
+    plot(R.zono{i})
+end
+plot(x(1,1:400),x(2,1:400),'r','LineWidth',2);
+plot(critX(1:400,1),critX(1:400,2),'g','LineWidth',2)
+drawnow; 
 end
 
