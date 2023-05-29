@@ -15,6 +15,7 @@ classdef KF_model
         %settings
         maxTrainSize %maximum number of simulations for training before terminating (default: 100)
         trainRand %int, set to 3 to train with random trajectory, 2 to train with random neighborhood trajectory, 0 to train with previously found crit trajectory or 1 to alternate between prev and random. (default: 0)
+        refineIter %bool, set true to refine with offset. (default: true)
         pulseInput %boolean, set to true if the inputs are pulse inputs, otherwise input is piecewise-constant (default: false)
 
         %autokoopman settings (struct)
@@ -41,6 +42,7 @@ classdef KF_model
             obj.model=model;
             obj.maxTrainSize=100;
             obj.trainRand=0;
+            obj.refineIter=true;
             obj.pulseInput = false;
 
             % autokoopman settings

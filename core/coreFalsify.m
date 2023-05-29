@@ -3,8 +3,6 @@ function [kfModel,trainset] = coreFalsify(kfModel)
 runtime=tic;
 %initialization and init assertions
 [kfModel, trainset] = initialize(kfModel);
-%generate random initial point and inputs
-[x0,u] = getSampleXU(kfModel);
 
 %test: pretrain with n traj
 % for i=1:400
@@ -18,8 +16,19 @@ falsified = false;
 trainIter = 0;
 while trainIter <= kfModel.maxTrainSize && falsified==false
 
+    %if first iter, random trajectory setting selected, or critical trajectory is
+    %repeated, retrain with random xu else retrain with prev traj
+    if trainIter==0 || kfModel.trainRand>=2 || ( kfModel.trainRand==1 && rem(trainIter, 2) == 0) || checkRepeatedTraj(critX,critU, trainset)
+        [x0,u] = getSampleXU(kfModel);
+        [t, x, kfModel] = simulate(kfModel, x0, u);
+    else
+        x=critX; %pass x0 as full x to avoid simulation again
+        u=critU;
+        t=trainset.t{end}; %same as last simulation
+    end
+
     %run autokoopman and learn linearized model
-    [kfModel, trainset, A, B, g] = symbolicRFF(kfModel, trainset, x0, u);
+    [kfModel, trainset, A, B, g] = symbolicRFF(kfModel, trainset, x, u, t);
     % finf predicted falsifying initial set and inputs
     % compute reachable set for Koopman linearized model
     R = reachKoopman(A,B,g,kfModel);
@@ -32,7 +41,7 @@ while trainIter <= kfModel.maxTrainSize && falsified==false
         % run most critical inputs on the real system
         [t, critX, kfModel] = simulate(kfModel, critX0, critU);
 
-        testDraw(critU,critX,A,B,g,R); %test plot: delete me
+        testDraw(critU,critX,x0,A,B,g,R); %test plot: delete me
 
         spec=kfModel.soln.spec; %critical spec found with best value of robustness
         % different types of specifications
@@ -70,15 +79,6 @@ while trainIter <= kfModel.maxTrainSize && falsified==false
         end
     end
     trainIter=trainIter+1;
-
-    %retrain: if random trajectory setting selected or critical trajectory is
-    %repeated, retrain with random xu else retrain with prev traj
-    if kfModel.trainRand>=2 || ( kfModel.trainRand==1 && rem(trainIter, 2) == 0) || checkRepeatedTraj(critX,critU, trainset)
-        [x0,u] = getSampleXU(kfModel);
-    else
-        x0=critX; %pass x0 as full x to avoid simulation again
-        u=critU;
-    end
 end
 %close simulink kfModel
 close_system;
@@ -157,7 +157,7 @@ kfModel.specSolns = dictionary(kfModel.spec,struct);
 trainset.X = {}; trainset.XU={}; trainset.t = {};
 end
 
-function testDraw(critU,critX,A,B,g,R)
+function testDraw(critU,critX,x0,A,B,g,R)
 drawu=critU(:,2:end)';
 x = g(x0);
 for i = 1:size(drawu,2)

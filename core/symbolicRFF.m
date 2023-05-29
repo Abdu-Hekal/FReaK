@@ -1,11 +1,7 @@
-function [kfModel, trainset, A, B,g] = symbolicRFF(kfModel, trainset, x0, u)
+function [kfModel, trainset, A, B,g] = symbolicRFF(kfModel, trainset, x, u, t)
 
-    if size(x0,2) > 1
-        x=x0; %x0 passed is infact the full critical trajectory
-        trainset.t{end+1} = trainset.t{end}; %time step is same anyway
-    else
-        [trainset.t{end+1}, x, kfModel] = simulate(kfModel, x0, u);
-    end
+    %add trajectory to koopman trainset
+    trainset.t{end+1} = t;
     trainset.X{end+1} = x';
     %append zeros at end to account for last time point (which has no
     %inputs), but length must be consistant with trajectory states
