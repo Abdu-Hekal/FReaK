@@ -21,10 +21,14 @@ while trainIter <= kfModel.maxTrainSize && falsified==false
     %run autokoopman and learn linearized model
     [kfModel, trainset, A, B, g] = symbolicRFF(kfModel, trainset, x0, u);
     % finf predicted falsifying initial set and inputs
-    [critX0, critU, kfModel] = falsifyFixedModel(A,B,g,kfModel);
+    % compute reachable set for Koopman linearized model
+    R = reachKoopman(A,B,g,kfModel);
+    % determine most critical reachable set and specification
+    kfModel = critAlpha(R,kfModel);
 
     refineIter = 0;
     while refineIter <= 1 && falsified==false %refine once if not falsified
+        [critX0, critU] = falsifyingTrajectory(kfModel);
         % run most critical inputs on the real system
         [t, critX, kfModel] = simulate(kfModel, critX0, critU);
 
@@ -43,20 +47,14 @@ while trainIter <= kfModel.maxTrainSize && falsified==false
             kfModel.specSolns(spec).realRob=robustness; %store real robustness value
             falsified = ~isreal(sqrt(robustness)); %sqrt of -ve values are imaginary
 
-            if ~falsified %not falsifed, robustness > 0: re-solve with offset
-                disp("reached here")
-                disp(refineIter)
+            if ~falsified && refineIter < 1 %not falsifed, robustness > 0: re-solve with offset
                 Sys=kfModel.specSolns(spec).lti;
                 Sys.offset = robustness;
                 Sys.offsetCount = getRobOffset(spec.set,critX,vpa(linspace(0,kfModel.T,size(critX,1)')),robustness);
-                disp("offset")
-                disp(Sys.offset)
                 Sys=optimize(Sys);
                 kfModel.soln.alpha = value(Sys.Alpha); %new alpha value after offset
-                [critX0, critU] = falsifyingTrajectory(kfModel);
-
-                refineIter = refineIter+1;
             end
+            refineIter = refineIter+1;
 
             %training with best neighborhood trajectories
             if kfModel.trainRand==2
