@@ -35,6 +35,8 @@ if abs(min(diff(t)) - max(diff(t))) > eps
         'Only uniformly sampled traces are supported!'));
 end
 
+%convert stl to disjunctive normal form ??
+obj = disjunctiveNormalForm(obj);
 % Compute the robustness of the formula on the trace using a recursive function
 rho = recursive(obj,x,t,vars);
 rho = rho(1); %robustness must return one value
@@ -79,7 +81,7 @@ elseif strcmp(obj.type,'>')
 elseif strcmp(obj.type,'<=')
 
     lhs = recursive(obj.lhs,x,t,vars);
-    rho = obj.rhs-lhs - eps;
+    rho = obj.rhs-lhs + eps;
 
 elseif strcmp(obj.type,'>=')
 

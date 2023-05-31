@@ -84,7 +84,7 @@ elseif strcmp(obj.type,'<=')
 
     arCount=arCount+1;
     lhs = recursive(obj.lhs,x,t,vars,offset,iterCount);
-    rho = obj.rhs-lhs - eps;
+    rho = obj.rhs-lhs + eps;
     if arCount == iterCount
         rho = rho - offset;
     end
