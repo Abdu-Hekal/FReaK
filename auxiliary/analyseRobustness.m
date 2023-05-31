@@ -202,8 +202,6 @@ elseif strcmp(obj.type,'until')
         end
     end
 end
-disp(obj)
-disp(rho(1))
 %check that stl complies with times of trace
 if all(isnan(rho))
     error(['Error in logic formula defined, make sure that your time' ...
