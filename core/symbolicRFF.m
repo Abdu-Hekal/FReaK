@@ -1,11 +1,4 @@
-function [kfModel, trainset, A, B,g] = symbolicRFF(kfModel, trainset, x, u, t)
-
-    %add trajectory to koopman trainset
-    trainset.t{end+1} = t;
-    trainset.X{end+1} = x';
-    %append zeros at end to account for last time point (which has no
-    %inputs), but length must be consistant with trajectory states
-    trainset.XU{end+1} = [u(:,2:end)', zeros(size(u,2)-1,1)];
+function [kfModel, trainset, A, B,g] = symbolicRFF(kfModel, trainset)
 
     % AutoKoopman settings and run
     if ~isempty(kfModel.U) %check if kfModel has inputs

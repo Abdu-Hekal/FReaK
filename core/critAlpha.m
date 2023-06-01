@@ -69,9 +69,6 @@ for i = 1:size(spec,1)
         %if no prev soln for this spec, setup alpha & stl milp vars/constrs
         try
             Sys=prevSpecSol.lti; %get previously setup milp problem with stl
-            %reset offset and offset count
-            Sys.offset=0;
-            Sys.offsetCount=-1;
         catch
             Sys=Koopman_lti(R.zono(1:maxStlSteps),kfModel.dt);
             if ~kfModel.pulseInput %if not pulse input, set cpBool

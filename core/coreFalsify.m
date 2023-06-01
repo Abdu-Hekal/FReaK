@@ -22,6 +22,7 @@ while trainIter <= kfModel.maxTrainSize && falsified==false
     if trainIter==0 || kfModel.trainRand>=2 || ( kfModel.trainRand==1 && rem(trainIter, 2) == 0) || checkRepeatedTraj(critX,critU, trainset)
         [x0,u] = getSampleXU(kfModel);
         [t, x, kfModel] = simulate(kfModel, x0, u);
+        trainset=appendToTrainset(trainset,t,x,u);
     else
         x=critX; %pass x0 as full x to avoid simulation again
         u=critU;
@@ -29,7 +30,7 @@ while trainIter <= kfModel.maxTrainSize && falsified==false
     end
 
     %run autokoopman and learn linearized model
-    [kfModel, trainset, A, B, g] = symbolicRFF(kfModel, trainset, x, u, t);
+    [kfModel, trainset, A, B, g] = symbolicRFF(kfModel, trainset);
     % finf predicted falsifying initial set and inputs
     % compute reachable set for Koopman linearized model
     R = reachKoopman(A,B,g,kfModel);
@@ -37,10 +38,11 @@ while trainIter <= kfModel.maxTrainSize && falsified==false
     kfModel = critAlpha(R,kfModel);
 
     refineIter = 0;
-    while refineIter <=kfModel.refine && falsified==false %refine once if not falsified
+    while refineIter <= max(kfModel.refine,0) && falsified==false %refine once if not falsified
         [critX0, critU] = falsifyingTrajectory(kfModel);
         % run most critical inputs on the real system
         [t, critX, kfModel] = simulate(kfModel, critX0, critU);
+        trainset=appendToTrainset(trainset,t,x,u);
 
         testDraw(critU,critX,x0,A,B,g,R); %test plot: delete me
 
@@ -56,22 +58,32 @@ while trainIter <= kfModel.maxTrainSize && falsified==false
             kfModel.specSolns(spec).realRob=robustness; %store real robustness value
             falsified = ~isreal(sqrt(robustness)); %sqrt of -ve values are imaginary
 
-            if ~falsified && kfModel.refine %not falsifed yet and refine mode selected by user
+            newOffsetCount = getRobOffset(spec.set,critX,vpa(linspace(0,kfModel.T,size(critX,1)')),robustness); %TODO: speedup
+            if ~falsified && abs(kfModel.refine) %not falsifed yet and a refine mode selected by user
                 Sys=kfModel.specSolns(spec).lti;
-                if refineIter < kfModel.refine %if not yet offset and refine set to true, re-solve with offset
-                    Sys.offset = robustness + epsilon;
+                if refineIter==0 %if first refine iteration, re-solve with offset if refine==1 or save offset for next iter if refine==-1
+                    if Sys.offsetCount == newOffsetCount %if same offset count as b4 offset (i.e. same inequality)
+                        Sys.offset =  Sys.offset+robustness+epsilon;
+                    else
+                        Sys.offset = robustness + epsilon;
+
+                    end
                     disp(Sys.offset)
-                    Sys.offsetCount = getRobOffset(spec.set,critX,vpa(linspace(0,kfModel.T,size(critX,1)')),robustness); %TODO: speedup
-                    Sys=optimize(Sys);
-                    kfModel.soln.alpha = value(Sys.Alpha); %new alpha value after offset
+                    Sys.offsetCount = newOffsetCount;
+                    if kfModel.refine == 1 %if refine in this iteration selected
+                        Sys=optimize(Sys);
+                        kfModel.soln.alpha = value(Sys.Alpha); %new alpha value after offset
+                    else %kfModel.refine == -1: offset next iteration
+                        kfModel.specSolns(spec).lti=Sys;
+                    end
                     % TODO: if offset gives better val of robustness, should we pass
-                    % it as training data instead? should we pass both?
+                    %                     % it as training data instead? should we pass both?
                 else %if already offset and failed to falsify, increase epsilon
                     %check first if same offset count as b4 offset (i.e. same inequality)
-                    if Sys.offsetCount == getRobOffset(spec.set,critX,vpa(linspace(0,kfModel.T,size(critX,1)')),robustness)
-                        epsilon = epsilon + robustness; 
+                    if Sys.offsetCount == newOffsetCount
+                        epsilon = epsilon + robustness;
                     else
-                        epsilon = robustness; 
+                        epsilon = robustness;
                     end
                 end
             end
@@ -168,6 +180,15 @@ kfModel.bestSoln=struct; kfModel.bestSoln.rob=inf;
 kfModel.specSolns = dictionary(kfModel.spec,struct);
 %empty cells to store states, inputs and times for training trajectories
 trainset.X = {}; trainset.XU={}; trainset.t = {};
+end
+
+function trainset=appendToTrainset(trainset,t,x,u)
+%add trajectory to koopman trainset
+trainset.t{end+1} = t;
+trainset.X{end+1} = x';
+%append zeros at end to account for last time point (which has no
+%inputs), but length must be consistant with trajectory states
+trainset.XU{end+1} = [u(:,2:end)', zeros(size(u,2)-1,1)];
 end
 
 function testDraw(critU,critX,x0,A,B,g,R)

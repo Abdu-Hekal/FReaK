@@ -15,7 +15,8 @@ classdef KF_model
         %settings
         maxTrainSize %maximum number of simulations for training before terminating (default: 100)
         trainRand %int, set to 3 to train with random trajectory, 2 to train with random neighborhood trajectory, 0 to train with previously found crit trajectory or 1 to alternate between prev and random. (default: 0)
-        refine %bool, set true to refine with offset. (default: true)
+        refine %int, set 1 to refine with offset, 0 for no refine, -1 to offset next iteration (after retraining koopman model). (default: 1)
+        useOptimizer %bool set to true to use optimizer object. Not using optimizer means stl needs to be setup for milp everytime. setting up optimizer object also takes time. Time trade off?
         pulseInput %boolean, set to true if the inputs are pulse inputs, otherwise input is piecewise-constant (default: false)
 
         %autokoopman settings (struct)
@@ -42,7 +43,8 @@ classdef KF_model
             obj.model=model;
             obj.maxTrainSize=100;
             obj.trainRand=0;
-            obj.refine=true;
+            obj.refine=1;
+            obj.useOptimizer=1;
             obj.pulseInput = false;
 
             % autokoopman settings
