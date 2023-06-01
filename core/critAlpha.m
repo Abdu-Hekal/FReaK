@@ -69,6 +69,9 @@ for i = 1:size(spec,1)
         %if no prev soln for this spec, setup alpha & stl milp vars/constrs
         try
             Sys=prevSpecSol.lti; %get previously setup milp problem with stl
+            if ~kfModel.useOptimizer
+                Sys=setupStl(Sys,true); %encode stl using milp
+            end
         catch
             Sys=Koopman_lti(R.zono(1:maxStlSteps),kfModel.dt);
             if ~kfModel.pulseInput %if not pulse input, set cpBool
@@ -79,7 +82,11 @@ for i = 1:size(spec,1)
             disjSet = disjunctiveNormalForm(spec(i,1).set); %is this necassary?
             bluStl = coraBlustlConvert(disjSet); %convert from cora syntax to blustl
             Sys.stlList = {bluStl};
-            Sys=setupStl(Sys); %encode stl using milp
+            if kfModel.useOptimizer
+                Sys=setupStl(Sys,false); %encode stl using milp
+            else
+                Sys=setupStl(Sys,true);
+            end
         end
 
         Sys.reachZonos=R.zono(1:maxStlSteps); %update reach zonos with new
@@ -87,9 +94,11 @@ for i = 1:size(spec,1)
         kfModel.soln.milpSetupTime = kfModel.soln.milpSetupTime+toc;
         
         tic
-        Sys = setupOptimizer(Sys,kfModel.solverOpts);
+        if kfModel.useOptimizer
+            Sys = setupOptimizer(Sys,kfModel.solverOpts);
+        end
         specSoln.lti=Sys; %store lti object with setcup optimizer 
-        Sys=optimize(Sys);
+        Sys=optimize(Sys,kfModel.solverOpts);
         kfModel.soln.milpSolvTime =kfModel.soln.milpSolvTime+toc;
 
         %get results

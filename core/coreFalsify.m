@@ -66,12 +66,14 @@ while trainIter <= kfModel.maxTrainSize && falsified==false
                         Sys.offset =  Sys.offset+robustness+epsilon;
                     else
                         Sys.offset = robustness + epsilon;
-
                     end
                     disp(Sys.offset)
                     Sys.offsetCount = newOffsetCount;
                     if kfModel.refine == 1 %if refine in this iteration selected
-                        Sys=optimize(Sys);
+                        if ~kfModel.useOptimizer %if no optimizer object, setup stl with hardcoded offset
+                            Sys=setupStl(Sys,true);
+                        end
+                        Sys=optimize(Sys,kfModel.solverOpts);
                         kfModel.soln.alpha = value(Sys.Alpha); %new alpha value after offset
                     else %kfModel.refine == -1: offset next iteration
                         kfModel.specSolns(spec).lti=Sys;
@@ -83,7 +85,7 @@ while trainIter <= kfModel.maxTrainSize && falsified==false
                     if Sys.offsetCount == newOffsetCount
                         epsilon = epsilon + robustness;
                     else
-                        epsilon = robustness;
+                        epsilon = 0; %reset epsilon cause we now violate a different inequality
                     end
                 end
             end

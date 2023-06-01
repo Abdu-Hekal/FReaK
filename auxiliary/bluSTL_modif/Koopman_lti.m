@@ -46,8 +46,8 @@ classdef Koopman_lti
             Sys = KoopmanSetupAlpha(Sys);
         end
 
-        function Sys = setupStl(Sys)
-            Sys = koopmanSetupStl(Sys);
+        function Sys = setupStl(Sys,hardcoded)
+            Sys = koopmanSetupStl(Sys,hardcoded);
         end
 
         function Sys = setupReach(Sys)
@@ -62,7 +62,13 @@ classdef Koopman_lti
             Sys.optimizer = optimizer(constraints,objective,options,Sys.Ostl, output);
         end
 
-        function Sys = optimize(Sys)
+        function Sys = optimize(Sys,options)
+            if isempty(Sys.optimizer) %no optimizer object, optimize directly
+                constraints=[Sys.Falpha, Sys.Fstl, Sys.Freach];
+                objective = Sys.Pstl; %objective is to minimize robustness of stl formula (falsification)
+                %% call solverarch
+                optimize(constraints,objective,options);
+            else
             param = zeros(1,length(Sys.Ostl));
             if Sys.offsetCount>0 %we have an offset
                 param(Sys.offsetCount) = Sys.offset;
@@ -76,6 +82,7 @@ classdef Koopman_lti
                 disp(['Yalmip error (disturbance too bad ?): ' yalmiperror(errorflag1)]); % probably there is no controller for this w
             else
                 disp(['Yalmip error: ' yalmiperror(errorflag1)]); % some other error
+            end
             end
         end
 
