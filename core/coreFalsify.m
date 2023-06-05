@@ -22,12 +22,11 @@ while trainIter <= kfModel.maxTrainSize && falsified==false
     if trainIter==0 || kfModel.trainRand>=2 || ( kfModel.trainRand==1 && rem(trainIter, 2) == 0) || checkRepeatedTraj(critX,critU, trainset)
         [x0,u] = getSampleXU(kfModel);
         [t, x, kfModel] = simulate(kfModel, x0, u);
-        trainset=appendToTrainset(trainset,t,x,u);
     else
         x=critX; %pass x0 as full x to avoid simulation again
         u=critU;
-        t=trainset.t{end}; %same as last simulation
     end
+    trainset=appendToTrainset(trainset,t,x,u);
 
     %run autokoopman and learn linearized model
     [kfModel, trainset, A, B, g] = symbolicRFF(kfModel, trainset);
@@ -42,7 +41,6 @@ while trainIter <= kfModel.maxTrainSize && falsified==false
         [critX0, critU] = falsifyingTrajectory(kfModel);
         % run most critical inputs on the real system
         [t, critX, kfModel] = simulate(kfModel, critX0, critU);
-        trainset=appendToTrainset(trainset,t,x,u);
 
         testDraw(critU,critX,x0,A,B,g,R); %test plot: delete me
 
@@ -201,10 +199,10 @@ for i = 1:size(drawu,2)
 end
 figure; hold on; box on;
 for i=1:size(drawu,2)
-    plot(R.zono{i})
+    plot(R.zono{i},[4,5])
 end
-plot(x(1,1:800),x(2,1:800),'r','LineWidth',2);
-plot(critX(1:800,1),critX(1:800,2),'g','LineWidth',2)
+plot(x(4,1:end),x(5,1:end),'r','LineWidth',2);
+plot(critX(1:end,4),critX(1:end,5),'g','LineWidth',2)
 drawnow;
 end
 

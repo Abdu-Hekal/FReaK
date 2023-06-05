@@ -43,16 +43,16 @@ classdef KF_model
             obj.model=model;
             obj.maxTrainSize=100;
             obj.trainRand=0;
-            obj.refine=1;
-            obj.useOptimizer=1;
+            obj.refine=-1;
+            obj.useOptimizer=false;
             obj.pulseInput = false;
 
             % autokoopman settings
             obj.ak.obsType="rff";
-            obj.ak.nObs=20;
+            obj.ak.nObs=200;
             obj.ak.gridSlices=5;
             obj.ak.opt="grid";
-            obj.ak.rank=[0,200,40];
+            obj.ak.rank=[0,200,20];
 
             %default optimizer options
             solver = 'gurobi';  % gurobi, cplex, glpk
@@ -83,9 +83,10 @@ classdef KF_model
             if isa(obj.model, 'string') || isa(obj.model,"char")
                 [tout, yout] = run_simulink(obj.model, obj.T, obj.dt, x0, u);
             elseif isa(obj.model,'function_handle')
-                error('sim as a function handle not yet implemented')
+                %function handle must have 4 inputs T,dt,x0,u
+                [tout, yout] = obj.model(obj.T, obj.dt, x0, u);
             else
-                error('sim not supported')
+                error('model not supported')
             end
             obj.soln.sims = obj.soln.sims+1;
         end
