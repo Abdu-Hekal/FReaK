@@ -106,8 +106,8 @@ for i = 1:size(spec,1)
         alpha = value(Sys.Alpha);
 
         %clear solution from yalmip and assign only alpha for warmstarting
-        %         yalmip('clearsolution')
-        %         assign(Sys.Alpha,alpha)
+%         yalmip('clearsolution')
+%         assign(Sys.Alpha,alpha)
 
         %TODO: how can we compare stl robustness and reachset robustness.
         if rob_ < rob

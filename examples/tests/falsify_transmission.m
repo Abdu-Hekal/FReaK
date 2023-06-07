@@ -2,7 +2,7 @@
 % pyenv("Version",'/Users/b6062805/Documents/Koopman/autokoopman_vitualenv/bin/python','ExecutionMode','InProcess');
 % py.importlib.import_module('autokoopman');
 
-kfModel = model_AutoTransmission();
+kfModel = modelAutoTransmission();
 plot_vars = [1,2];
 
 [kfModel,trainset] = falsify(kfModel);

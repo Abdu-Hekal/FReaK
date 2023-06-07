@@ -8,7 +8,7 @@ classdef KF_model
 
         T %time horizon for simulation
         dt %time step
-        cp %control points for each input signal. needs to be an array of length equal to number of inputs. Needs to be a factor of T/dt
+        cp %control points for each input signal. needs to be an array of length equal to number of inputs. Needs to be a factor of T/dt & T/kdt
         %default is cp every dt. Note that values other than default are
         %currently only supported for spec of type stl formula.
 
@@ -21,6 +21,7 @@ classdef KF_model
 
         %autokoopman settings (struct)
         ak
+        %          .dt: koopman time step. default ak.dt=dt. Change to use coarser koopman step for quicker solution
         %         .obsType: type of observables (default="rff")
         %         .nObs: number of observables (default=100)
         %         .gridSlices: number of slices for grid parameter search (default=5)
@@ -43,16 +44,16 @@ classdef KF_model
             obj.model=model;
             obj.maxTrainSize=100;
             obj.trainRand=0;
-            obj.refine=-1;
-            obj.useOptimizer=false;
+            obj.refine=1;
+            obj.useOptimizer=true;
             obj.pulseInput = false;
 
             % autokoopman settings
             obj.ak.obsType="rff";
-            obj.ak.nObs=200;
+            obj.ak.nObs=10;
             obj.ak.gridSlices=5;
             obj.ak.opt="grid";
-            obj.ak.rank=[0,200,20];
+            obj.ak.rank=[0,10,5];
 
             %default optimizer options
             solver = 'gurobi';  % gurobi, cplex, glpk
@@ -66,6 +67,8 @@ classdef KF_model
                 'gurobi.MIPGap', gapLimit, ...
                 'gurobi.MIPGapAbs', gapAbsLimit, ...
                 'gurobi.SolutionLimit', solnLimit,...
+                'gurobi.Method',3,...
+                'gurobi.BarHomogeneous', 1,...
                 'usex0', 0 ...
                 );
             %                 'gurobi.MIPFocus',3,...

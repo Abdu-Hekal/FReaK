@@ -52,14 +52,14 @@ while trainIter <= kfModel.maxTrainSize && falsified==false
             falsified = ~all(spec.set.contains(critX')); %check this
         elseif strcmp(spec.type,'logic')
             robustness = computeRobustness(spec.set,critX,vpa(linspace(0,kfModel.T,size(critX,1)')))
-            %  breachRob = bReachRob(kfModel.spec,kfModel.soln.x,kfModel.soln.t)
+%             breachRob = bReachRob(spec,critX,t)
             kfModel.specSolns(spec).realRob=robustness; %store real robustness value
             falsified = ~isreal(sqrt(robustness)); %sqrt of -ve values are imaginary
 
             newOffsetCount = getRobOffset(spec.set,critX,vpa(linspace(0,kfModel.T,size(critX,1)')),robustness); %TODO: speedup
             if ~falsified && abs(kfModel.refine) %not falsifed yet and a refine mode selected by user
-                Sys=kfModel.specSolns(spec).lti;
                 if refineIter==0 %if first refine iteration, re-solve with offset if refine==1 or save offset for next iter if refine==-1
+                    Sys=kfModel.specSolns(spec).lti;
                     if Sys.offsetCount == newOffsetCount %if same offset count as b4 offset (i.e. same inequality)
                         Sys.offset =  Sys.offset+robustness+epsilon;
                     else
@@ -192,6 +192,7 @@ trainset.XU{end+1} = [u(:,2:end)', zeros(size(u,2)-1,1)];
 end
 
 function testDraw(critU,critX,x0,A,B,g,R)
+plotVars=[1,2];
 drawu=critU(:,2:end)';
 x = g(x0);
 for i = 1:size(drawu,2)
@@ -199,10 +200,10 @@ for i = 1:size(drawu,2)
 end
 figure; hold on; box on;
 for i=1:size(drawu,2)
-    plot(R.zono{i},[4,5])
+    plot(R.zono{i},plotVars)
 end
-plot(x(4,1:end),x(5,1:end),'r','LineWidth',2);
-plot(critX(1:end,4),critX(1:end,5),'g','LineWidth',2)
+plot(x(plotVars(1),1:end),x(plotVars(2),1:end),'r','LineWidth',2);
+plot(critX(1:end,plotVars(1)),critX(1:end,plotVars(2)),'g','LineWidth',2)
 drawnow;
 end
 
