@@ -41,10 +41,13 @@ while trainIter <= kfModel.maxTrainSize && falsified==false
     refineIter = 0;
     while refineIter <= max(kfModel.refine,0) && falsified==false %refine once if not falsified
         [critX0, critU] = falsifyingTrajectory(kfModel);
+        %repeat input for all timesteps T/dt 
+        oldU=critU; %test deleteme
+        critU=repelem(critU,abstr,1);
         % run most critical inputs on the real system
         [t, critX, kfModel] = simulate(kfModel, critX0, critU);
+        testDraw(oldU,critX,x0,A,B,g,R); %test plot: delete me
 
-        testDraw(critU,critX,x0,A,B,g,R); %test plot: delete me
 
         spec=kfModel.soln.spec; %critical spec found with best value of robustness
         % different types of specifications
