@@ -61,7 +61,7 @@ for i = 1:size(spec,1)
     elseif strcmp(spec(i,1).type,'logic')
         %compute max time required to falsify stl and use it if less than
         %sim time (avoids unnecessary optim variables)
-        maxStlSteps = min(maxStlTime(spec(i,1).set)/kfModel.dt,length(R.zono));
+        maxStlSteps = min(maxStlTime(spec(i,1).set)/kfModel.ak.dt,length(R.zono));
         %get prev solns
         prevSpecSol = kfModel.specSolns(kfModel.spec(i,1));
         %setup and run bluSTL
@@ -73,7 +73,7 @@ for i = 1:size(spec,1)
                 Sys=setupStl(Sys,true); %encode stl using milp
             end
         catch
-            Sys=Koopman_lti(R.zono(1:maxStlSteps),kfModel.dt);
+            Sys=Koopman_lti(R.zono(1:maxStlSteps),kfModel.ak.dt);
             if ~kfModel.pulseInput %if not pulse input, set cpBool
                 Sys.cpBool=kfModel.cpBool;
             end

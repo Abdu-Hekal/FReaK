@@ -2,7 +2,7 @@ function R = reachKoopman(A,B,g,kfModel)
 % compute reachable set for Koopman linearized model
 
 %setup
-dt=kfModel.dt;
+dt=kfModel.ak.dt;
 R0=kfModel.R0;
 U=kfModel.U;
 tFinal=kfModel.T;

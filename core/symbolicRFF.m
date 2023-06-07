@@ -1,4 +1,4 @@
-function [kfModel, trainset, A, B,g] = symbolicRFF(kfModel, trainset)
+function [kfModel, A, B,g] = symbolicRFF(kfModel, trainset)
 
     % AutoKoopman settings and run
     if ~isempty(kfModel.U) %check if kfModel has inputs

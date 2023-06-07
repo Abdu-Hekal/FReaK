@@ -63,8 +63,11 @@ else
     u = [];
 end
 %append zeros for remaining steps if no input given.
-all_steps = kfModel.T/kfModel.dt;
+all_steps = kfModel.T/kfModel.ak.dt;
 u = [u';zeros(size(u,1),all_steps-size(u,2))']; 
 %append time points as first column
-u = [linspace(0,kfModel.T-kfModel.dt,all_steps)',u];
+u = [linspace(0,kfModel.T-kfModel.ak.dt,all_steps)',u];
+%repeat input for all timesteps T/dt 
+abstr = kfModel.ak.dt/kfModel.dt; %define abstraction ratio 
+u=repelem(u,abstr,1);
 end

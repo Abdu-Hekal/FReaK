@@ -10,14 +10,15 @@ function [x0,u] = getRandomSampleXU(model)
 %generate random initial set
 x0 = randPoint(model.R0);
 %generate random input if model has input.
+cp = model.cp*(model.dt/model.ak.dt); %get new cp array based on koopman timestep
 if ~isempty(model.U)
     all_steps = model.T/model.dt;
     u = randPoint(model.U,all_steps)';
     if model.pulseInput
         u = u.*model.cpBool;
     else %piecewise constant input
-        for k=1:length(model.cp)
-            uk = model.cp(k);
+        for k=1:length(cp)
+            uk = cp(k);
             u(:,k) = repelem(u(1:uk,k),length(u(:,k))/uk);
         end
     end
@@ -27,7 +28,7 @@ else
 end
 end
 
-function [x0,u]=getDispSampleXU(model)
+function [x0,u]=getDispSampleXU(model) %TODO: implement control points
     % current values of input and initial state and valid ranges
     u = model.bestSoln.u(:,2:end);
     x0 = model.bestSoln.x(1,:)';

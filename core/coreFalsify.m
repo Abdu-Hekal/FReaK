@@ -26,11 +26,13 @@ while trainIter <= kfModel.maxTrainSize && falsified==false
         x=critX; %pass x0 as full x to avoid simulation again
         u=critU;
     end
+    abstr = kfModel.ak.dt/kfModel.dt; %define abstraction ratio
+    t=t(1:abstr:end); x=x(1:abstr:end,:); u=u(1:abstr:end,:);
     trainset=appendToTrainset(trainset,t,x,u);
 
     %run autokoopman and learn linearized model
-    [kfModel, trainset, A, B, g] = symbolicRFF(kfModel, trainset);
-    % finf predicted falsifying initial set and inputs
+    [kfModel, A, B, g] = symbolicRFF(kfModel, trainset);
+    % find predicted falsifying initial set and inputs
     % compute reachable set for Koopman linearized model
     R = reachKoopman(A,B,g,kfModel);
     % determine most critical reachable set and specification
@@ -138,9 +140,18 @@ assert(isa(kfModel.R0, 'interval'), 'Initial set (kfModel.R0) must be defined as
 assert(~isempty(kfModel.T) & isnumeric(kfModel.T), 'Time horizon (kfModel.T) must be defined as a numeric')
 assert(~isempty(kfModel.dt) & isnumeric(kfModel.dt), 'Time step (kfModel.dt) must be defined as a numeric')
 assert(isa(kfModel.spec, 'specification'), 'Falsifying spec (kfModel.spec) must be defined as a CORA specification')
+all_steps = kfModel.T/kfModel.dt;
+assert(floor(all_steps)==all_steps,'Time step (dt) must be a factor of Time horizon (T)')
 
-%add dt to autokoopman settings as well
-kfModel.ak.dt=kfModel.dt;
+%add dt to autokoopman settings as well if it is not set
+if isempty(kfModel.ak.dt)
+    kfModel.ak.dt=kfModel.dt;
+else
+    abstr = kfModel.ak.dt/kfModel.dt; %define abstraction ratio
+    assert(floor(abstr)==abstr,'time step of koopman (ak.dt) must be a multiple of dt')
+    allAbstrSteps = kfModel.T/kfModel.ak.dt;
+    assert(floor(allAbstrSteps)==allAbstrSteps,'time step of koopman (ak.dt) must be a multiple of dt')
+end
 % ensure that autokoopman rank is an integer
 kfModel.ak.rank=int64(kfModel.ak.rank);
 
@@ -158,9 +169,6 @@ if ~isempty(kfModel.U) %check if kfModel has inputs
     end
 
     assert(length(kfModel.U)==length(kfModel.cp),'Number of control points (kfModel.cp) must be equal to number of inputs (kfModel.U)')
-
-    all_steps = kfModel.T/kfModel.dt;
-    assert(floor(all_steps)==all_steps,'Time step (dt) must be a factor of Time horizon (T)')
 
     kfModel.cpBool = zeros(all_steps,length(kfModel.U));
     for k=1:length(kfModel.cp)
@@ -199,9 +207,9 @@ for i = 1:size(drawu,2)
     x = [x, A*x(:,end) + B*drawu(:,i)];
 end
 figure; hold on; box on;
-for i=1:size(drawu,2)
-    plot(R.zono{i},plotVars)
-end
+% for i=1:size(drawu,2)
+%     plot(R.zono{i},plotVars)
+% end
 plot(x(plotVars(1),1:end),x(plotVars(2),1:end),'r','LineWidth',2);
 plot(critX(1:end,plotVars(1)),critX(1:end,plotVars(2)),'g','LineWidth',2)
 drawnow;
