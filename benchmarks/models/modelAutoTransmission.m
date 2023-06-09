@@ -20,6 +20,7 @@ function model = model_AutoTransmission()
     model.T=30; 
     model.dt = 0.01;
     model.ak.dt=0.1;
+    model.refine=0;
     model.cp=[3000 3000];
 
     x = stl('x',3);

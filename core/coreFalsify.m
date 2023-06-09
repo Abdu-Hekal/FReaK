@@ -17,6 +17,11 @@ trainIter = 0;
 epsilon = eps; %epsilon value to add to offset
 while trainIter <= kfModel.maxTrainSize && falsified==false
 
+    %empty trainset after first iter because it is random trajectory
+    if trainIter == 1
+        trainset.X = {}; trainset.XU={}; trainset.t = {};
+    end
+
     %if first iter, random trajectory setting selected, or critical trajectory is
     %repeated, retrain with random xu else retrain with prev traj
     if trainIter==0 || kfModel.trainRand>=2 || ( kfModel.trainRand==1 && rem(trainIter, 2) == 0) || checkRepeatedTraj(critX,critU, trainset)
@@ -41,12 +46,12 @@ while trainIter <= kfModel.maxTrainSize && falsified==false
     refineIter = 0;
     while refineIter <= max(kfModel.refine,0) && falsified==false %refine once if not falsified
         [critX0, critU] = falsifyingTrajectory(kfModel);
-        %repeat input for all timesteps T/dt 
+        %repeat input for all timesteps T/dt
         oldU=critU; %test deleteme
         critU=repelem(critU,abstr,1);
         % run most critical inputs on the real system
         [t, critX, kfModel] = simulate(kfModel, critX0, critU);
-        testDraw(oldU,critX,x0,A,B,g,R); %test plot: delete me
+        testDraw(oldU,critX,t,t(1:abstr:end),x0,A,B,g,R); %test plot: delete me
 
 
         spec=kfModel.soln.spec; %critical spec found with best value of robustness
@@ -56,13 +61,17 @@ while trainIter <= kfModel.maxTrainSize && falsified==false
         elseif strcmp(spec.type,'safeSet')
             falsified = ~all(spec.set.contains(critX')); %check this
         elseif strcmp(spec.type,'logic')
+            tic
             robustness = computeRobustness(spec.set,critX,vpa(linspace(0,kfModel.T,size(critX,1)')))
-%             breachRob = bReachRob(spec,critX,t)
+            toc
+            tic
+            robustness = bReachRob(spec,critX,t)
+            toc
             kfModel.specSolns(spec).realRob=robustness; %store real robustness value
             falsified = ~isreal(sqrt(robustness)); %sqrt of -ve values are imaginary
 
-            newOffsetCount = getRobOffset(spec.set,critX,vpa(linspace(0,kfModel.T,size(critX,1)')),robustness); %TODO: speedup
             if ~falsified && abs(kfModel.refine) %not falsifed yet and a refine mode selected by user
+                newOffsetCount = getRobOffset(spec.set,critX,vpa(linspace(0,kfModel.T,size(critX,1)')),robustness); %TODO: speedup
                 if refineIter==0 %if first refine iteration, re-solve with offset if refine==1 or save offset for next iter if refine==-1
                     Sys=kfModel.specSolns(spec).lti;
                     if Sys.offsetCount == newOffsetCount %if same offset count as b4 offset (i.e. same inequality)
@@ -202,8 +211,8 @@ trainset.X{end+1} = x';
 trainset.XU{end+1} = [u(:,2:end)', zeros(size(u,2)-1,1)];
 end
 
-function testDraw(critU,critX,x0,A,B,g,R)
-plotVars=[1,2];
+function testDraw(critU,critX,t,xt,x0,A,B,g,R)
+plotVars=[3];
 drawu=critU(:,2:end)';
 x = g(x0);
 for i = 1:size(drawu,2)
@@ -213,8 +222,13 @@ figure; hold on; box on;
 % for i=1:size(drawu,2)
 %     plot(R.zono{i},plotVars)
 % end
-plot(x(plotVars(1),1:end),x(plotVars(2),1:end),'r','LineWidth',2);
-plot(critX(1:end,plotVars(1)),critX(1:end,plotVars(2)),'g','LineWidth',2)
+if ~any(size(plotVars)>[1,1]) %singular plot var, plot against time
+    plot(xt,x(plotVars(1),1:end),'r','LineWidth',2);
+    plot(t,critX(1:end,plotVars(1)),'g','LineWidth',2)
+else
+    plot(x(plotVars(1),1:end),x(plotVars(2),1:end),'r','LineWidth',2);
+    plot(critX(1:end,plotVars(1)),critX(1:end,plotVars(2)),'g','LineWidth',2)
+end
 drawnow;
 end
 

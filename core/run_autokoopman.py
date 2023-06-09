@@ -14,7 +14,10 @@ def run(times, trajectories, param_dict, inputs_list):
     ids = np.arange(0, len(training_data)).tolist()
     training_data = traj.TrajectoriesData(dict(zip(ids, training_data)))
 
-    n_splits = training_data.n_trajs if training_data.n_trajs>1 else None
+    if training_data.n_trajs > 3:
+        n_splits = int(training_data.n_trajs/2) if training_data.n_trajs%2==0 else None
+    else:
+        n_splits=None
 
     experiment_results = auto_koopman(
         training_data,  # list of trajectories
