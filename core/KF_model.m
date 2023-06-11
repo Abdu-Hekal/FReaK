@@ -28,8 +28,10 @@ classdef KF_model
         %         .opt: tuner of type "grid", "bopt", or "monte-carlo" (default=grid)
         %         .rank: set of ranks to try of DMD rank parameter (default=[1,200,20]) 
 
-        %solver (optimizer) options (sdpsettings)
-        solverOpts
+        %solver/optimizer (struct)
+        solver
+        %         .dt: solver time step. default solver.dt=ak.dt Change to use coarser solver step when setting up stl constraints for quicker solution
+        %         .opts: solver options (sdpsettings)
 
         %internal properties
         soln %internally defined property that stores the solution for last iteration (do not change)
@@ -52,8 +54,8 @@ classdef KF_model
             obj.ak.obsType="rff";
             obj.ak.nObs=20;
             obj.ak.gridSlices=5;
-            obj.ak.opt="monte-carlo"; %grid
-            obj.ak.rank=[0,20,1];
+            obj.ak.opt="grid"; %grid
+            obj.ak.rank=[0,20,4];
 
             %default optimizer options
             solver = 'gurobi';  % gurobi, cplex, glpk
@@ -61,8 +63,8 @@ classdef KF_model
             gapLimit = 0.01; %0.01;
             gapAbsLimit = 0.1; %0.1;
             solnLimit = Inf;
-            verb = 2;
-            obj.solverOpts = sdpsettings('verbose', verb,'solver', solver, ...
+            verb = 0;
+            obj.solver.opts = sdpsettings('verbose', verb,'solver', solver, ...
                 'gurobi.TimeLimit', timeLimit, ...
                 'gurobi.MIPGap', gapLimit, ...
                 'gurobi.MIPGapAbs', gapAbsLimit, ...

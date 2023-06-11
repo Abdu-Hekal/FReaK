@@ -53,7 +53,6 @@ while trainIter <= kfModel.maxTrainSize && falsified==false
         [t, critX, kfModel] = simulate(kfModel, critX0, critU);
         testDraw(oldU,critX,t,t(1:abstr:end),x0,A,B,g,R); %test plot: delete me
 
-
         spec=kfModel.soln.spec; %critical spec found with best value of robustness
         % different types of specifications
         if strcmp(spec.type,'unsafeSet')
@@ -61,12 +60,7 @@ while trainIter <= kfModel.maxTrainSize && falsified==false
         elseif strcmp(spec.type,'safeSet')
             falsified = ~all(spec.set.contains(critX')); %check this
         elseif strcmp(spec.type,'logic')
-            tic
-            robustness = computeRobustness(spec.set,critX,vpa(linspace(0,kfModel.T,size(critX,1)')))
-            toc
-            tic
             robustness = bReachRob(spec,critX,t)
-            toc
             kfModel.specSolns(spec).realRob=robustness; %store real robustness value
             falsified = ~isreal(sqrt(robustness)); %sqrt of -ve values are imaginary
 
@@ -85,7 +79,7 @@ while trainIter <= kfModel.maxTrainSize && falsified==false
                         if ~kfModel.useOptimizer %if no optimizer object, setup stl with hardcoded offset
                             Sys=setupStl(Sys,true);
                         end
-                        Sys=optimize(Sys,kfModel.solverOpts);
+                        Sys=optimize(Sys,kfModel.solver.opts);
                         kfModel.soln.alpha = value(Sys.Alpha); %new alpha value after offset
                     else %kfModel.refine == -1: offset next iteration
                         kfModel.specSolns(spec).lti=Sys;
@@ -129,6 +123,7 @@ kfModel.soln.falsified=falsified;
 kfModel.soln.trainIter=trainIter;
 kfModel.soln.sims=kfModel.soln.sims-1; %last sim that finds critical trace not counted?
 kfModel.soln.runtime=toc(runtime); %record runtime
+fprintf("number of simulations to falsify %d \n",kfModel.soln.sims)
 end
 
 function repeatedTraj = checkRepeatedTraj(critX,critU, trainset)
@@ -155,15 +150,26 @@ assert(isa(kfModel.spec, 'specification'), 'Falsifying spec (kfModel.spec) must 
 all_steps = kfModel.T/kfModel.dt;
 assert(floor(all_steps)==all_steps,'Time step (dt) must be a factor of Time horizon (T)')
 
-%add dt to autokoopman settings as well if it is not set
+%set autokoopman timestep if it is not set, else check it is compliant.
 if isempty(kfModel.ak.dt)
     kfModel.ak.dt=kfModel.dt;
 else
     abstr = kfModel.ak.dt/kfModel.dt; %define abstraction ratio
-    assert(floor(abstr)==abstr,'time step of koopman (ak.dt) must be a multiple of dt')
+    assert(floor(abstr)==abstr,'Time step of koopman (ak.dt) must be a multiple of dt')
     allAbstrSteps = kfModel.T/kfModel.ak.dt;
-    assert(floor(allAbstrSteps)==allAbstrSteps,'time step of koopman (ak.dt) must be a multiple of dt')
+    assert(floor(allAbstrSteps)==allAbstrSteps,'Time step of koopman (ak.dt) must be a factor of Time horizon (T)')
 end
+
+%set solver timestep if it is not set, else check it is compliant.
+if isempty(kfModel.solver.dt)
+    kfModel.solver.dt=kfModel.ak.dt;
+else
+    abstr = kfModel.solver.dt/kfModel.ak.dt; %define abstraction ratio
+    assert(floor(abstr)==abstr,'Time step of solver (solver.dt) must be a multiple of koopman time step (ak.dt)')
+    allAbstrSteps = kfModel.T/kfModel.solver.dt;
+    assert(floor(allAbstrSteps)==allAbstrSteps,'Time step of solver (solver.dt) must be a factor of Time horizon (T)')
+end
+
 % ensure that autokoopman rank is an integer
 kfModel.ak.rank=int64(kfModel.ak.rank);
 
@@ -212,20 +218,20 @@ trainset.XU{end+1} = [u(:,2:end)', zeros(size(u,2)-1,1)];
 end
 
 function testDraw(critU,critX,t,xt,x0,A,B,g,R)
-plotVars=[3];
+plotVars=[3]; %[1,2];
 drawu=critU(:,2:end)';
 x = g(x0);
 for i = 1:size(drawu,2)
     x = [x, A*x(:,end) + B*drawu(:,i)];
 end
 figure; hold on; box on;
-% for i=1:size(drawu,2)
-%     plot(R.zono{i},plotVars)
-% end
 if ~any(size(plotVars)>[1,1]) %singular plot var, plot against time
     plot(xt,x(plotVars(1),1:end),'r','LineWidth',2);
     plot(t,critX(1:end,plotVars(1)),'g','LineWidth',2)
 else
+    for i=1:size(drawu,2)
+        plot(R.zono{i},plotVars)
+    end
     plot(x(plotVars(1),1:end),x(plotVars(2),1:end),'r','LineWidth',2);
     plot(critX(1:end,plotVars(1)),critX(1:end,plotVars(2)),'g','LineWidth',2)
 end

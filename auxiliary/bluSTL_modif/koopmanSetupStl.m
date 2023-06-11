@@ -1,7 +1,10 @@
 function Sys = koopmanSetupStl(Sys,hardcoded)
 
 %% STL formula
-var = struct('X',Sys.X);
+n = Sys.solverdt/Sys.koopdt; %evaluate stl formula every n koopman time steps 
+X = Sys.X(:,1:n:end);
+var = struct('X',X);
+L=size(X,2);
 
 stlList= KoopmanParseStlLabels(Sys);
 M = Sys.bigM;
@@ -13,10 +16,10 @@ phi = STLformula('phi', stlList{1});
 if hardcoded
     global vkmrCount %globl count to track wihch subpred to offset in milp
     vkmrCount=0;
-    [Fstl, Pstl] = hardCodedvectorKoopmanMilpRobust(phi,1,Sys.L+1,Sys.dt,var,M,normz,Sys.offset,Sys.offsetCount);
+    [Fstl, Pstl] = hardCodedvectorKoopmanMilpRobust(phi,1,L,Sys.solverdt,var,M,normz,Sys.offset,Sys.offsetCount);
     Ostl = {};
 else
-    [Fstl, Pstl, Ostl] = vector_KoopmanMilpRobust(phi, 1, Sys.L+1, Sys.dt, var,M, normz);
+    [Fstl, Pstl, Ostl] = vector_KoopmanMilpRobust(phi, 1, L, Sys.solverdt, var,M, normz);
 end
 
 %assign stl optim variables and constraints

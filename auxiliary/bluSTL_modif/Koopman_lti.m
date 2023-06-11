@@ -1,7 +1,8 @@
 classdef Koopman_lti
     properties
         reachZonos = [] %reachable zonotopes
-        dt %time_step
+        koopdt %koopman time_step
+        solverdt %solver time step for setting up stl, i.e. points where to evaluate stl
 
         stlList %stl list to falsify
         cpBool %boolean array representing cp points
@@ -33,9 +34,10 @@ classdef Koopman_lti
 
     methods
         % Constructor
-        function Sys = Koopman_lti(reachZonos,dt)
+        function Sys = Koopman_lti(reachZonos,koopdt,solverdt)
             Sys.reachZonos = reachZonos;
-            Sys.dt=dt;
+            Sys.koopdt=koopdt;
+            Sys.solverdt=solverdt;
 
             %intitalise offset and count to zero
             Sys.offset=0;

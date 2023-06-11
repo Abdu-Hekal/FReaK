@@ -61,7 +61,7 @@ for i = 1:size(spec,1)
     elseif strcmp(spec(i,1).type,'logic')
         %compute max time required to falsify stl and use it if less than
         %sim time (avoids unnecessary optim variables)
-        maxStlSteps = min(maxStlTime(spec(i,1).set)/kfModel.ak.dt,length(R.zono));
+        maxStlSteps = min((maxStlTime(spec(i,1).set)/kfModel.ak.dt)+1,length(R.zono));
         %get prev solns
         prevSpecSol = kfModel.specSolns(kfModel.spec(i,1));
         %setup and run bluSTL
@@ -73,7 +73,7 @@ for i = 1:size(spec,1)
                 Sys=setupStl(Sys,true); %encode stl using milp
             end
         catch
-            Sys=Koopman_lti(R.zono(1:maxStlSteps),kfModel.ak.dt);
+            Sys=Koopman_lti(R.zono(1:maxStlSteps),kfModel.ak.dt,kfModel.solver.dt);
             if ~kfModel.pulseInput %if not pulse input, set cpBool
                 Sys.cpBool=kfModel.cpBool;
             end
@@ -92,13 +92,13 @@ for i = 1:size(spec,1)
         Sys.reachZonos=R.zono(1:maxStlSteps); %update reach zonos with new
         Sys = setupReach(Sys);
         kfModel.soln.milpSetupTime = kfModel.soln.milpSetupTime+toc;
-        
+
         tic
         if kfModel.useOptimizer
-            Sys = setupOptimizer(Sys,kfModel.solverOpts);
+            Sys = setupOptimizer(Sys,kfModel.solver.opts);
         end
-        specSoln.lti=Sys; %store lti object with setcup optimizer 
-        Sys=optimize(Sys,kfModel.solverOpts);
+        specSoln.lti=Sys; %store lti object with setcup optimizer
+        Sys=optimize(Sys,kfModel.solver.opts);
         kfModel.soln.milpSolvTime =kfModel.soln.milpSolvTime+toc;
 
         %get results
@@ -106,8 +106,8 @@ for i = 1:size(spec,1)
         alpha = value(Sys.Alpha);
 
         %clear solution from yalmip and assign only alpha for warmstarting
-%         yalmip('clearsolution')
-%         assign(Sys.Alpha,alpha)
+        %         yalmip('clearsolution')
+        %         assign(Sys.Alpha,alpha)
 
         %TODO: how can we compare stl robustness and reachset robustness.
         if rob_ < rob
@@ -224,10 +224,10 @@ end
             maxTime=maxTime+obj.to;
         end
         if ~isempty(obj.lhs)
-            maxTime=maxTime(obj.lhs)
+            maxTime=maxTime(obj.lhs);
         end
         if ~isempty(obj.rhs)
-            maxTime=maxTime(obj.rhs)
+            maxTime=maxTime(obj.rhs);
         end
     end
 
