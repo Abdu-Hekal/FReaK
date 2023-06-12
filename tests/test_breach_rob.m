@@ -10,6 +10,8 @@ Bdata.AddTrace(trace);
 
 
 phi = STL_Formula('phi', '(alw_[0,0.2] humidity[t]<=0.5) until_[0.5,1] temperature[t]>=0.5');
+% phi = STL_Formula('phi', '(alw_[0,0.2] humidity[t]<=0.5) until_[0.5,1] humidity[t]<=0.5');
+
 % phi = STL_Formula('phi', 'ev (humidity[t]>0.8)');
 % phi = STL_Formula('phi', 'alw_[0.4,0.6] (humidity[t]>1.1)');
 % phi = STL_Formula('phi', 'alw((alw humidity[t]>0.8) until (temperature[t]>-0.9))');
@@ -29,10 +31,9 @@ Rphi = BreachRequirement(phi);
 
 robustness = @(Bdata) Rphi.Eval(Bdata);
 
-robustness(Bdata)
+rob=robustness(Bdata);
+culprit=bReachCulprit(Bdata,phi,rob)
 
-traj.X = trace(:, 2:end)';
-traj.time = trace(:,1)';
 
 
 

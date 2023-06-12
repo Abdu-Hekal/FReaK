@@ -60,12 +60,13 @@ while trainIter <= kfModel.maxTrainSize && falsified==false
         elseif strcmp(spec.type,'safeSet')
             falsified = ~all(spec.set.contains(critX')); %check this
         elseif strcmp(spec.type,'logic')
-            robustness = bReachRob(spec,critX,t)
+            [Bdata,phi,robustness] = bReachRob(spec,critX,t);
+            robustness
             kfModel.specSolns(spec).realRob=robustness; %store real robustness value
             falsified = ~isreal(sqrt(robustness)); %sqrt of -ve values are imaginary
 
             if ~falsified && abs(kfModel.refine) %not falsifed yet and a refine mode selected by user
-                newOffsetCount = getRobOffset(spec.set,critX,vpa(linspace(0,kfModel.T,size(critX,1)')),robustness); %TODO: speedup
+                newOffsetCount = bReachCulprit(Bdata,phi,robustness); %get no. of predicate responsible for robustness value 
                 if refineIter==0 %if first refine iteration, re-solve with offset if refine==1 or save offset for next iter if refine==-1
                     Sys=kfModel.specSolns(spec).lti;
                     if Sys.offsetCount == newOffsetCount %if same offset count as b4 offset (i.e. same inequality)
@@ -73,7 +74,8 @@ while trainIter <= kfModel.maxTrainSize && falsified==false
                     else
                         Sys.offset = robustness + epsilon;
                     end
-                    disp(Sys.offset)
+                    Sys.offset
+                    newOffsetCount
                     Sys.offsetCount = newOffsetCount;
                     if kfModel.refine == 1 %if refine in this iteration selected
                         if ~kfModel.useOptimizer %if no optimizer object, setup stl with hardcoded offset
@@ -218,7 +220,7 @@ trainset.XU{end+1} = [u(:,2:end)', zeros(size(u,2)-1,1)];
 end
 
 function testDraw(critU,critX,t,xt,x0,A,B,g,R)
-plotVars=[3]; %[1,2];
+plotVars=[3]; %[3];
 drawu=critU(:,2:end)';
 x = g(x0);
 for i = 1:size(drawu,2)
