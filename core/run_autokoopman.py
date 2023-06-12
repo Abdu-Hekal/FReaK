@@ -43,6 +43,11 @@ def run(times, trajectories, param_dict, inputs_list):
     koopman_model = {"A": A, "B": B, "w": w, "u": u}
     savemat("autokoopman_model.mat", koopman_model)
 
+    params = experiment_results['hyperparameters']
+    paramVals = experiment_results['hyperparameter_values']
+    print(params)
+    print(paramVals)
+
     return koopman_model
 
 koopman_model = run(times,trajectories, param_dict,inputs_list)

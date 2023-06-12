@@ -1,39 +1,39 @@
-function [x0,u] = getSampleXU(model)
-if model.bestSoln.rob==inf %no previous solution, i.e. first iteration
-    [x0,u]=getRandomSampleXU(model);
+function [x0,u] = getSampleXU(kfModel)
+if kfModel.bestSoln.rob==inf %no previous solution, i.e. first iteration or kfModel.trainRand~=2
+    [x0,u]=getRandomSampleXU(kfModel);
 else
-    [x0,u]=getDispSampleXU(model);
+    [x0,u]=getDispSampleXU(kfModel);
 end
 end
 
-function [x0,u] = getRandomSampleXU(model)
+function [x0,u] = getRandomSampleXU(kfModel)
 %generate random initial set
-x0 = randPoint(model.R0);
-%generate random input if model has input.
-cp = model.cp*(model.dt/model.ak.dt); %get new cp array based on koopman timestep
-if ~isempty(model.U)
-    all_steps = model.T/model.dt;
-    u = randPoint(model.U,all_steps)';
-    if model.pulseInput
-        u = u.*model.cpBool;
+x0 = randPoint(kfModel.R0);
+%generate random input if kfModel has input.
+cp = kfModel.cp*(kfModel.dt/kfModel.ak.dt); %get new cp array based on koopman timestep
+if ~isempty(kfModel.U)
+    all_steps = kfModel.T/kfModel.dt;
+    u = randPoint(kfModel.U,all_steps)';
+    if kfModel.pulseInput
+        u = u.*kfModel.cpBool;
     else %piecewise constant input
         for k=1:length(cp)
             uk = cp(k);
             u(:,k) = repelem(u(1:uk,k),length(u(:,k))/uk);
         end
     end
-    u = [linspace(0,model.T-model.dt,all_steps)',u];
+    u = [linspace(0,kfModel.T-kfModel.dt,all_steps)',u];
 else
     u = [];
 end
 end
 
-function [x0,u]=getDispSampleXU(model) %TODO: implement control points
+function [x0,u]=getDispSampleXU(kfModel) %TODO: implement control points
     % current values of input and initial state and valid ranges
-    u = model.bestSoln.u(:,2:end);
-    x0 = model.bestSoln.x(1,:)';
-    uRange = model.U;
-    x0Range = model.R0;
+    u = kfModel.bestSoln.u(:,2:end);
+    x0 = kfModel.bestSoln.x(1,:)';
+    uRange = kfModel.U;
+    x0Range = kfModel.R0;
     % dimensions of u and x0
     u1 = size(u, 1);      % Number of time points
     u2 = size(u, 2);      % Number of inputs
@@ -77,6 +77,6 @@ function [x0,u]=getDispSampleXU(model) %TODO: implement control points
     % Extract the new u and newX0
     newSample(isnan(newSample)) = curSampleOrig(isnan(newSample)); %replace all nan values with original values, nan means range is zero
     newU = newSample(1:m);
-    u= [model.bestSoln.u(:,1),reshape(newU,u1,u2)];
+    u= [kfModel.bestSoln.u(:,1),reshape(newU,u1,u2)];
     x0 = newSample(m+1:end);
 end
