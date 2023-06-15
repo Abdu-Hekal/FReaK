@@ -18,8 +18,10 @@ if ~isempty(kfModel.U)
         u = u.*kfModel.cpBool;
     else %piecewise constant input
         for k=1:length(cp)
-            uk = cp(k);
-            u(:,k) = repelem(u(1:uk,k),length(u(:,k))/uk);
+            uk = round(cp(k)); %round is necassary for large numbers
+            rep=length(u(:,k))/uk;
+            assert(floor(rep)==rep,"All time steps must be a factor of cp")
+            u(:,k) = repelem(u(1:uk,k),rep);
         end
     end
     u = [linspace(0,kfModel.T-kfModel.dt,all_steps)',u];

@@ -13,7 +13,8 @@ classdef KF_model
         %currently only supported for spec of type stl formula.
 
         %settings
-        maxTrainSize %maximum number of simulations for training before terminating (default: 100)
+        maxSims %maximum number of simulations for training before terminating (default: 100)
+        nResets %reset training set after n trajectories (default: 20), note that we also reset if milp fails to solve (model is bad)
         trainRand %int, set to 3 to train with random trajectory, 2 to train with random neighborhood trajectory, 0 to train with previously found crit trajectory or 1 to alternate between prev and random. (default: 0)
         offsetStrat %int, set 1 to refine with offset, 0 for no offset, -1 to offset next iteration (after retraining koopman model). (default: 1)
         useOptimizer %bool set to true to use optimizer object. Not using optimizer means stl needs to be setup for milp everytime. setting up optimizer object also takes time. Time trade off?
@@ -44,7 +45,8 @@ classdef KF_model
         % Constructor
         function obj = KF_model(model)
             obj.model=model;
-            obj.maxTrainSize=100;
+            obj.maxSims=100;
+            obj.nResets=20;
             obj.trainRand=0;
             obj.offsetStrat=-1;
             obj.useOptimizer=true;
@@ -55,13 +57,13 @@ classdef KF_model
             obj.ak.nObs=20;
             obj.ak.gridSlices=5;
             obj.ak.opt="grid"; %grid
-            obj.ak.rank=[0,20,4];
+            obj.ak.rank=[1,20,4];
 
             %default optimizer options
             solver = 'gurobi';  % gurobi, cplex, glpk
             timeLimit = 2000; %2000;
-            gapLimit = 0.01; %0.01;
-            gapAbsLimit = 0.1; %0.1;
+            gapLimit = 1; %0.01;
+            gapAbsLimit = 1; %0.1;
             solnLimit = Inf;
             verb = 0;
             obj.solver.opts = sdpsettings('verbose', verb,'solver', solver, ...

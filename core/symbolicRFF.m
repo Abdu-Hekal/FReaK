@@ -23,4 +23,5 @@ function [kfModel, A, B,g] = symbolicRFF(kfModel, trainset)
     matlabFunction(g,'Vars',{xSym},'File',fullfile(path,'autokoopman'));
 
     g = @(x) autokoopman(x);
+
 end

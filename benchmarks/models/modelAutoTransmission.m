@@ -1,4 +1,4 @@
-function model = model_AutoTransmission()
+function model = modelAutoTransmission()
 % model_AutoTransmission - model parameters for the Autotransmission benchmark
 %
 % Syntax:
@@ -19,8 +19,9 @@ function model = model_AutoTransmission()
 
     model.T=30; 
     model.dt = 0.01;
-    model.ak.dt=0.1;
-    model.solver.dt=0.1;
+    model.ak.dt=2.5;
+    model.trainRand=0;
+%     model.solver.dt=0.1;
     model.cp=[3000 3000];
 
     x = stl('x',3);

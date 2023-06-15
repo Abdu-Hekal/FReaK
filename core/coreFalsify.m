@@ -7,10 +7,13 @@ runtime=tic;
 falsified = false;
 trainIter = 0;
 epsilon = eps; %epsilon value to add to offset
-while trainIter <= kfModel.maxTrainSize && falsified==false
-
-    %empty trainset after first iter because it is random trajectory
-    if trainIter == 1
+while kfModel.soln.sims <= kfModel.maxSims && falsified==false
+    %reset after size of trainset==nResets;
+    if numel(trainset.X) == kfModel.nResets
+        trainIter = 0;
+    end
+    %empty trainset after first iter because it is random trajectory.
+    if trainIter <= 1
         trainset.X = {}; trainset.XU={}; trainset.t = {};
     end
 
@@ -23,74 +26,83 @@ while trainIter <= kfModel.maxTrainSize && falsified==false
         x=critX; %pass x0 as full x to avoid simulation again
         u=critU;
     end
+
     abstr = kfModel.ak.dt/kfModel.dt; %define abstraction ratio
     t=t(1:abstr:end); x=x(1:abstr:end,:); u=u(1:abstr:end,:);
     trainset=appendToTrainset(trainset,t,x,u);
 
-    %run autokoopman and learn linearized model
-    [kfModel, A, B, g] = symbolicRFF(kfModel, trainset);
-    % find predicted falsifying initial set and inputs
-    % compute reachable set for Koopman linearized model
-    R = reachKoopman(A,B,g,kfModel);
-    % determine most critical reachable set and specification
-    kfModel = critAlpha(R,kfModel);
+    try
+        %run autokoopman and learn linearized model
+        [kfModel, A, B, g] = symbolicRFF(kfModel, trainset);
+        % find predicted falsifying initial set and inputs
+        % compute reachable set for Koopman linearized model
+        R = reachKoopman(A,B,g,kfModel);
+        % determine most critical reachable set and specification
+        kfModel = critAlpha(R,kfModel);
+    catch
+        disp("error encountered whilst setup/solving, resetting training data")
+        trainIter=0;
+        continue;
+    end
 
-    offsetIter = 0;
-    while offsetIter <= max(kfModel.offsetStrat,0) && falsified==false %offset once if not falsified
-        [critX0, critU] = falsifyingTrajectory(kfModel);
-        %repeat input for all timesteps T/dt
-        oldU=critU; %test deleteme
-        critU=repelem(critU,abstr,1);
-        % run most critical inputs on the real system
-        [t, critX, kfModel] = simulate(kfModel, critX0, critU);
-        testDraw(oldU,critX,t,t(1:abstr:end),x0,A,B,g,R); %test plot: delete me
+    if kfModel.soln.rob<inf
+        offsetIter = 0;
+        while offsetIter <= max(kfModel.offsetStrat,0) && falsified==false %offset once if not falsified
+            [critX0, critU] = falsifyingTrajectory(kfModel);
+            %repeat input for all timesteps T/dt
+            oldU=critU; %test deleteme
+            critU=repelem(critU,abstr,1);
+            % run most critical inputs on the real system
+            [t, critX, kfModel] = simulate(kfModel, critX0, critU);
+            %         testDraw(oldU,critX,t,t(1:abstr:end),x0,A,B,g,R); %test plot: delete me
 
-        spec=kfModel.soln.spec; %critical spec found with best value of robustness
-        % different types of specifications
-        if strcmp(spec.type,'unsafeSet')
-            falsified = any(spec.set.contains(critX'));
-        elseif strcmp(spec.type,'safeSet')
-            falsified = ~all(spec.set.contains(critX')); %check this
-        elseif strcmp(spec.type,'logic')
-            [Bdata,phi,robustness] = bReachRob(spec,critX,t);
-            kfModel.specSolns(spec).realRob=robustness; %store real robustness value
-            falsified = ~isreal(sqrt(robustness)); %sqrt of -ve values are imaginary
-            if kfModel.trainRand==2 && numel(trainset.X)>1 %neighborhood training mode and we have more than 1 trajectory in our trainset
-                [kfModel,trainset] = neighborhoodTrain(kfModel,trainset,robustness,critX,critU);
-            end
+            spec=kfModel.soln.spec; %critical spec found with best value of robustness
+            % different types of specifications
+            if strcmp(spec.type,'unsafeSet')
+                falsified = any(spec.set.contains(critX'));
+            elseif strcmp(spec.type,'safeSet')
+                falsified = ~all(spec.set.contains(critX')); %check this
+            elseif strcmp(spec.type,'logic')
+                [Bdata,phi,robustness] = bReachRob(spec,critX,t);
+                kfModel.specSolns(spec).realRob=robustness; %store real robustness value
+                falsified = ~isreal(sqrt(robustness)); %sqrt of -ve values are imaginary
+                if kfModel.trainRand==2 && numel(trainset.X)>1 %neighborhood training mode and we have more than 1 trajectory in our trainset
+                    [kfModel,trainset] = neighborhoodTrain(kfModel,trainset,robustness,critX,critU);
+                end
 
-            if ~falsified && abs(kfModel.offsetStrat) %not falsifed yet and an offset mode selected by user
-                newOffsetCount = bReachCulprit(Bdata,phi,robustness); %get no. of predicate responsible for robustness value
-                if newOffsetCount > 0 %there exists an individual predicate that is culprit for (+ve) robustness
-                    if offsetIter==0 %if first offset iteration, re-solve with offset if offsetStrat==1 or save offset for next iter if offsetStrat==-1
-                        Sys=kfModel.specSolns(spec).lti;
-                        if Sys.offsetCount == newOffsetCount %if same offset count as b4 offset (i.e. same inequality)
-                            Sys.offset =  Sys.offset+robustness+epsilon;
-                        else
-                            Sys.offset = robustness + epsilon;
-                        end
-                        Sys.offsetCount = newOffsetCount;
-                        if kfModel.offsetStrat == 1 %if offset strategy in this iteration selected
-                            if ~kfModel.useOptimizer %if no optimizer object, setup stl with hardcoded offset
-                                Sys=setupStl(Sys,true);
+                if ~falsified && abs(kfModel.offsetStrat) %not falsifed yet and an offset mode selected by user
+                    newOffsetCount = bReachCulprit(Bdata,phi,robustness); %get no. of predicate responsible for robustness value
+                    if newOffsetCount > 0 %there exists an individual predicate that is culprit for (+ve) robustness
+                        if offsetIter==0 %if first offset iteration, re-solve with offset if offsetStrat==1 or save offset for next iter if offsetStrat==-1
+                            Sys=kfModel.specSolns(spec).lti;
+                            if Sys.offsetCount == newOffsetCount %if same offset count as b4 offset (i.e. same inequality)
+                                Sys.offset =  Sys.offset+robustness+epsilon;
+                            else
+                                Sys.offset = robustness + epsilon;
                             end
-                            Sys=optimize(Sys,kfModel.solver.opts);
-                            kfModel.soln.alpha = value(Sys.Alpha); %new alpha value after offset
-                        else %kfModel.offsetStrat == -1: offset next iteration
-                            kfModel.specSolns(spec).lti=Sys;
-                        end
-                        % TODO: if offset gives better val of robustness, should we pass
-                        %                     % it as training data instead? should we pass both?
-                    else %if already offset and failed to falsify, increase epsilon
-                        %check first if same offset count as b4 offset (i.e. same inequality)
-                        if Sys.offsetCount == newOffsetCount
-                            epsilon = epsilon + robustness;
-                        else
-                            epsilon = eps; %reset epsilon cause we now violate a different inequality
+                            Sys.offsetCount = newOffsetCount;
+                            if kfModel.offsetStrat == 1 %if offset strategy in this iteration selected
+                                if ~kfModel.useOptimizer %if no optimizer object, setup stl with hardcoded offset
+                                    Sys=setupStl(Sys,true);
+                                end
+                                Sys=optimize(Sys,kfModel.solver.opts);
+                                kfModel.soln.alpha = value(Sys.Alpha); %new alpha value after offset
+                            else %kfModel.offsetStrat == -1: offset next iteration
+                                kfModel.specSolns(spec).lti=Sys;
+                            end
+                            % TODO: if offset gives better val of robustness, should we pass
+                            %                     % it as training data instead? should we pass both?
+                        else %if already offset and failed to falsify, increase epsilon
+                            %check first if same offset count as b4 offset (i.e. same inequality)
+                            if Sys.offsetCount == newOffsetCount
+                                epsilon = epsilon + robustness;
+                            else
+                                epsilon = eps; %reset epsilon cause we now violate a different inequality
+                            end
                         end
                     end
+                    offsetIter = offsetIter+1;
                 end
-                offsetIter = offsetIter+1;
             end
         end
     end
@@ -103,7 +115,6 @@ kfModel.soln.t=t;
 kfModel.soln.x=critX;
 kfModel.soln.u = critU;
 kfModel.soln.falsified=falsified;
-kfModel.soln.trainIter=trainIter;
 kfModel.soln.sims=kfModel.soln.sims-1; %last sim that finds critical trace not counted?
 kfModel.soln.runtime=toc(runtime); %record runtime
 fprintf("number of simulations to falsify %d \n",kfModel.soln.sims)
@@ -134,7 +145,7 @@ all_steps = kfModel.T/kfModel.dt;
 assert(floor(all_steps)==all_steps,'Time step (dt) must be a factor of Time horizon (T)')
 
 %set autokoopman timestep if it is not set, else check it is compliant.
-if isempty(kfModel.ak.dt)
+if ~isfield(kfModel.ak,'dt')
     kfModel.ak.dt=kfModel.dt;
 else
     abstr = kfModel.ak.dt/kfModel.dt; %define abstraction ratio
@@ -144,7 +155,7 @@ else
 end
 
 %set solver timestep if it is not set, else check it is compliant.
-if isempty(kfModel.solver.dt)
+if ~isfield(kfModel.solver,'dt')
     kfModel.solver.dt=kfModel.ak.dt;
 else
     abstr = kfModel.solver.dt/kfModel.ak.dt; %define abstraction ratio
@@ -184,7 +195,7 @@ kfModel.soln=struct;
 kfModel.soln.koopTime=0; kfModel.soln.milpSetupTime=0; kfModel.soln.milpSolvTime=0;
 kfModel.soln.sims=0;
 %create empty struct to store best soln
-kfModel.bestSoln=struct; kfModel.bestSoln.rob=inf;
+kfModel.bestSoln=struct; kfModel.bestSoln.rob=inf; kfModel.bestSoln.timeRob=inf;
 %create empty dict to store prev soln for each spec
 kfModel.specSolns = dictionary(kfModel.spec,struct);
 %empty cells to store states, inputs and times for training trajectories
@@ -202,7 +213,7 @@ end
 
 function [kfModel,trainset] = neighborhoodTrain(kfModel,trainset,robustness,critX,critU)
 %training with best neighborhood trajectories
-if robustness < kfModel.bestSoln.rob
+if robustness <= kfModel.bestSoln.rob
     kfModel.bestSoln.rob = robustness;
     kfModel.bestSoln.x=critX;
     kfModel.bestSoln.u=critU;
@@ -210,7 +221,6 @@ else
     %remove last entry because it is not improving the kfModel
     trainset.X(end) = []; trainset.XU(end)=[]; trainset.t(end) = [];
 end
-disp(kfModel.bestSoln.rob)
 end
 
 function testDraw(critU,critX,t,xt,x0,A,B,g,R)
