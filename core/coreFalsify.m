@@ -31,19 +31,19 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
     t=t(1:abstr:end); x=x(1:abstr:end,:); u=u(1:abstr:end,:);
     trainset=appendToTrainset(trainset,t,x,u);
 
-    try
-        %run autokoopman and learn linearized model
-        [kfModel, A, B, g] = symbolicRFF(kfModel, trainset);
-        % find predicted falsifying initial set and inputs
-        % compute reachable set for Koopman linearized model
-        R = reachKoopman(A,B,g,kfModel);
-        % determine most critical reachable set and specification
-        kfModel = critAlpha(R,kfModel);
-    catch
-        disp("error encountered whilst setup/solving, resetting training data")
-        trainIter=0;
-        continue;
-    end
+    %     try
+    %run autokoopman and learn linearized model
+    [kfModel, A, B, g] = symbolicRFF(kfModel, trainset);
+    % find predicted falsifying initial set and inputs
+    % compute reachable set for Koopman linearized model
+    R = reachKoopman(A,B,g,kfModel);
+    % determine most critical reachable set and specification
+    kfModel = critAlpha(R,kfModel);
+    %     catch
+    %         disp("error encountered whilst setup/solving, resetting training data")
+    %         trainIter=0;
+    %         continue;
+    %     end
 
     if kfModel.soln.rob<inf
         offsetIter = 0;
@@ -54,7 +54,7 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
             critU=repelem(critU,abstr,1);
             % run most critical inputs on the real system
             [t, critX, kfModel] = simulate(kfModel, critX0, critU);
-            %         testDraw(oldU,critX,t,t(1:abstr:end),x0,A,B,g,R); %test plot: delete me
+            testDraw(oldU,critX,t,t(1:abstr:end),x0,A,B,g,R); %test plot: delete me
 
             spec=kfModel.soln.spec; %critical spec found with best value of robustness
             % different types of specifications
@@ -69,16 +69,16 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
                 if kfModel.trainRand==2 && numel(trainset.X)>1 %neighborhood training mode and we have more than 1 trajectory in our trainset
                     [kfModel,trainset] = neighborhoodTrain(kfModel,trainset,robustness,critX,critU);
                 end
-
-                if ~falsified && abs(kfModel.offsetStrat) %not falsifed yet and an offset mode selected by user
-                    newOffsetCount = bReachCulprit(Bdata,phi,robustness); %get no. of predicate responsible for robustness value
-                    if newOffsetCount > 0 %there exists an individual predicate that is culprit for (+ve) robustness
+                gap = getMilpGap(kfModel.solver.opts);
+                if robustness > gap && abs(kfModel.offsetStrat) %not falsifed yet, robustness is greater than gap termination criteria for milp solver and an offset mode selected by user. Note that if robustness is less than gap, offset most likely is not benefecial.
+                    [newOffsetCount,sign,mus] = bReachCulprit(Bdata,phi,robustness); %get no. of predicate responsible for robustness value
+                    if numel(mus)>1 && newOffsetCount > 0 %if there is more than 1 predicate and there exists an individual predicate that is culprit for (+ve) robustness
                         if offsetIter==0 %if first offset iteration, re-solve with offset if offsetStrat==1 or save offset for next iter if offsetStrat==-1
                             Sys=kfModel.specSolns(spec).lti;
                             if Sys.offsetCount == newOffsetCount %if same offset count as b4 offset (i.e. same inequality)
-                                Sys.offset =  Sys.offset+robustness+epsilon;
+                                Sys.offset =  Sys.offset+(sign*robustness)+epsilon;
                             else
-                                Sys.offset = robustness + epsilon;
+                                Sys.offset = (sign*robustness) + epsilon;
                             end
                             Sys.offsetCount = newOffsetCount;
                             if kfModel.offsetStrat == 1 %if offset strategy in this iteration selected
@@ -101,9 +101,12 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
                             end
                         end
                     end
-                    offsetIter = offsetIter+1;
+                else
+                    break
                 end
             end
+            offsetIter = offsetIter+1;
+
         end
     end
     trainIter=trainIter+1;
@@ -198,7 +201,7 @@ kfModel.soln.sims=0;
 kfModel.bestSoln=struct; kfModel.bestSoln.rob=inf; kfModel.bestSoln.timeRob=inf;
 %create empty dict to store prev soln for each spec
 kfModel.specSolns = dictionary(kfModel.spec,struct);
-%empty cells to store states, inputs and times for training trajectories
+%empty struct to store training data
 trainset.X = {}; trainset.XU={}; trainset.t = {};
 end
 
@@ -223,8 +226,18 @@ else
 end
 end
 
+function gap=getMilpGap(opts)
+if opts.solver == "gurobi"
+    gap=opts.gurobi.MIPGapAbs;
+elseif opts.solver == "cplex"
+    gap=opts.cplex.epagap;
+else
+    gap=0.1;
+end
+end
+
 function testDraw(critU,critX,t,xt,x0,A,B,g,R)
-plotVars=[3]; %[3];
+plotVars=[1,2]; %[3];
 drawu=critU(:,2:end)';
 x = g(x0);
 for i = 1:size(drawu,2)

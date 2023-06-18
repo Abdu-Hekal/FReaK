@@ -75,7 +75,7 @@ classdef Koopman_lti
                 if Sys.offsetCount>0 %we have an offset
                     param(Sys.offsetCount) = Sys.offset;
                 end
-                [sol_control, errorflag1] = Sys.optimizer{{param}}; %% call solver
+                [sol_control, errorflag1,~,~,P] = Sys.optimizer{{param}}; %% call solver
                 if(errorflag1==0)
                     Sys.X = double(sol_control{1});
                     Sys.Alpha = double(sol_control{2});

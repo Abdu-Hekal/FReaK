@@ -106,8 +106,12 @@ for i = 1:size(spec,1)
         alpha = value(Sys.Alpha);
 
         %clear solution from yalmip and assign only alpha for warmstarting
-        %         yalmip('clearsolution')
-        %         assign(Sys.Alpha,alpha)
+        if kfModel.solver.opts.usex0
+            yalmip('clearsolution')
+            if ~kfModel.useOptimizer
+                assign(Sys.Alpha,alpha)
+            end
+        end
 
         %TODO: how can we compare stl robustness and reachset robustness.
         if rob_ < rob

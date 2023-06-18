@@ -16,8 +16,8 @@ classdef KF_model
         maxSims %maximum number of simulations for training before terminating (default: 100)
         nResets %reset training set after n trajectories (default: 20), note that we also reset if milp fails to solve (model is bad)
         trainRand %int, set to 3 to train with random trajectory, 2 to train with random neighborhood trajectory, 0 to train with previously found crit trajectory or 1 to alternate between prev and random. (default: 0)
-        offsetStrat %int, set 1 to refine with offset, 0 for no offset, -1 to offset next iteration (after retraining koopman model). (default: 1)
-        useOptimizer %bool set to true to use optimizer object. Not using optimizer means stl needs to be setup for milp everytime. setting up optimizer object also takes time. Time trade off?
+        offsetStrat %int, set 1 to refine with offset, 0 for no offset, -1 to offset next iteration (after retraining koopman model). (default: 1). Note that offset strategy 1 is most stable and strategy -1 can lead to problems when warmstart (usex0) is used.
+        useOptimizer %bool set to true to use optimizer object. Not using optimizer means stl needs to be setup for milp everytime for offset. setting up optimizer object also takes time. Time trade off? Note that using optimzier is most stable and not using can lead to problems when warmstart (usex0) is used.
         pulseInput %boolean, set to true if the inputs are pulse inputs, otherwise input is piecewise-constant (default: false)
 
         %autokoopman settings (struct)
@@ -46,9 +46,9 @@ classdef KF_model
         function obj = KF_model(model)
             obj.model=model;
             obj.maxSims=100;
-            obj.nResets=20;
+            obj.nResets=5;
             obj.trainRand=0;
-            obj.offsetStrat=-1;
+            obj.offsetStrat=1;
             obj.useOptimizer=true;
             obj.pulseInput = false;
 
@@ -62,17 +62,17 @@ classdef KF_model
             %default optimizer options
             solver = 'gurobi';  % gurobi, cplex, glpk
             timeLimit = 2000; %2000;
-            gapLimit = 1; %0.01;
-            gapAbsLimit = 1; %0.1;
+            gapLimit = 0.1; %1;
+            gapAbsLimit = 0.1; %1;
             solnLimit = Inf;
-            verb = 0;
+            verb = 2;
             obj.solver.opts = sdpsettings('verbose', verb,'solver', solver, ...
                 'gurobi.TimeLimit', timeLimit, ...
                 'gurobi.MIPGap', gapLimit, ...
                 'gurobi.MIPGapAbs', gapAbsLimit, ...
                 'gurobi.SolutionLimit', solnLimit,...
                 'gurobi.Method',3,...
-                'usex0', 0 ...
+                'usex0', 1 ...
                 );
             %                 'gurobi.MIPFocus',3,...
             %                 'gurobi.ScaleFlag', 2,...
