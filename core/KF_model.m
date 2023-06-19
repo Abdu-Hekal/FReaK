@@ -8,7 +8,7 @@ classdef KF_model
 
         T %time horizon for simulation
         dt %time step
-        cp %control points for each input signal. needs to be an array of length equal to number of inputs. Needs to be a factor of T/dt & T/kdt
+        cp %max control points for each input signal. needs to be an array of length equal to number of inputs. Needs to be a factor of T/dt & T/kdt
         %default is cp every dt. Note that values other than default are
         %currently only supported for spec of type stl formula.
 

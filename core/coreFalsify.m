@@ -56,6 +56,7 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
             %extrap and interp input for all timesteps T/dt
             usim = interp1(critU(:,1),critU(:,2:end),tsim(1:end-1),kfModel.inputInterpolation,"extrap"); %interpolate and extrapolate input points
             usim = [tsim(1:end-1),usim];
+            
             % run most critical inputs on the real system
             [t, critX, kfModel] = simulate(kfModel, critX0, usim);
 %             testDraw(oldU,critX,t,t(1:abstr:end),x0,A,B,g,R); %test plot: delete me
@@ -229,10 +230,10 @@ end
 
 function kfModel=setCpBool(kfModel)
 all_steps = kfModel.T/kfModel.ak.dt;
-cp = kfModel.cp/(kfModel.ak.dt/kfModel.dt); %get new cp array based on koopman timestep
 kfModel.cpBool = zeros(all_steps,length(kfModel.U));
-for k=1:length(cp)
-    step = (kfModel.T/kfModel.ak.dt)/cp(k);
+for k=1:length(kfModel.cp)
+    step = (kfModel.T/kfModel.ak.dt)/kfModel.cp(k);
+    step = max(1,step); %if step<1, then we have more control points than ak steps, set control points equal to number of steps
     assert(floor(step)==step,'number of control points (cp) must be a factor of T/ak.dt')
     kfModel.cpBool(1:step:end,k) = 1;
 end
