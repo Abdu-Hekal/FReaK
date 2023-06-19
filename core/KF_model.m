@@ -18,6 +18,9 @@ classdef KF_model
         trainRand %int, set to 3 to train with random trajectory, 2 to train with random neighborhood trajectory, 0 to train with previously found crit trajectory or 1 to alternate between prev and random. (default: 0)
         offsetStrat %int, set 1 to refine with offset, 0 for no offset, -1 to offset next iteration (after retraining koopman model). (default: 1). Note that offset strategy 1 is most stable and strategy -1 can lead to problems when warmstart (usex0) is used.
         useOptimizer %bool set to true to use optimizer object. Not using optimizer means stl needs to be setup for milp everytime for offset. setting up optimizer object also takes time. Time trade off? Note that using optimzier is most stable and not using can lead to problems when warmstart (usex0) is used.
+        % interpolation types for input & trajectory. See "interp1" for supported types
+        inputInterpolation % interpolate input between control points. default 'previous'. Note that control points may decrease with coarser koopman
+        trajInterpolation %interpolate output trajectory for stl analysis, default 'pchip'
         pulseInput %boolean, set to true if the inputs are pulse inputs, otherwise input is piecewise-constant (default: false)
 
         %autokoopman settings (struct)
@@ -50,6 +53,8 @@ classdef KF_model
             obj.trainRand=0;
             obj.offsetStrat=1;
             obj.useOptimizer=true;
+            obj.inputInterpolation='previous';
+            obj.trajInterpolation='pchip';
             obj.pulseInput = false;
 
             % autokoopman settings
@@ -65,7 +70,7 @@ classdef KF_model
             gapLimit = 0.1; %1;
             gapAbsLimit = 0.1; %1;
             solnLimit = Inf;
-            verb = 2;
+            verb = 0;
             obj.solver.opts = sdpsettings('verbose', verb,'solver', solver, ...
                 'gurobi.TimeLimit', timeLimit, ...
                 'gurobi.MIPGap', gapLimit, ...

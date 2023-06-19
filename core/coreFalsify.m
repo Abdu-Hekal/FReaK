@@ -21,15 +21,18 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
     %repeated, retrain with random xu else retrain with prev traj
     if trainIter==0 || kfModel.trainRand>=2 || ( kfModel.trainRand==1 && rem(trainIter, 2) == 0) || checkRepeatedTraj(critX,critU, trainset)
         [x0,u] = getSampleXU(kfModel);
-        [t, x, kfModel] = simulate(kfModel, x0, u);
+        tsim = (0:kfModel.dt:kfModel.T)'; %define simulation time points
+        usim = interp1(u(:,1),u(:,2:end),tsim(1:end-1),kfModel.inputInterpolation,"extrap"); %interpolate and extrapolate input points
+        usim = [tsim(1:end-1),usim];
+        [t, x, kfModel] = simulate(kfModel, x0, usim);
     else
         x=critX; %pass x0 as full x to avoid simulation again
         u=critU;
     end
 
-    abstr = kfModel.ak.dt/kfModel.dt; %define abstraction ratio
-    t=t(1:abstr:end); x=x(1:abstr:end,:); u=u(1:abstr:end,:);
-    trainset=appendToTrainset(trainset,t,x,u);
+    tak = (0:kfModel.ak.dt:kfModel.T)'; %define autokoopman time points
+    xak = interp1(t,x,tak,kfModel.trajInterpolation); %define autokoopman trajectory points
+    trainset=appendToTrainset(trainset,tak,xak,u);
 
     %     try
     %run autokoopman and learn linearized model
@@ -49,13 +52,14 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
         offsetIter = 0;
         while offsetIter <= max(kfModel.offsetStrat,0) && falsified==false %offset once if not falsified
             [critX0, critU] = falsifyingTrajectory(kfModel);
-            %repeat input for all timesteps T/dt
-            oldU=critU; %test deleteme
-            critU=repelem(critU,abstr,1);
+            %extrap and interp input for all timesteps T/dt
+            usim = interp1(u(:,1),u(:,2:end),tsim(1:end-1),kfModel.inputInterpolation,"extrap"); %interpolate and extrapolate input points
+            usim = [tsim(1:end-1),usim];
             % run most critical inputs on the real system
-            [t, critX, kfModel] = simulate(kfModel, critX0, critU);
-            testDraw(oldU,critX,t,t(1:abstr:end),x0,A,B,g,R); %test plot: delete me
+            [t, critX, kfModel] = simulate(kfModel, critX0, usim);
+%             testDraw(oldU,critX,t,t(1:abstr:end),x0,A,B,g,R); %test plot: delete me
 
+            critX = interp1(t,critX,tsim,kfModel.trajInterpolation);
             spec=kfModel.soln.spec; %critical spec found with best value of robustness
             % different types of specifications
             if strcmp(spec.type,'unsafeSet')
@@ -64,6 +68,7 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
                 falsified = ~all(spec.set.contains(critX')); %check this
             elseif strcmp(spec.type,'logic')
                 [Bdata,phi,robustness] = bReachRob(spec,critX,t);
+                robustness
                 kfModel.specSolns(spec).realRob=robustness; %store real robustness value
                 falsified = ~isreal(sqrt(robustness)); %sqrt of -ve values are imaginary
                 if kfModel.trainRand==2 && numel(trainset.X)>1 %neighborhood training mode and we have more than 1 trajectory in our trainset
@@ -100,6 +105,8 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
                                 epsilon = eps; %reset epsilon cause we now violate a different inequality
                             end
                         end
+                    else
+                        break
                     end
                 else
                     break
