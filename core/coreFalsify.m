@@ -17,6 +17,7 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
         trainset.X = {}; trainset.XU={}; trainset.t = {};
     end
 
+    kfModel=setCpBool(kfModel);
     %if first iter, random trajectory setting selected, or critical trajectory is
     %repeated, retrain with random xu else retrain with prev traj
     if trainIter==0 || kfModel.trainRand>=2 || ( kfModel.trainRand==1 && rem(trainIter, 2) == 0) || checkRepeatedTraj(critX,critU, trainset)
@@ -53,7 +54,7 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
         while offsetIter <= max(kfModel.offsetStrat,0) && falsified==false %offset once if not falsified
             [critX0, critU] = falsifyingTrajectory(kfModel);
             %extrap and interp input for all timesteps T/dt
-            usim = interp1(u(:,1),u(:,2:end),tsim(1:end-1),kfModel.inputInterpolation,"extrap"); %interpolate and extrapolate input points
+            usim = interp1(critU(:,1),critU(:,2:end),tsim(1:end-1),kfModel.inputInterpolation,"extrap"); %interpolate and extrapolate input points
             usim = [tsim(1:end-1),usim];
             % run most critical inputs on the real system
             [t, critX, kfModel] = simulate(kfModel, critX0, usim);
@@ -67,7 +68,7 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
             elseif strcmp(spec.type,'safeSet')
                 falsified = ~all(spec.set.contains(critX')); %check this
             elseif strcmp(spec.type,'logic')
-                [Bdata,phi,robustness] = bReachRob(spec,critX,t);
+                [Bdata,phi,robustness] = bReachRob(spec,critX,tsim);
                 robustness
                 kfModel.specSolns(spec).realRob=robustness; %store real robustness value
                 falsified = ~isreal(sqrt(robustness)); %sqrt of -ve values are imaginary
@@ -191,13 +192,6 @@ if ~isempty(kfModel.U) %check if kfModel has inputs
     end
 
     assert(length(kfModel.U)==length(kfModel.cp),'Number of control points (kfModel.cp) must be equal to number of inputs (kfModel.U)')
-
-    kfModel.cpBool = zeros(all_steps,length(kfModel.U));
-    for k=1:length(kfModel.cp)
-        step = (kfModel.T/kfModel.dt)/kfModel.cp(k);
-        assert(floor(step)==step,'number of control points (cp) must be a factor of T/dt')
-        kfModel.cpBool(1:step:end,k) = 1;
-    end
 end
 
 %create empty struct to store prev soln
@@ -230,6 +224,17 @@ if robustness <= kfModel.bestSoln.rob
 else
     %remove last entry because it is not improving the kfModel
     trainset.X(end) = []; trainset.XU(end)=[]; trainset.t(end) = [];
+end
+end
+
+function kfModel=setCpBool(kfModel)
+all_steps = kfModel.T/kfModel.ak.dt;
+cp = kfModel.cp/(kfModel.ak.dt/kfModel.dt); %get new cp array based on koopman timestep
+kfModel.cpBool = zeros(all_steps,length(kfModel.U));
+for k=1:length(cp)
+    step = (kfModel.T/kfModel.ak.dt)/cp(k);
+    assert(floor(step)==step,'number of control points (cp) must be a factor of T/ak.dt')
+    kfModel.cpBool(1:step:end,k) = 1;
 end
 end
 

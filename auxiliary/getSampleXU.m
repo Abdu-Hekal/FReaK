@@ -15,19 +15,13 @@ if ~isempty(kfModel.U)
     all_steps = kfModel.T/kfModel.ak.dt;
     u = randPoint(kfModel.U,all_steps)';
     if kfModel.pulseInput
-        kfModel.cpBool = zeros(all_steps,length(kfModel.U));
-        for k=1:length(kfModel.cp)
-            step = (kfModel.T/kfModel.ak.dt)/kfModel.cp(k);
-            assert(floor(step)==step,'number of control points (cp) must be a factor of T/ak.dt')
-            kfModel.cpBool(1:step:end,k) = 1;
-        end
         u = u.*kfModel.cpBool;
     else %piecewise constant input
         for k=1:length(cp)
             uk = cp(k); %round is necassary for large numbers
             rep=length(u(:,k))/uk;
             assert(floor(rep)==rep,"All time steps must be a factor of cp")
-            u(:,k) = repelem(u(1:uk,k),rep);
+            u(:,k) = interp1(1:rep:numel(u(:,k)),u(1:uk,k),1:numel(u(:,k)),kfModel.inputInterpolation,"extrap");
         end
     end
     u = [linspace(0,kfModel.T-kfModel.ak.dt,all_steps)',u];
