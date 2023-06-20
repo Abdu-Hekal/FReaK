@@ -67,8 +67,8 @@ classdef KF_model
             %default optimizer options
             solver = 'gurobi';  % gurobi, cplex, glpk
             timeLimit = 2000; %2000;
-            gapLimit = 0.1; %1;
-            gapAbsLimit = 0.1; %1;
+            gapLimit = 1; %1;
+            gapAbsLimit = 1; %1;
             solnLimit = Inf;
             verb = 0;
             obj.solver.opts = sdpsettings('verbose', verb,'solver', solver, ...

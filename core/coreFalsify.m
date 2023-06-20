@@ -13,7 +13,7 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
         trainIter = 0;
     end
     %empty trainset after first iter because it is random trajectory.
-    if trainIter <= 1
+    if trainIter <= 1 && (kfModel.trainRand == 0 || kfModel.trainRand == 2)
         trainset.X = {}; trainset.XU={}; trainset.t = {};
     end
 
@@ -35,19 +35,19 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
     xak = interp1(t,x,tak,kfModel.trajInterpolation); %define autokoopman trajectory points
     trainset=appendToTrainset(trainset,tak,xak,u);
 
-    %     try
-    %run autokoopman and learn linearized model
-    [kfModel, A, B, g] = symbolicRFF(kfModel, trainset);
-    % find predicted falsifying initial set and inputs
-    % compute reachable set for Koopman linearized model
-    R = reachKoopman(A,B,g,kfModel);
-    % determine most critical reachable set and specification
-    kfModel = critAlpha(R,kfModel);
-    %     catch
-    %         disp("error encountered whilst setup/solving, resetting training data")
-    %         trainIter=0;
-    %         continue;
-    %     end
+    try
+        %run autokoopman and learn linearized model
+        [kfModel, A, B, g] = symbolicRFF(kfModel, trainset);
+        % find predicted falsifying initial set and inputs
+        % compute reachable set for Koopman linearized model
+        R = reachKoopman(A,B,g,kfModel);
+        % determine most critical reachable set and specification
+        kfModel = critAlpha(R,kfModel);
+    catch
+        disp("error encountered whilst setup/solving, resetting training data")
+        trainIter=0;
+        continue;
+    end
 
     if kfModel.soln.rob<inf
         offsetIter = 0;
@@ -56,10 +56,10 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
             %extrap and interp input for all timesteps T/dt
             usim = interp1(critU(:,1),critU(:,2:end),tsim(1:end-1),kfModel.inputInterpolation,"extrap"); %interpolate and extrapolate input points
             usim = [tsim(1:end-1),usim];
-            
+
             % run most critical inputs on the real system
             [t, critX, kfModel] = simulate(kfModel, critX0, usim);
-%             testDraw(oldU,critX,t,t(1:abstr:end),x0,A,B,g,R); %test plot: delete me
+%             testDraw(critU,critX,t,tsim,x0,A,B,g,R); %test plot: delete me
 
             critX = interp1(t,critX,tsim,kfModel.trajInterpolation);
             spec=kfModel.soln.spec; %critical spec found with best value of robustness
@@ -70,7 +70,6 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
                 falsified = ~all(spec.set.contains(critX')); %check this
             elseif strcmp(spec.type,'logic')
                 [Bdata,phi,robustness] = bReachRob(spec,critX,tsim);
-                robustness
                 kfModel.specSolns(spec).realRob=robustness; %store real robustness value
                 falsified = ~isreal(sqrt(robustness)); %sqrt of -ve values are imaginary
                 if kfModel.trainRand==2 && numel(trainset.X)>1 %neighborhood training mode and we have more than 1 trajectory in our trainset
@@ -80,6 +79,7 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
                 if robustness > gap && abs(kfModel.offsetStrat) %not falsifed yet, robustness is greater than gap termination criteria for milp solver and an offset mode selected by user. Note that if robustness is less than gap, offset most likely is not benefecial.
                     [newOffsetCount,sign,mus] = bReachCulprit(Bdata,phi,robustness); %get no. of predicate responsible for robustness value
                     if numel(mus)>1 && newOffsetCount > 0 %if there is more than 1 predicate and there exists an individual predicate that is culprit for (+ve) robustness
+                        kfModel.solver.opts.usex0=0; %avoid warmstarting if offsetting
                         if offsetIter==0 %if first offset iteration, re-solve with offset if offsetStrat==1 or save offset for next iter if offsetStrat==-1
                             Sys=kfModel.specSolns(spec).lti;
                             if Sys.offsetCount == newOffsetCount %if same offset count as b4 offset (i.e. same inequality)
@@ -181,9 +181,6 @@ kfModel.ak.rank=int64(kfModel.ak.rank);
 
 % clear yalmip
 yalmip('clear')
-
-% initialize seed
-rng(0)
 
 if ~isempty(kfModel.U) %check if kfModel has inputs
     assert(isa(kfModel.U, 'interval'), 'Input (kfModel.U) must be defined as an CORA interval')

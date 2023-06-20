@@ -23,6 +23,7 @@ if ~isempty(kfModel.U)
             if all_steps > kfModel.cp(k)
                 step = all_steps/kfModel.cp(k);
                 assert(floor(step)==step,'number of control points (cp) must be a factor of T/ak.dt');
+                (0:kfModel.ak.dt*step:kfModel.T-kfModel.ak.dt)'
                 u(:,k) = interp1((0:kfModel.ak.dt*step:kfModel.T-kfModel.ak.dt)', cpVal, linspace(0,kfModel.T-kfModel.ak.dt,all_steps)',kfModel.inputInterpolation,"extrap");
             else
                 u(:,k) = cpVal;

@@ -3,6 +3,8 @@ from autokoopman import auto_koopman
 
 import autokoopman.core.trajectory as traj
 import numpy as np
+import torch
+import random
 
 def run(times, trajectories, param_dict, inputs_list):
 
@@ -45,11 +47,11 @@ def run(times, trajectories, param_dict, inputs_list):
 
     params = experiment_results['hyperparameters']
     paramVals = experiment_results['hyperparameter_values']
-    print(params)
-    print(paramVals)
-
+#     print(params)
+#     print(paramVals)
 
     return koopman_model
+
 
 koopman_model = run(times,trajectories, param_dict,inputs_list)
 
