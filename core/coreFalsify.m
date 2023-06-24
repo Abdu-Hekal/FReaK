@@ -34,7 +34,7 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
     end
     trainset=appendToTrainset(trainset,tak,xak,u);
 
-    try
+%     try
         %run autokoopman and learn linearized model
         [kfModel, A, B, g] = symbolicRFF(kfModel, trainset);
         % find predicted falsifying initial set and inputs
@@ -42,11 +42,11 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
         R = reachKoopman(A,B,g,kfModel);
         % determine most critical reachable set and specification
         kfModel = critAlpha(R,kfModel);
-    catch
-        disp("error encountered whilst setup/solving, resetting training data")
-        trainIter=0;
-        continue;
-    end
+%     catch
+%         disp("error encountered whilst setup/solving, resetting training data")
+%         trainIter=0;
+%         continue;
+%     end
 
     if kfModel.soln.rob<inf
         offsetIter = 0;
@@ -68,7 +68,7 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
             elseif strcmp(spec.type,'safeSet')
                 falsified = ~all(spec.set.contains(interpCritX')); %check this
             elseif strcmp(spec.type,'logic')
-                [Bdata,phi,robustness] = bReachRob(spec,interpCritX,tsim);
+                [Bdata,phi,robustness] = bReachRob(spec,tsim,interpCritX,[usim(:,2:end)', zeros(size(usim,2)-1,1)]);
                  kfModel.specSolns(spec).realRob=robustness; %store real robustness value
                 falsified = ~isreal(sqrt(robustness)); %sqrt of -ve values are imaginary
                 if kfModel.trainRand==2 %neighborhood training mode

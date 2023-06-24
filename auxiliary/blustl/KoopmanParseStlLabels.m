@@ -13,8 +13,9 @@ function stl = KoopmanParseStlLabels(Sys)
 % :copyright: TBD
 % :license: TBD
 
-labels = {'xlabel'};
-vars = {'X'};
+labels = {'xlabel','ulabel'};
+vars = {'x','u'};
+
 stl=Sys.stl;
 for ilabel = 1:numel(labels)
     var = vars{ilabel};

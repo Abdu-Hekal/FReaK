@@ -73,7 +73,7 @@ for i = 1:size(spec,1)
                 Sys=setupStl(Sys,true); %encode stl using milp
             end
         catch
-            Sys=Koopman_lti(R.zono(1:maxStlSteps),kfModel.ak.dt,kfModel.solver.dt);
+            Sys=Koopman_lti(R.zono(1:maxStlSteps),kfModel.U,kfModel.ak.dt,kfModel.solver.dt);
             if ~kfModel.pulseInput %if not pulse input, set cpBool
                 Sys.cpBool=kfModel.cpBool;
             end
@@ -103,7 +103,7 @@ for i = 1:size(spec,1)
 
         %get results
         rob_ = value(Sys.Pstl);
-        alpha = value(Sys.Alpha);
+        alpha = value(Sys.alpha);
 
         %clear solution from yalmip and assign only alpha for warmstarting
         if kfModel.solver.opts.usex0

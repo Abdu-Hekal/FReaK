@@ -8,11 +8,19 @@ reachZonos=Sys.reachZonos;
 %% System dimensions and variables
 nx=Sys.nx; %number of states
 % variables
-X = sdpvar(nx, L+1); %states
-Alpha = sdpvar(1, size(reachZonos{end}.generators,2));
+Sys.x = sdpvar(nx, L+1); %states
+alpha = sdpvar(1, size(reachZonos{end}.generators,2));
+if ~isempty(Sys.U)
+    alphaU = alpha(size(reachZonos{1}.generators,2)+1:end);
+    U = zonotope(Sys.U); c_u = center(U); G_u = generators(U);
+    alphaU = reshape(alphaU,[size(G_u,2),length(alphaU)/size(G_u,2)]);
+    c_u = repmat(c_u,1,size(alphaU,2));
 
-%constraints for Alpha
-Falpha= -1<=Alpha<=1;
+    Sys.u = c_u + G_u*alphaU;
+end
+
+%constraints for alpha
+Falpha= -1<=alpha<=1;
 
 %constraint for control points
 cpBool = cpBool(1:L,:); %get cpbool corresponding to number of steps
@@ -23,7 +31,7 @@ if ~isempty(cpBool) %piecewise constant signal and not pulse.
         for col=1:size(cpBool,2)
             %if bool is zero constrain alpha to be same value as prev
             if ~cpBool(row,col)
-                Falpha=[Falpha, Alpha(k)==Alpha(k-size(cpBool,2))];
+                Falpha=[Falpha, alpha(k)==alpha(k-size(cpBool,2))];
             end
             k=k+1; %next alpha
         end
@@ -31,7 +39,7 @@ if ~isempty(cpBool) %piecewise constant signal and not pulse.
 end
 
 %assign optim variables and outputs to system
-Sys.Falpha=Falpha; Sys.Alpha=Alpha; Sys.X=X;
+Sys.Falpha=Falpha; Sys.alpha=alpha;
 
 
 

@@ -2,17 +2,16 @@ function Sys = koopmanSetupStl(Sys,hardcoded)
 
 %% STL formula
 n = Sys.solverdt/Sys.koopdt; %evaluate stl formula every n koopman time steps 
-X = Sys.X(:,1:n:end);
-var = struct('X',X);
-L=size(X,2);
+x = Sys.x(:,1:n:end);
+var = struct('x',x);
+L=size(x,2);
 
 stl= KoopmanParseStlLabels(Sys);
+
 M = Sys.bigM;
 normz = Sys.normz;
 phi = STLformula('phi', stl);
 
-%     [Fphi, Pphi] = KoopmanMilpRobust(phi, 1, Sys.L+1, Sys.dt, var,M);
-%     [Fphi, Pphi] = orig_KoopmanMilpRobust(phi, 1, Sys.L+1, Sys.dt, var,M);
 if hardcoded
     global vkmrCount %globl count to track wihch subpred to offset in milp
     vkmrCount=0;
