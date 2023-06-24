@@ -16,7 +16,8 @@ if ~isempty(Sys.U)
     alphaU = reshape(alphaU,[size(G_u,2),length(alphaU)/size(G_u,2)]);
     c_u = repmat(c_u,1,size(alphaU,2));
 
-    Sys.u = c_u + G_u*alphaU;
+    %append empty sdpvar for consistent length with states X
+    Sys.u = [c_u + G_u*alphaU,sdpvar(size(alphaU,1),1)];
 end
 
 %constraints for alpha
