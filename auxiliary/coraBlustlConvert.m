@@ -21,12 +21,13 @@ blu_stl = replace(blu_stl,'&','and');
 blu_stl = replace(blu_stl,'|','or');
 blu_stl = replace(blu_stl,'~','not ');
 blu_stl = regexprep(blu_stl,'x(\w*)','x$1(t)');
+blu_stl = regexprep(blu_stl,'u(\w*)','u$1(t)');
 
-for k=1:size(cora_stl.variables)
-   old = strcat('(\w*)',cora_stl.variables{k},'\s');
-   new = strcat('x',string(k),'(t)');
-   blu_stl = regexprep(blu_stl,old,new);
-end
+% for k=1:size(cora_stl.variables)
+%    old = strcat('(\w*)',cora_stl.variables{k},'\s');
+%    new = strcat('x',string(k),'(t)');
+%    blu_stl = regexprep(blu_stl,old,new);
+% end
 
 blu_stl = strtrim(blu_stl);
 

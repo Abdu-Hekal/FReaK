@@ -139,7 +139,6 @@ F = zl == z_eval;
 z = zl;
 end
 
-
 % BOOLEAN OPERATIONS
 
 function [F,P] = and(p_list,M)
