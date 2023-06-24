@@ -7,7 +7,7 @@ classdef KF_model
         spec %specification defined as an object of the CORA specification class (safe/unsafe sets)
 
         T %time horizon for simulation
-        dt %time step
+        dt %time step. This time step is used to interpolate inputs to system and output trajecotries. Use a small dt for accurate results, (default:0.01)
         cp %max control points for each input signal. needs to be an array of length equal to number of inputs. Needs to be a factor of T/dt & T/kdt
         %default is cp every dt. Note that values other than default are
         %currently only supported for spec of type stl formula.
@@ -48,7 +48,8 @@ classdef KF_model
         % Constructor
         function obj = KF_model(model)
             obj.model=model;
-            obj.maxSims=100;
+            obj.dt=0.01;
+            obj.maxSims=1500;
             obj.nResets=5;
             obj.trainRand=0;
             obj.offsetStrat=1;
@@ -66,9 +67,9 @@ classdef KF_model
 
             %default optimizer options
             solver = 'gurobi';  % gurobi, cplex, glpk
-            timeLimit = 2000; %2000;
-            gapLimit = 1; %1;
-            gapAbsLimit = 1; %1;
+            timeLimit = 60; %2000;
+            gapLimit = 1e-4; %0.1;
+            gapAbsLimit = 1e-10; %0.1;
             solnLimit = Inf;
             verb = 0;
             obj.solver.opts = sdpsettings('verbose', verb,'solver', solver, ...
@@ -77,6 +78,7 @@ classdef KF_model
                 'gurobi.MIPGapAbs', gapAbsLimit, ...
                 'gurobi.SolutionLimit', solnLimit,...
                 'gurobi.Method',3,...
+                'gurobi.MIPFocus',3,...
                 'usex0', 1 ...
                 );
             %                 'gurobi.MIPFocus',3,...
@@ -92,10 +94,10 @@ classdef KF_model
         %used for a subclass of this class. Ensure that the outputs are consistent
         function [tout, yout, obj] = simulate(obj, x0, u)
             if isa(obj.model, 'string') || isa(obj.model,"char")
-                [tout, yout] = run_simulink(obj.model, obj.T, obj.dt, x0, u);
+                [tout, yout] = run_simulink(obj.model, obj.T, x0, u);
             elseif isa(obj.model,'function_handle')
-                %function handle must have 4 inputs T,dt,x0,u
-                [tout, yout] = obj.model(obj.T, obj.dt, x0, u);
+                %function handle must have 3 inputs T,x0,u
+                [tout, yout] = obj.model(obj.T, x0, u);
             else
                 error('model not supported')
             end

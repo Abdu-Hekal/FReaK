@@ -76,14 +76,11 @@ classdef Koopman_lti
                     param(Sys.offsetCount) = Sys.offset;
                 end
                 [sol_control, errorflag1,~,~,P] = Sys.optimizer{{param}}; %% call solver
-                if(errorflag1==0)
-                    Sys.X = double(sol_control{1});
-                    Sys.Alpha = double(sol_control{2});
-                    Sys.Pstl = double(sol_control{3});
-                elseif (errorflag1==1 || errorflag1==15||errorflag1==12)  % some error, infeasibility or else
-                    disp(['Yalmip error (disturbance too bad ?): ' yalmiperror(errorflag1)]); % probably there is no controller for this w
-                else
-                    disp(['Yalmip error: ' yalmiperror(errorflag1)]); % some other error
+                Sys.X = double(sol_control{1});
+                Sys.Alpha = double(sol_control{2});
+                Sys.Pstl = double(sol_control{3});
+                if errorflag1 ~= 0
+                   disp(['Yalmip error: ' yalmiperror(errorflag1)]); % some other error
                 end
             end
         end

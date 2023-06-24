@@ -12,8 +12,8 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
     if numel(trainset.X) == kfModel.nResets
         trainIter = 0;
     end
-    %empty trainset after first iter because it is random trajectory.
-    if trainIter <= 1 && (kfModel.trainRand == 0 || kfModel.trainRand == 2)
+    %if nonrandom training technique is used, empty trainset after first iter because it is random trajectory.
+    if trainIter <= 1 && kfModel.trainRand == 0 
         trainset.X = {}; trainset.XU={}; trainset.t = {};
     end
 
@@ -22,17 +22,16 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
     %repeated, retrain with random xu else retrain with prev traj
     if trainIter==0 || kfModel.trainRand>=2 || ( kfModel.trainRand==1 && rem(trainIter, 2) == 0) || checkRepeatedTraj(critX,critU, trainset)
         [x0,u] = getSampleXU(kfModel);
-        tsim = (0:kfModel.dt:kfModel.T)'; %define simulation time points
+        tsim = (0:kfModel.dt:kfModel.T)'; %define time points for interpolating simulation
         usim = interp1(u(:,1),u(:,2:end),tsim(1:end-1),kfModel.inputInterpolation,"extrap"); %interpolate and extrapolate input points
         usim = [tsim(1:end-1),usim];
         [t, x, kfModel] = simulate(kfModel, x0, usim);
+        tak = (0:kfModel.ak.dt:kfModel.T)'; %define autokoopman time points
+        xak = interp1(t,x,tak,kfModel.trajInterpolation); %define autokoopman trajectory points
     else
-        x=critX; %pass x0 as full x to avoid simulation again
+        xak=interp1(t,critX,tak,kfModel.trajInterpolation); %pass x0 as full x to avoid simulation again
         u=critU;
     end
-
-    tak = (0:kfModel.ak.dt:kfModel.T)'; %define autokoopman time points
-    xak = interp1(t,x,tak,kfModel.trajInterpolation); %define autokoopman trajectory points
     trainset=appendToTrainset(trainset,tak,xak,u);
 
     try
@@ -61,18 +60,18 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
             [t, critX, kfModel] = simulate(kfModel, critX0, usim);
 %             testDraw(critU,critX,t,tsim,x0,A,B,g,R); %test plot: delete me
 
-            critX = interp1(t,critX,tsim,kfModel.trajInterpolation);
+            interpCritX = interp1(t,critX,tsim,kfModel.trajInterpolation); %interpolate trajectory at granulated time points for checking correctness
             spec=kfModel.soln.spec; %critical spec found with best value of robustness
             % different types of specifications
             if strcmp(spec.type,'unsafeSet')
-                falsified = any(spec.set.contains(critX'));
+                falsified = any(spec.set.contains(interpCritX'));
             elseif strcmp(spec.type,'safeSet')
-                falsified = ~all(spec.set.contains(critX')); %check this
+                falsified = ~all(spec.set.contains(interpCritX')); %check this
             elseif strcmp(spec.type,'logic')
-                [Bdata,phi,robustness] = bReachRob(spec,critX,tsim);
-                kfModel.specSolns(spec).realRob=robustness; %store real robustness value
+                [Bdata,phi,robustness] = bReachRob(spec,interpCritX,tsim);
+                 kfModel.specSolns(spec).realRob=robustness; %store real robustness value
                 falsified = ~isreal(sqrt(robustness)); %sqrt of -ve values are imaginary
-                if kfModel.trainRand==2 && numel(trainset.X)>1 %neighborhood training mode and we have more than 1 trajectory in our trainset
+                if kfModel.trainRand==2 %neighborhood training mode
                     [kfModel,trainset] = neighborhoodTrain(kfModel,trainset,robustness,critX,critU);
                 end
                 gap = getMilpGap(kfModel.solver.opts);
@@ -215,7 +214,8 @@ end
 
 function [kfModel,trainset] = neighborhoodTrain(kfModel,trainset,robustness,critX,critU)
 %training with best neighborhood trajectories
-if robustness <= kfModel.bestSoln.rob
+if robustness < kfModel.bestSoln.rob
+    disp("new best robustness found!")
     kfModel.bestSoln.rob = robustness;
     kfModel.bestSoln.x=critX;
     kfModel.bestSoln.u=critU;

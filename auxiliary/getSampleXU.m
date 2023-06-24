@@ -46,7 +46,7 @@ x0Range = kfModel.R0;
 u1 = size(u, 1);      % Number of time points
 u2 = size(u, 2);      % Number of inputs
 %displacement ratio
-dispL=0.75;
+dispL=0.35;
 % reshape u for size 1
 u = reshape(u,[],1);
 % Calculate normalized current sample

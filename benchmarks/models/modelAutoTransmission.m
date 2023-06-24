@@ -21,7 +21,7 @@ function model = modelAutoTransmission()
     model.dt = 0.01;
     model.ak.dt=2.5;
     model.trainRand=0;
-%     model.solver.dt=0.1;
+%     model.solver.dt=5;
     model.cp=[3000 3000];
 
     x = stl('x',3);
