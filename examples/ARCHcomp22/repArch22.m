@@ -48,17 +48,17 @@ bench.requirements = {; ...
 %     "CC4", globally(finally(globally(x(5)-x(4)>=8,interval(0,20)),interval(0,30)),interval(0,65)); ...
     "CC5", globally(finally(implies(globally(x(2)-x(1)>=9,interval(0,5)),globally(x(5)-x(4)>=9,interval(5,20))),interval(0,8)),interval(0,72))
     };
-benches{end+1} = bench;
-
-% bench.kfModel = modelNeural();
-% x = stl('x',2);
-% u = stl('u',1);
-% alpha=0.005;
-% beta=0.03;
-% bench.requirements = {; ...
-%     "NN", globally(x(1)-u(1)>2,interval(1,37)); ...
-%     };
 % benches{end+1} = bench;
+
+bench.kfModel = modelNeural();
+x = stl('x',2);
+u = stl('u',1);
+alpha=0.005;
+beta=0.03;
+bench.requirements = {; ...
+    "NN", globally(x(1)-u(1)>2,interval(1,37)); ...
+    };
+benches{end+1} = bench;
 
 solns=dictionary(string.empty,cell.empty);
 for b = 1:length(benches)

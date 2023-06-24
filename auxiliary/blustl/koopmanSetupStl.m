@@ -1,9 +1,12 @@
 function Sys = koopmanSetupStl(Sys,hardcoded)
 
 %% STL formula
-n = Sys.solverdt/Sys.koopdt; %evaluate stl formula every n koopman time steps 
+n = Sys.solverdt/Sys.koopdt; %evaluate stl formula on x every n koopman time steps 
 x = Sys.x(:,1:n:end);
-var = struct('x',x);
+nu = n/((size(Sys.x,2)-1)/size(Sys.u,2)); %evaluate stl formula on u every nu koopman time steps. Note that size of nu might be different than n for pulse input.
+assert(floor(nu)==nu,'check if pulse input that isdivisible by trajectory steps')
+u = Sys.u(:,1:nu:end);
+var = struct('x',x,'u',u);
 L=size(x,2);
 
 stl= KoopmanParseStlLabels(Sys);
