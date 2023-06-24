@@ -81,7 +81,7 @@ for i = 1:size(spec,1)
             %convert disjunct stl from CORA format to blustl
             disjSet = disjunctiveNormalForm(spec(i,1).set); %is this necassary?
             bluStl = coraBlustlConvert(disjSet); %convert from cora syntax to blustl
-            Sys.stlList = {bluStl};
+            Sys.stl = bluStl;
             if kfModel.useOptimizer
                 Sys=setupStl(Sys,false); %encode stl using milp
             else

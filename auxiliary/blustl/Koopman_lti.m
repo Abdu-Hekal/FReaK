@@ -4,7 +4,7 @@ classdef Koopman_lti
         koopdt %koopman time_step
         solverdt %solver time step for setting up stl, i.e. points where to evaluate stl
 
-        stlList %stl list to falsify
+        stl %stl to falsify
         cpBool %boolean array representing cp points
 
         %milp sdpvars and constraints

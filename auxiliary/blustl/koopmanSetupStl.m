@@ -6,10 +6,10 @@ X = Sys.X(:,1:n:end);
 var = struct('X',X);
 L=size(X,2);
 
-stlList= KoopmanParseStlLabels(Sys);
+stl= KoopmanParseStlLabels(Sys);
 M = Sys.bigM;
 normz = Sys.normz;
-phi = STLformula('phi', stlList{1});
+phi = STLformula('phi', stl);
 
 %     [Fphi, Pphi] = KoopmanMilpRobust(phi, 1, Sys.L+1, Sys.dt, var,M);
 %     [Fphi, Pphi] = orig_KoopmanMilpRobust(phi, 1, Sys.L+1, Sys.dt, var,M);
