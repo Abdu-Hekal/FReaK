@@ -80,10 +80,11 @@ classdef Koopman_lti
                     param(Sys.offsetCount) = Sys.offset;
                 end
                 [sol_control, errorflag1,~,~,P] = Sys.optimizer{{param}}; %% call solver
-                Sys.x = double(sol_control{1});
-                Sys.alpha = double(sol_control{2});
-                Sys.u = double(sol_control{3});
-                Sys.Pstl = double(sol_control{4});
+                
+                assign(Sys.x,double(sol_control{1}));
+                assign(Sys.alpha,double(sol_control{2}));
+                assign(Sys.u,double(sol_control{3}));
+                assign(Sys.Pstl,double(sol_control{4}));
                 if errorflag1 ~= 0
                    disp(['Yalmip error: ' yalmiperror(errorflag1)]); % some other error
                 end

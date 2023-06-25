@@ -32,7 +32,6 @@ if isempty(generators(R0))
 else
     x0 = center(R0) + generators(R0)*alphaInit;
 end
-
 %check if kfModel has control input
 if ~isempty(U)
     % determine most ctritical control input

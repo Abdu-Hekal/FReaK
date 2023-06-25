@@ -139,7 +139,7 @@ end
 %     normVal = normVal + normz(idx);
 % end
 % st = strcat(st,'/',num2str(normVal));
-disp(st)
+
 %AH: set up tags for normalization and weighting
 % matches = regexp(st, 'X\((\d+),', 'tokens');
 % tag = 'pred';

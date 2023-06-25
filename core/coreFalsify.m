@@ -8,12 +8,16 @@ falsified = false;
 trainIter = 0;
 epsilon = eps; %epsilon value to add to offset
 while kfModel.soln.sims <= kfModel.maxSims && falsified==false
+    %clear previous solution from yalmip (makes warmstart feasible)
+    if kfModel.solver.opts.usex0
+        yalmip('clearsolution')
+    end
     %reset after size of trainset==nResets;
     if numel(trainset.X) == kfModel.nResets
         trainIter = 0;
     end
     %if nonrandom training technique is used, empty trainset after first iter because it is random trajectory.
-    if trainIter <= 1 && kfModel.trainRand == 0 
+    if trainIter <= 1 && kfModel.trainRand == 0
         trainset.X = {}; trainset.XU={}; trainset.t = {};
     end
 
@@ -21,6 +25,10 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
     %if first iter, random trajectory setting selected, or critical trajectory is
     %repeated, retrain with random xu else retrain with prev traj
     if trainIter==0 || kfModel.trainRand>=2 || ( kfModel.trainRand==1 && rem(trainIter, 2) == 0) || checkRepeatedTraj(critX,critU, trainset)
+        if trainIter>0 && kfModel.solver.opts.usex0==1 && checkRepeatedTraj(critX,critU, trainset)
+            kfModel.solver.opts.usex0=0; %turn off warmstarting if repeated trajectory returned by solver
+            disp('Turned off warmstarting due to repeated solutions')
+        end
         [x0,u] = getSampleXU(kfModel);
         tsim = (0:kfModel.dt:kfModel.T)'; %define time points for interpolating simulation
         usim = interp1(u(:,1),u(:,2:end),tsim(1:end-1),kfModel.inputInterpolation,"extrap"); %interpolate and extrapolate input points
@@ -34,7 +42,7 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
     end
     trainset=appendToTrainset(trainset,tak,xak,u);
 
-%     try
+    try
         %run autokoopman and learn linearized model
         [kfModel, A, B, g] = symbolicRFF(kfModel, trainset);
         % find predicted falsifying initial set and inputs
@@ -42,13 +50,13 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
         R = reachKoopman(A,B,g,kfModel);
         % determine most critical reachable set and specification
         kfModel = critAlpha(R,kfModel);
-%     catch
-%         disp("error encountered whilst setup/solving, resetting training data")
-%         trainIter=0;
-%         continue;
-%     end
+    catch
+        disp("error encountered whilst setup/solving, resetting training data")
+        trainIter=0;
+        continue;
+    end
 
-    if kfModel.soln.rob<inf
+    if kfModel.soln.rob<inf %found a viable solution
         offsetIter = 0;
         while offsetIter <= max(kfModel.offsetStrat,0) && falsified==false %offset once if not falsified
             [critX0, critU] = falsifyingTrajectory(kfModel);
@@ -58,7 +66,7 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
 
             % run most critical inputs on the real system
             [t, critX, kfModel] = simulate(kfModel, critX0, usim);
-%             testDraw(critU,critX,t,tsim,x0,A,B,g,R); %test plot: delete me
+%             testDraw(critU,critX,t,tak,x0,A,B,g,R); %test plot: delete me
 
             interpCritX = interp1(t,critX,tsim,kfModel.trajInterpolation); %interpolate trajectory at granulated time points for checking correctness
             spec=kfModel.soln.spec; %critical spec found with best value of robustness
@@ -69,8 +77,7 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
                 falsified = ~all(spec.set.contains(interpCritX')); %check this
             elseif strcmp(spec.type,'logic')
                 [Bdata,phi,robustness] = bReachRob(spec,tsim,interpCritX,[usim(:,2:end)', zeros(size(usim,2)-1,1)]);
-                robustness
-                 kfModel.specSolns(spec).realRob=robustness; %store real robustness value
+                kfModel.specSolns(spec).realRob=robustness; %store real robustness value
                 falsified = ~isreal(sqrt(robustness)); %sqrt of -ve values are imaginary
                 if kfModel.trainRand==2 %neighborhood training mode
                     [kfModel,trainset] = neighborhoodTrain(kfModel,trainset,robustness,critX,critU);
@@ -93,7 +100,7 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
                                     Sys=setupStl(Sys,true);
                                 end
                                 Sys=optimize(Sys,kfModel.solver.opts);
-                                kfModel.soln.alpha = value(Sys.Alpha); %new alpha value after offset
+                                kfModel.soln.alpha = value(Sys.alpha); %new alpha value after offset
                             else %kfModel.offsetStrat == -1: offset next iteration
                                 kfModel.specSolns(spec).lti=Sys;
                             end
@@ -248,7 +255,7 @@ end
 end
 
 function testDraw(critU,critX,t,xt,x0,A,B,g,R)
-plotVars=[1,2]; %[3];
+plotVars=[3]; %[3];
 drawu=critU(:,2:end)';
 x = g(x0);
 for i = 1:size(drawu,2)

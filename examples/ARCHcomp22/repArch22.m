@@ -20,7 +20,7 @@ function repArch22()
 %------------- BEGIN CODE --------------
 benches = {}; %empty cell to store benchmarks
 %Model transmission benchmark
-bench.kfModel = modelAutoTransmission();
+bench.kfModel = @modelAutoTransmission;
 x = stl('x',3);
 bench.requirements = {; ...
     "AT1", globally(x(1) < 120,interval(0,20)); ...
@@ -39,7 +39,7 @@ bench.requirements = {; ...
     };
 % benches{end+1} = bench;
 % Chasing cars benchmark
-bench.kfModel = modelCars();
+bench.kfModel = @modelCars;
 x = stl('x',5);
 bench.requirements = {; ...
 %     "CC1", globally(x(5)-x(4)<=40,interval(0,100)); ...
@@ -50,7 +50,7 @@ bench.requirements = {; ...
     };
 benches{end+1} = bench;
 
-bench.kfModel = modelNeural();
+bench.kfModel = @modelNeural;
 x = stl('x',2);
 u = stl('u',1);
 alpha=0.005;
@@ -64,12 +64,12 @@ solns=dictionary(string.empty,cell.empty);
 for b = 1:length(benches)
     bench = benches{b};
     req = bench.requirements;
-    kfModel = bench.kfModel;
     for i = 1:size(req, 1)
         % initialize seeds
         rng(0)
         pyrunfile("seed.py")
         for j = 1:10
+            kfModel = bench.kfModel();
             disp("--------------------------------------------------------")
             name = req{i, 1};
             eq = req{i, 2};

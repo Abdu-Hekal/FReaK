@@ -47,8 +47,8 @@ def run(times, trajectories, param_dict, inputs_list):
 
     params = experiment_results['hyperparameters']
     paramVals = experiment_results['hyperparameter_values']
-    print(params)
-    print(paramVals)
+#     print(params)
+#     print(paramVals)
 
     return koopman_model
 
