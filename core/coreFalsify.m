@@ -73,7 +73,6 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
                 falsified = ~all(spec.set.contains(interpCritX')); %check this
             elseif strcmp(spec.type,'logic')
                 [Bdata,phi,robustness] = bReachRob(spec,tsim,interpCritX,[usim(:,2:end)', zeros(size(usim,2)-1,1)]);
-                robustness
                 kfModel.specSolns(spec).realRob=robustness; %store real robustness value
                 falsified = ~isreal(sqrt(robustness)); %sqrt of -ve values are imaginary
                 if kfModel.trainRand==2 %neighborhood training mode
@@ -118,12 +117,12 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
                     break
                 end
             end
-            %clear previous solution from yalmip (makes warmstart feasible)
-            if kfModel.solver.opts.usex0
-                yalmip('clearsolution')
-            end
             offsetIter = offsetIter+1;
         end
+    end
+    %clear previous solution from yalmip (makes warmstart feasible)
+    if kfModel.solver.opts.usex0
+        yalmip('clearsolution')
     end
     trainIter=trainIter+1;
 end
