@@ -223,6 +223,7 @@ function [kfModel,trainset] = neighborhoodTrain(kfModel,trainset,robustness,crit
 %training with best neighborhood trajectories
 if robustness < kfModel.bestSoln.rob
     disp("new best robustness found!")
+    disp(robustness)
     kfModel.bestSoln.rob = robustness;
     kfModel.bestSoln.x=critX;
     kfModel.bestSoln.u=critU;

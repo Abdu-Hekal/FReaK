@@ -37,54 +37,28 @@ end
 end
 
 function [x0,u]=getDispSampleXU(kfModel) %TODO: implement control points
-% current values of input and initial state and valid ranges
+
 u = kfModel.bestSoln.u(:,2:end);
 x0 = kfModel.bestSoln.x(1,:)';
 uRange = kfModel.U;
 x0Range = kfModel.R0;
-% dimensions of u and x0
 u1 = size(u, 1);      % Number of time points
 u2 = size(u, 2);      % Number of inputs
-%displacement ratio
-dispL=0.35;
-% reshape u for size 1
+
+perturb = 0.05; %max perturbation percentage
+lowerBound = [repmat(uRange.inf,size(u,1),1); x0Range.inf];
+upperBound = [repmat(uRange.sup,size(u,1),1); x0Range.sup];
+
 u = reshape(u,[],1);
-% Calculate normalized current sample
-curSampleOrig = [u; x0];
-uRange=repelem(uRange,u1,1); % input range for each time point
-curSample = (curSampleOrig - [uRange.inf; x0Range.inf]) ./ ([uRange.sup; x0Range.sup] - [uRange.inf; x0Range.inf]);
+curSample = [u; x0];
 
-% Generate random unit vector
-m = numel(u);
-n = numel(x0);
-rUnitVector = randn(m+n, 1);
-rUnitVector = rUnitVector / norm(rUnitVector);
+maxPerturb = perturb * (upperBound-lowerBound);
+lowerBound = max(curSample-maxPerturb,lowerBound); %maximum of perturbation and bounds on inputs
+upperBound = min(curSample+maxPerturb,upperBound); %minimum of perturbation and bounds on inputs
 
-% Compute offsets along the random unit vector
-lam1 = ([uRange.inf; x0Range.inf] - curSample) ./ rUnitVector;
-lam2 = ([uRange.sup; x0Range.sup] - curSample) ./ rUnitVector;
+newSample = (upperBound - lowerBound) .* rand(size(curSample)) + lowerBound;
+newU = newSample(1:u1*u2);
+u= [kfModel.bestSoln.u(:,1),reshape(newU,u1,u2)]; %append time from previously found best solution
+x0 = newSample(u1*u2+1:end);
 
-% Ensure lam1 <= lam2 for each dimension
-[lam1, lam2] = deal(min(lam1, lam2), max(lam1, lam2));
-% Handle restricted dimensions
-Ix_nonzero = find([uRange.inf; x0Range.inf] - [uRange.sup; x0Range.sup]);
-l1 = max(lam1(Ix_nonzero));
-l2 = min(lam2(Ix_nonzero));
-
-% Generate a random number within the range
-r = mcGenerateRandomNumber(l1, l2, dispL);
-
-% Create the weight vector
-weightVector = zeros(m+n, 1);
-weightVector(Ix_nonzero) = r;
-
-% Transform new point back to the original search hypercube
-newSample = curSample + weightVector .* rUnitVector;
-newSample = newSample .* ([uRange.sup; x0Range.sup] - [uRange.inf; x0Range.inf]) + [uRange.inf; x0Range.inf];
-
-% Extract the new u and newX0
-newSample(isnan(newSample)) = curSampleOrig(isnan(newSample)); %replace all nan values with original values, nan means range is zero
-newU = newSample(1:m);
-u= [kfModel.bestSoln.u(:,1),reshape(newU,u1,u2)];
-x0 = newSample(m+1:end);
 end

@@ -130,7 +130,7 @@ if strfind(st, '>')
     st= [ '(' tokens{1}{1} ')-(' tokens{1}{2} ')+' num2str(robOffset)];    
 end
 %AH: Normalize
-% matches = regexp(st, 'X\((\d+),', 'tokens');
+% matches = regexp(st, 'x\((\d+),', 'tokens');
 % tag = 'pred';
 % normVal=0;
 % for i=1:length(matches)

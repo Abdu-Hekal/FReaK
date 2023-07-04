@@ -24,7 +24,7 @@ phi = STL_Formula('phi', '(alw_[0,0.2] humidity[t]<=0.5) until_[0.5,1] temperatu
 
 % phi = STL_Formula('phi', 'alw_[0,1] (alw_[0.1,0.3] humidity[t]>-0.1) ')
 
-
+phi = STL_Formula('phi', 'alw_[0,0.2] humidity[t]<=0.5 and (alw_[0,0.2] humidity[t]<=0.5 or alw_[0,0.2] temperature[t]>=0.5)');
 
 Rphi = BreachRequirement(phi);
 
@@ -32,9 +32,9 @@ Rphi = BreachRequirement(phi);
 robustness = @(Bdata) Rphi.Eval(Bdata);
 
 rob=robustness(Bdata);
-culprit=bReachCulprit(Bdata,phi,rob)
 
-
+disp("break")
+map=get_formula_name_map(phi, containers.Map());
 
 
 
