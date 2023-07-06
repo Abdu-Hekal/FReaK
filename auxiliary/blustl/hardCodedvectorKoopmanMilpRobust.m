@@ -1,4 +1,4 @@
-function [F,P] = hardCodedvectorKoopmanMilpRobust(phi,kList,kMax,ts,var,M,normz,offset,offsetCount)
+function [F,P] = hardCodedvectorKoopmanMilpRobust(phi,kList,kMax,ts,var,M,normz,offsetMap)
 % hardCodedvectorKoopmanMilpRobust  constructs MILP constraints in YALMIP that compute
 %                  the robustness of satisfaction for specification phi
 %
@@ -10,8 +10,8 @@ function [F,P] = hardCodedvectorKoopmanMilpRobust(phi,kList,kMax,ts,var,M,normz,
 %       var:    a dictionary mapping strings to variables
 %       M:   	a large positive constant used for big-M constraints
 %       normz:  normalization values based on boundaries of reachable sets
-%       offset- offset which is equal to robustness of trajectory on real stl
-%       offsetCount - count of subset of stl where rob==0
+%       offsetMap: map that defines predicates to offset, key:number of
+%       predicate, value:offset value
 %
 % Output:
 %       F:  YALMIP constraints
@@ -48,31 +48,31 @@ end
 switch (phi.type)
 
     case 'predicate'
-        [F,P] = pred(phi.st,kList,var,normz,offset,offsetCount);
+        [F,P] = pred(phi.st,kList,var,normz,offsetMap);
 
     case 'not'
-        [Frest,Prest] = hardCodedvectorKoopmanMilpRobust(phi.phi,kList,kMax,ts, var,M,normz,offset,offsetCount);
+        [Frest,Prest] = hardCodedvectorKoopmanMilpRobust(phi.phi,kList,kMax,ts, var,M,normz,offsetMap);
         [Fnot, Pnot] = not(Prest);
         F = [F, Fnot, Frest];
         P = Pnot;
 
     case 'or'
-        [Fdis1,Pdis1] = hardCodedvectorKoopmanMilpRobust(phi.phi1,kList,kMax,ts, var,M,normz,offset,offsetCount);
-        [Fdis2,Pdis2] = hardCodedvectorKoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M,normz,offset,offsetCount);
+        [Fdis1,Pdis1] = hardCodedvectorKoopmanMilpRobust(phi.phi1,kList,kMax,ts, var,M,normz,offsetMap);
+        [Fdis2,Pdis2] = hardCodedvectorKoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M,normz,offsetMap);
         [For, Por] = or([Pdis1;Pdis2],M);
         F = [F, For, Fdis1, Fdis2];
         P = Por;
 
     case 'and'
-        [Fcon1,Pcon1] = hardCodedvectorKoopmanMilpRobust(phi.phi1,kList,kMax,ts, var,M,normz,offset,offsetCount);
-        [Fcon2,Pcon2] = hardCodedvectorKoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M,normz,offset,offsetCount);
+        [Fcon1,Pcon1] = hardCodedvectorKoopmanMilpRobust(phi.phi1,kList,kMax,ts, var,M,normz,offsetMap);
+        [Fcon2,Pcon2] = hardCodedvectorKoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M,normz,offsetMap);
         [Fand, Pand] = and([Pcon1;Pcon2],M);
         F = [F, Fand, Fcon1, Fcon2];
         P = Pand;
 
     case '=>'
-        [Fant,Pant] = hardCodedvectorKoopmanMilpRobust(phi.phi1,kList,kMax,ts,var,M,normz,offset,offsetCount);
-        [Fcons,Pcons] = hardCodedvectorKoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M,normz,offset,offsetCount);
+        [Fant,Pant] = hardCodedvectorKoopmanMilpRobust(phi.phi1,kList,kMax,ts,var,M,normz,offsetMap);
+        [Fcons,Pcons] = hardCodedvectorKoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M,normz,offsetMap);
         [Fnotant,Pnotant] = not(Pant);
         [Fimp, Pimp] = or([Pnotant;Pcons],M);
         F = [F, Fant, Fnotant, Fcons, Fimp];
@@ -80,7 +80,7 @@ switch (phi.type)
 
     case 'always'
         kListAlw = unique(cell2mat(arrayfun(@(k) {min(kMax,k + a): min(kMax,k + b)}, kList)));
-        [Frest,Prest] = hardCodedvectorKoopmanMilpRobust(phi.phi,kListAlw,kMax,ts, var,M,normz,offset,offsetCount);
+        [Frest,Prest] = hardCodedvectorKoopmanMilpRobust(phi.phi,kListAlw,kMax,ts, var,M,normz,offsetMap);
         [Falw, Palw] = always(Prest,a,b,kList,kMax,M);
         F = [F, Falw];
         P = [Palw, P];
@@ -88,22 +88,22 @@ switch (phi.type)
 
     case 'eventually'
         kListEv = unique(cell2mat(arrayfun(@(k) {min(kMax,k + a): min(kMax,k + b)}, kList)));
-        [Frest,Prest] = hardCodedvectorKoopmanMilpRobust(phi.phi,kListEv,kMax,ts, var,M,normz,offset,offsetCount);
+        [Frest,Prest] = hardCodedvectorKoopmanMilpRobust(phi.phi,kListEv,kMax,ts, var,M,normz,offsetMap);
         [Fev, Pev] = eventually(Prest,a,b,kList,kMax,M);
         F = [F, Fev];
         P = [Pev, P];
         F = [F, Frest];
 
     case 'until'
-        [Fp,Pp] = hardCodedvectorKoopmanMilpRobust(phi.phi1,kList,kMax,ts, var,M,normz,offset,offsetCount);
-        [Fq,Pq] = hardCodedvectorKoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M,normz,offset,offsetCount);
+        [Fp,Pp] = hardCodedvectorKoopmanMilpRobust(phi.phi1,kList,kMax,ts, var,M,normz,offsetMap);
+        [Fq,Pq] = hardCodedvectorKoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M,normz,offsetMap);
         [Funtil, Puntil] = until(Pp,Pq,a,b,kList,kMax,M);
         F = [F, Funtil, Fp, Fq];
         P = Puntil;
 end
 end
 
-function [F,z] = pred(st,kList,var,normz,offset,offsetCount)
+function [F,z] = pred(st,kList,var,normz,offsetMap)
 % Enforce constraints based on predicates
 % var is the variable dictionary
 fnames = fieldnames(var);
@@ -114,8 +114,8 @@ end
 
 global vkmrCount %globl count to track wihch subpred to offset in milp
 vkmrCount=vkmrCount+1; %increase count as pred found
-if vkmrCount == offsetCount
-    robOffset=offset;
+if isKey(offsetMap,vkmrCount)
+    robOffset=offsetMap(vkmrCount);
 else
     robOffset=0;
 end

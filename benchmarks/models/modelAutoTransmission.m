@@ -20,7 +20,7 @@ function model = modelAutoTransmission()
     model.T=30; 
     model.dt = 0.01;
     model.ak.dt=2.5;
-    model.trainRand=2;
+    model.trainRand=0;
 %     model.solver.dt=5;
     model.cp=[3000 3000];
 

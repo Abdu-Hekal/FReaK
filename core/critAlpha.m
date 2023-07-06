@@ -78,9 +78,8 @@ for i = 1:size(spec,1)
                 Sys.cpBool=kfModel.cpBool;
             end
             Sys = setupAlpha(Sys);
-            %convert disjunct stl from CORA format to blustl
-            disjSet = disjunctiveNormalForm(spec(i,1).set); %is this necassary?
-            bluStl = coraBlustlConvert(disjSet); %convert from cora syntax to blustl
+            %convert stl from CORA format to blustl
+            bluStl = coraBlustlConvert(spec(i,1).set); %convert from cora syntax to blustl
             Sys.stl = bluStl;
             if kfModel.useOptimizer
                 Sys=setupStl(Sys,false); %encode stl using milp

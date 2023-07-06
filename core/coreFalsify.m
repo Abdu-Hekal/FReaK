@@ -6,7 +6,7 @@ runtime=tic;
 
 falsified = false;
 trainIter = 0;
-epsilon = eps; %epsilon value to add to offset
+epsilon = 1.01; %epsilon % for offset, offset=epsilon*robustness
 while kfModel.soln.sims <= kfModel.maxSims && falsified==false
     %reset after size of trainset==nResets;
     if numel(trainset.X) == kfModel.nResets
@@ -38,19 +38,19 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
     end
     trainset=appendToTrainset(trainset,tak,xak,u);
 
-    try
-        %run autokoopman and learn linearized model
-        [kfModel, A, B, g] = symbolicRFF(kfModel, trainset);
-        % find predicted falsifying initial set and inputs
-        % compute reachable set for Koopman linearized model
-        R = reachKoopman(A,B,g,kfModel);
-        % determine most critical reachable set and specification
-        kfModel = critAlpha(R,kfModel);
-    catch
-        disp("error encountered whilst setup/solving, resetting training data")
-        trainIter=0;
-        continue;
-    end
+    %     try
+    %run autokoopman and learn linearized model
+    [kfModel, A, B, g] = symbolicRFF(kfModel, trainset);
+    % find predicted falsifying initial set and inputs
+    % compute reachable set for Koopman linearized model
+    R = reachKoopman(A,B,g,kfModel);
+    % determine most critical reachable set and specification
+    kfModel = critAlpha(R,kfModel);
+    %     catch
+    %         disp("error encountered whilst setup/solving, resetting training data")
+    %         trainIter=0;
+    %         continue;
+    %     end
 
     if kfModel.soln.rob<inf %found a viable solution
         offsetIter = 0;
@@ -72,25 +72,27 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
             elseif strcmp(spec.type,'safeSet')
                 falsified = ~all(spec.set.contains(interpCritX')); %check this
             elseif strcmp(spec.type,'logic')
+
                 [Bdata,phi,robustness] = bReachRob(spec,tsim,interpCritX,[usim(:,2:end)', zeros(size(usim,2)-1,1)]);
                 kfModel.specSolns(spec).realRob=robustness; %store real robustness value
+                robustness
                 falsified = ~isreal(sqrt(robustness)); %sqrt of -ve values are imaginary
                 if kfModel.trainRand==2 %neighborhood training mode
                     [kfModel,trainset] = neighborhoodTrain(kfModel,trainset,robustness,critX,critU);
                 end
                 gap = getMilpGap(kfModel.solver.opts);
                 if robustness > gap && abs(kfModel.offsetStrat) %not falsifed yet, robustness is greater than gap termination criteria for milp solver and an offset mode selected by user. Note that if robustness is less than gap, offset most likely is not benefecial.
-                    [newOffsetCount,sign,mus] = bReachCulprit(Bdata,phi,robustness); %get no. of predicate responsible for robustness value
-                    if numel(mus)>1 && newOffsetCount > 0 %if there is more than 1 predicate and there exists an individual predicate that is culprit for (+ve) robustness
+                    offsetMap=bReachCulprit2(Bdata,spec); %get predicates responsible for robustness value
+                    if offsetMap.Count > 0 %if there is more than 1 predicate and there exists predicates that are culprit for (+ve) robustness
                         kfModel.solver.opts.usex0=0; %avoid warmstarting if offsetting
+                        Sys=kfModel.specSolns(spec).lti;
                         if offsetIter==0 %if first offset iteration, re-solve with offset if offsetStrat==1 or save offset for next iter if offsetStrat==-1
-                            Sys=kfModel.specSolns(spec).lti;
-                            if Sys.offsetCount == newOffsetCount %if same offset count as b4 offset (i.e. same inequality)
-                                Sys.offset =  Sys.offset+(sign*robustness)+epsilon;
-                            else
-                                Sys.offset = (sign*robustness) + epsilon;
+                            keys = offsetMap.keys;
+                            for ii=1:offsetMap.Count
+                                key = keys{ii};
+                                offsetMap(key) = offsetMap(key)*epsilon;
                             end
-                            Sys.offsetCount = newOffsetCount;
+                            Sys.offsetMap = offsetMap;
                             if kfModel.offsetStrat == 1 %if offset strategy in this iteration selected
                                 if ~kfModel.useOptimizer %if no optimizer object, setup stl with hardcoded offset
                                     Sys=setupStl(Sys,true);
@@ -102,13 +104,6 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
                             end
                             % TODO: if offset gives better val of robustness, should we pass
                             %                     % it as training data instead? should we pass both?
-                        else %if already offset and failed to falsify, increase epsilon
-                            %check first if same offset count as b4 offset (i.e. same inequality)
-                            if Sys.offsetCount == newOffsetCount
-                                epsilon = epsilon + robustness;
-                            else
-                                epsilon = eps; %reset epsilon cause we now violate a different inequality
-                            end
                         end
                     else
                         break
@@ -166,8 +161,6 @@ assert(floor(all_steps)==all_steps,'Time step (dt) must be a factor of Time hori
 if ~isfield(kfModel.ak,'dt')
     kfModel.ak.dt=kfModel.dt;
 else
-    abstr = kfModel.ak.dt/kfModel.dt; %define abstraction ratio
-    assert(floor(abstr)==abstr,'Time step of koopman (ak.dt) must be a multiple of dt')
     allAbstrSteps = kfModel.T/kfModel.ak.dt;
     assert(floor(allAbstrSteps)==allAbstrSteps,'Time step of koopman (ak.dt) must be a factor of Time horizon (T)')
 end
@@ -187,6 +180,13 @@ kfModel.ak.rank=int64(kfModel.ak.rank);
 
 % clear yalmip
 yalmip('clear')
+
+% convert all stl specs to conjunctive normal form, this allows us to correctly implement offsets
+for ii=1:numel(kfModel.spec)
+    if strcmp(kfModel.spec(ii).type,'logic')
+        kfModel.spec(ii).set = conjunctiveNormalForm(kfModel.spec(ii).set);
+    end
+end
 
 if ~isempty(kfModel.U) %check if kfModel has inputs
     assert(isa(kfModel.U, 'interval'), 'Input (kfModel.U) must be defined as an CORA interval')
@@ -255,7 +255,7 @@ end
 end
 
 function testDraw(critU,critX,t,xt,x0,A,B,g,R)
-plotVars=[3]; %[3];
+plotVars=[1]; %[3];
 drawu=critU(:,2:end)';
 x = g(x0);
 for i = 1:size(drawu,2)

@@ -50,9 +50,9 @@ classdef KF_model
             obj.model=model;
             obj.dt=0.01;
             obj.maxSims=1500;
-            obj.nResets=1500;
+            obj.nResets=5;
             obj.trainRand=0;
-            obj.offsetStrat=0;
+            obj.offsetStrat=-1;
             obj.useOptimizer=false;
             obj.inputInterpolation='previous';
             obj.trajInterpolation='pchip';

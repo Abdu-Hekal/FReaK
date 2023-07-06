@@ -22,8 +22,7 @@ classdef Koopman_lti
         optimizer
 
         %offset and offset count to modify stl based on prev iterations
-        offset
-        offsetCount
+        offsetMap
     end
 
     properties (Dependent)
@@ -43,9 +42,8 @@ classdef Koopman_lti
             Sys.koopdt=koopdt;
             Sys.solverdt=solverdt;
 
-            %intitalise offset and count to zero
-            Sys.offset=0;
-            Sys.offsetCount=-1;
+            %intitalise offset map to empty 
+            Sys.offsetMap = containers.Map('KeyType', 'double', 'ValueType', 'double');
         end
 
         function Sys = setupAlpha(Sys)
@@ -76,8 +74,12 @@ classdef Koopman_lti
                 optimize(constraints,objective,options);
             else
                 param = zeros(1,length(Sys.Ostl));
-                if Sys.offsetCount>0 %we have an offset
-                    param(Sys.offsetCount) = Sys.offset;
+                if Sys.offsetMap.Count > 0 %we have an offset
+                    keys = Sys.offsetMap.keys;
+                    for ii=1:Sys.offsetMap.Count
+                        key = keys{ii};
+                        param(key) = Sys.offsetMap(key);
+                    end
                 end
                 [sol_control, errorflag1,~,~,P] = Sys.optimizer{{param}}; %% call solver
                 
@@ -125,13 +127,12 @@ classdef Koopman_lti
             end
         end
         function normz = get.normz(Sys)
-            nx=Sys.nx;
-            minBound=inf(nx,1);
-            maxBound=-inf(nx,1);
+            minBound=inf(Sys.nx,1);
+            maxBound=-inf(Sys.nx,1);
             for i=1:length(Sys.reachZonos)
                 zono=Sys.reachZonos{i};
-                for k=1:nx
-                    supFun=zeros(1,nx);
+                for k=1:Sys.nx
+                    supFun=zeros(1,Sys.nx);
                     supFun(k)=-1;
                     minBound(k) = min(minBound(k),-supportFunc(zono,supFun));
                     supFun(k)=1;
