@@ -6,7 +6,7 @@ runtime=tic;
 
 falsified = false;
 trainIter = 0;
-epsilon = 1.01; %epsilon % for offset, offset=epsilon*robustness
+epsilon = 1; %epsilon % for offset, offset=epsilon*robustness
 while kfModel.soln.sims <= kfModel.maxSims && falsified==false
     %reset after size of trainset==nResets;
     if numel(trainset.X) == kfModel.nResets
@@ -74,16 +74,17 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
             elseif strcmp(spec.type,'logic')
 
                 [Bdata,phi,robustness] = bReachRob(spec,tsim,interpCritX,[usim(:,2:end)', zeros(size(usim,2)-1,1)]);
-                kfModel.specSolns(spec).realRob=robustness; %store real robustness value
                 robustness
+                kfModel.specSolns(spec).realRob=robustness; %store real robustness value
                 falsified = ~isreal(sqrt(robustness)); %sqrt of -ve values are imaginary
                 if kfModel.trainRand==2 %neighborhood training mode
                     [kfModel,trainset] = neighborhoodTrain(kfModel,trainset,robustness,critX,critU);
                 end
                 gap = getMilpGap(kfModel.solver.opts);
                 if robustness > gap && abs(kfModel.offsetStrat) %not falsifed yet, robustness is greater than gap termination criteria for milp solver and an offset mode selected by user. Note that if robustness is less than gap, offset most likely is not benefecial.
-                    offsetMap=bReachCulprit2(Bdata,spec); %get predicates responsible for robustness value
-                    if offsetMap.Count > 0 %if there is more than 1 predicate and there exists predicates that are culprit for (+ve) robustness
+                    [offsetMap]=bReachCulprit3(critU,critX,t,tak,x0,A,B,g,R);
+                    offsetMap=bReachCulprit2(Bdata,conjunctiveNormalForm(spec.set)); %get predicates responsible for robustness value
+                    if offsetMap.Count > 0 %if there there exists predicates that are culprit for (+ve) robustness
                         kfModel.solver.opts.usex0=0; %avoid warmstarting if offsetting
                         Sys=kfModel.specSolns(spec).lti;
                         if offsetIter==0 %if first offset iteration, re-solve with offset if offsetStrat==1 or save offset for next iter if offsetStrat==-1
@@ -94,8 +95,11 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
                             end
                             Sys.offsetMap = offsetMap;
                             if kfModel.offsetStrat == 1 %if offset strategy in this iteration selected
-                                if ~kfModel.useOptimizer %if no optimizer object, setup stl with hardcoded offset
-                                    Sys=setupStl(Sys,true);
+                                set = conjunctiveNormalForm(spec.set); %only use conjunctive form if we are offsetting
+                                bluStl = coraBlustlConvert(set); %convert from cora syntax to blustl
+                                if ~isequal(bluStl,Sys.stl) || ~kfModel.useOptimizer
+                                    Sys.stl = bluStl;
+                                    Sys=setupStl(Sys,~kfModel.useOptimizer); %encode stl using milp
                                 end
                                 Sys=optimize(Sys,kfModel.solver.opts);
                                 kfModel.soln.alpha = value(Sys.alpha); %new alpha value after offset
@@ -180,13 +184,6 @@ kfModel.ak.rank=int64(kfModel.ak.rank);
 
 % clear yalmip
 yalmip('clear')
-
-% convert all stl specs to conjunctive normal form, this allows us to correctly implement offsets
-for ii=1:numel(kfModel.spec)
-    if strcmp(kfModel.spec(ii).type,'logic')
-        kfModel.spec(ii).set = conjunctiveNormalForm(kfModel.spec(ii).set);
-    end
-end
 
 if ~isempty(kfModel.U) %check if kfModel has inputs
     assert(isa(kfModel.U, 'interval'), 'Input (kfModel.U) must be defined as an CORA interval')

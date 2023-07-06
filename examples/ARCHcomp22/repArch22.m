@@ -52,9 +52,14 @@ bench.kfModel = @modelNeural;
 x = stl('x',2);
 u = stl('u',1);
 alpha=0.005;
-beta=0.04;
+beta=0.03;
+beta2=0.04;
 bench.requirements = {; ...
-    "NN", globally(implies(abs(x(1)-u(1))>alpha+beta*abs(u(1)),finally(globally(~(alpha+beta*abs(u(1))<=abs(x(1)-u(1))),interval(0,1)),interval(0,2))),interval(1,37)); ...
+%     "NN", globally(implies(abs(x(1)-u(1))>alpha+beta*abs(u(1)),finally(globally(~(alpha+beta*abs(u(1))<=abs(x(1)-u(1))),interval(0,1)),interval(0,2))),interval(1,37)); ...
+%     "NN2", globally(implies(abs(x(1)-u(1))>alpha+beta2*abs(u(1)),finally(globally(~(alpha+beta2*abs(u(1))<=abs(x(1)-u(1))),interval(0,1)),interval(0,2))),interval(1,37)); ...
+    "NNx", (finally(x(1)>3.2,interval(0,1))) & (finally(globally(x(1)>1.75 & x(1)<2.25,interval(0,0.5)),interval(1,1.5))) & (globally(x(1)>1.825 & x(1)<2.175,interval(2,3))) ; ...
+%     "testNNx", (finally(x(1)>3.2,interval(0,1))) & (globally(x(1)>1.825 & x(1)<2.175,interval(2,3))) ; ...
+%     "testNNx", finally(x(1)>3.2,interval(0,1)) ; ...
     };
 benches{end+1} = bench;
 
@@ -71,6 +76,10 @@ for b = 1:length(benches)
             disp("--------------------------------------------------------")
             name = req{i, 1};
             eq = req{i, 2};
+
+            if name=="NNx"
+                kfModel.U = interval(1.95,2.05); 
+            end
 
             kfModel.spec = specification(eq,'logic');
             [kfModel,~] = falsify(kfModel);

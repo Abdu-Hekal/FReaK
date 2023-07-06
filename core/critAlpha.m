@@ -78,14 +78,18 @@ for i = 1:size(spec,1)
                 Sys.cpBool=kfModel.cpBool;
             end
             Sys = setupAlpha(Sys);
-            %convert stl from CORA format to blustl
-            bluStl = coraBlustlConvert(spec(i,1).set); %convert from cora syntax to blustl
+
+        end
+        
+        if Sys.offsetMap.Count > 0 %there is an offset
+            set = conjunctiveNormalForm(spec(i,1).set); %only use conjunctive form if we are offsetting
+        else
+            set=spec(i,1).set;
+        end
+        bluStl = coraBlustlConvert(set); %convert from cora syntax to blustl
+        if ~isequal(bluStl,Sys.stl)
             Sys.stl = bluStl;
-            if kfModel.useOptimizer
-                Sys=setupStl(Sys,false); %encode stl using milp
-            else
-                Sys=setupStl(Sys,true);
-            end
+            Sys=setupStl(Sys,~kfModel.useOptimizer); %encode stl using milp
         end
 
         Sys.reachZonos=R.zono(1:maxStlSteps); %update reach zonos with new

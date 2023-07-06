@@ -23,7 +23,6 @@ if ~isempty(kfModel.U)
             if all_steps > kfModel.cp(k)
                 step = all_steps/kfModel.cp(k);
                 assert(floor(step)==step,'number of control points (cp) must be a factor of T/ak.dt');
-                (0:kfModel.ak.dt*step:kfModel.T-kfModel.ak.dt)'
                 u(:,k) = interp1((0:kfModel.ak.dt*step:kfModel.T-kfModel.ak.dt)', cpVal, linspace(0,kfModel.T-kfModel.ak.dt,all_steps)',kfModel.inputInterpolation,"extrap");
             else
                 u(:,k) = cpVal;
@@ -45,7 +44,7 @@ x0Range = kfModel.R0;
 u1 = size(u, 1);      % Number of time points
 u2 = size(u, 2);      % Number of inputs
 
-perturb = 0.05; %max perturbation percentage
+perturb = 0.1; %max perturbation percentage
 lowerBound = [repmat(uRange.inf,size(u,1),1); x0Range.inf];
 upperBound = [repmat(uRange.sup,size(u,1),1); x0Range.sup];
 
