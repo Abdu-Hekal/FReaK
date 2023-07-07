@@ -6,7 +6,7 @@ runtime=tic;
 
 falsified = false;
 trainIter = 0;
-epsilon = 1; %epsilon % for offset, offset=epsilon*robustness
+epsilon = 1.01; %epsilon % for offset, offset=epsilon*robustness
 while kfModel.soln.sims <= kfModel.maxSims && falsified==false
     %reset after size of trainset==nResets;
     if numel(trainset.X) == kfModel.nResets
@@ -27,8 +27,12 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
         end
         [x0,u] = getSampleXU(kfModel);
         tsim = (0:kfModel.dt:kfModel.T)'; %define time points for interpolating simulation
-        usim = interp1(u(:,1),u(:,2:end),tsim(1:end-1),kfModel.inputInterpolation,"extrap"); %interpolate and extrapolate input points
-        usim = [tsim(1:end-1),usim];
+        if ~isempty(u)
+            usim = interp1(u(:,1),u(:,2:end),tsim(1:end-1),kfModel.inputInterpolation,"extrap"); %interpolate and extrapolate input points
+            usim = [tsim(1:end-1),usim];
+        else
+            usim=u; %no input for the model
+        end
         [t, x, kfModel] = simulate(kfModel, x0, usim);
         tak = (0:kfModel.ak.dt:kfModel.T)'; %define autokoopman time points
         xak = interp1(t,x,tak,kfModel.trajInterpolation); %define autokoopman trajectory points
@@ -57,8 +61,12 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
         while offsetIter <= max(kfModel.offsetStrat,0) && falsified==false %offset once if not falsified
             [critX0, critU] = falsifyingTrajectory(kfModel);
             %extrap and interp input for all timesteps T/dt
-            usim = interp1(critU(:,1),critU(:,2:end),tsim(1:end-1),kfModel.inputInterpolation,"extrap"); %interpolate and extrapolate input points
-            usim = [tsim(1:end-1),usim];
+            if size(critU,2) > 1 %not just time
+                usim = interp1(critU(:,1),critU(:,2:end),tsim(1:end-1),kfModel.inputInterpolation,"extrap"); %interpolate and extrapolate input points
+                usim = [tsim(1:end-1),usim];
+            else
+                usim=critU; %no input for the modek
+            end
 
             % run most critical inputs on the real system
             [t, critX, kfModel] = simulate(kfModel, critX0, usim);
@@ -82,7 +90,6 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
                 end
                 gap = getMilpGap(kfModel.solver.opts);
                 if robustness > gap && abs(kfModel.offsetStrat) %not falsifed yet, robustness is greater than gap termination criteria for milp solver and an offset mode selected by user. Note that if robustness is less than gap, offset most likely is not benefecial.
-                    [offsetMap]=bReachCulprit3(critU,critX,t,tak,x0,A,B,g,R);
                     offsetMap=bReachCulprit2(Bdata,conjunctiveNormalForm(spec.set)); %get predicates responsible for robustness value
                     if offsetMap.Count > 0 %if there there exists predicates that are culprit for (+ve) robustness
                         kfModel.solver.opts.usex0=0; %avoid warmstarting if offsetting

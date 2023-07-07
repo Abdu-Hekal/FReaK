@@ -3,14 +3,13 @@
 % py.importlib.import_module('autokoopman');
 
 kfModel = modelVanderpol();
-kfModel.maxTrainSize=10; %maximum number of training trajectories before quitting
 plot_vars = [1,2];
 
 [kfModel,trainset] = falsify(kfModel);
 
 if kfModel.soln.falsified
     visualize_falsification(kfModel.soln.x, trainset.t{1}, kfModel.spec, plot_vars)
-    disp(['training iterations required: ',num2str(kfModel.soln.trainIter)])
+    disp(['simulations required: ',num2str(kfModel.soln.sims)])
     visualize_train(trainset, plot_vars)
 else
     disp("No falsifiying trace found")
