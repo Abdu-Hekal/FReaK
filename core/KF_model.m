@@ -57,6 +57,8 @@ classdef KF_model
             obj.inputInterpolation='previous';
             obj.trajInterpolation='pchip';
             obj.pulseInput = false;
+            obj.soln=struct;
+            obj.soln.sims=0;
 
             % autokoopman settings
             obj.ak.obsType="rff";
@@ -71,7 +73,7 @@ classdef KF_model
             gapLimit = 1e-4; %0.1;
             gapAbsLimit = 1e-10; %0.1;
             solnLimit = Inf;
-            verb = 0;
+            verb = 2;
             obj.solver.opts = sdpsettings('verbose', verb,'solver', solver, ...
                 'gurobi.TimeLimit', timeLimit, ...
                 'gurobi.MIPGap', gapLimit, ...
@@ -102,6 +104,11 @@ classdef KF_model
                 error('model not supported')
             end
             obj.soln.sims = obj.soln.sims+1;
+        end
+
+        function [tout, yout] = randSimulation(obj)
+            [x0,u] = getRandomSampleXU(obj);
+            [tout, yout,~] = simulate(obj, x0, u);
         end
 
         function [obj,trainset]=falsify(obj)

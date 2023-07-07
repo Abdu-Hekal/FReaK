@@ -6,6 +6,6 @@ phig = (pi/4);...       % Roll angle from wings level (rad)
 thetag = -(pi/2)*0.8;...    % Pitch angle from nose level (rad)
 psig = -(pi/4);             % Yaw angle from North (rad)
 
-T = 15;
+T = 0.1;
 
-[tout, yout] = run_f16(altg, Vtg, phig, thetag, psig, T);
+[tout, yout] = orig_run_f16(altg, Vtg, phig, thetag, psig, T);

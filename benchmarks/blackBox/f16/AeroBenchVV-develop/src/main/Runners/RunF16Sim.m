@@ -237,7 +237,7 @@ x_f16_hist = x_f16_hist';
 if(~analysisOn)
     simOut = x_f16_hist;
     passFail = 'NO ANALYSIS COMPLETED';
-    warning('No analysis completed');
+%     warning('No analysis completed');
     return
 end
 

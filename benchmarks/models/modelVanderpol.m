@@ -20,5 +20,8 @@ function model = model_vanderpol()
     model.dt = 0.01;
 
     model.spec = specification(halfspace([-1;0],-2.095),'unsafeSet');
+    x = stl('x',2);
+    eq = globally(x(1) < 2.095,interval(0,7));
+    model.spec = specification(eq,'logic');
 
 end

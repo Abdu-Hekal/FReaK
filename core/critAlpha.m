@@ -78,9 +78,18 @@ for i = 1:size(spec,1)
                 Sys.cpBool=kfModel.cpBool;
             end
             Sys = setupAlpha(Sys);
-
         end
-        
+
+        %setup problem from scratch if number of generators is no longer
+        %the same. TODO: check and clean this section
+        if size(Sys.alpha,2) ~= size(generators(R.zono{end}),2)
+            Sys=Koopman_lti(R.zono(1:maxStlSteps),kfModel.U,kfModel.ak.dt,kfModel.solver.dt);
+            if ~kfModel.pulseInput %if not pulse input, set cpBool
+                Sys.cpBool=kfModel.cpBool;
+            end
+            Sys = setupAlpha(Sys);
+        end
+
         if Sys.offsetMap.Count > 0 %there is an offset
             set = conjunctiveNormalForm(spec(i,1).set); %only use conjunctive form if we are offsetting
         else

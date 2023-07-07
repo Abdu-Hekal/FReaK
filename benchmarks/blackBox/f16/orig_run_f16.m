@@ -1,4 +1,4 @@
-function [tout, yout] = run_f16(altg, Vtg, phig, thetag, psig, T)
+function [tout, yout] = orig_run_f16(altg, Vtg, phig, thetag, psig, T)
     model_err = false;
     analysisOn = false;
     printOn = false;
@@ -23,10 +23,11 @@ function [tout, yout] = run_f16(altg, Vtg, phig, thetag, psig, T)
 
     % Select Desired F-16 Plant
     % Table Lookup
+    initialState
     [output, passFail] = RunF16Sim(initialState, t_vec, orient, 'stevens',...
         flightLimits, ctrlLimits, autopilot, printOn, plotOn);
 
 	tout = t_vec;
 	yout = output(12,:);
-    output'
+    vpa(output')
 end

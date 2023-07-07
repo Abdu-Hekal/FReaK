@@ -6,7 +6,7 @@ function [u_deg, isSaturated] = applyCtrlSatLimits(u_deg_in, ...
 coder.extrinsic('sprintf', 'warning');
 
 if nargin < 3
-    warnOn = true;
+    warnOn = false;
 end
 
 u_deg = zeros(size(u_deg_in));

@@ -259,11 +259,15 @@ end
 end
 
 function testDraw(critU,critX,t,xt,x0,A,B,g,R)
-plotVars=[1]; %[3];
+plotVars=[12]; %[3];
 drawu=critU(:,2:end)';
 x = g(x0);
-for i = 1:size(drawu,2)
-    x = [x, A*x(:,end) + B*drawu(:,i)];
+for i = 1:size(xt)-1
+    if ~isempty(drawu)
+        x = [x, A*x(:,end) + B*drawu(:,i)];
+    else
+        x = [x, A*x(:,end)];
+    end
 end
 figure; hold on; box on;
 if ~any(size(plotVars)>[1,1]) %singular plot var, plot against time

@@ -61,7 +61,11 @@ classdef Koopman_lti
         function Sys = setupOptimizer(Sys,options)
             constraints=[Sys.Falpha, Sys.Fstl, Sys.Freach];
             objective = Sys.Pstl; %objective is to minimize robustness of stl formula (falsification)
-            output = {Sys.x,Sys.alpha,Sys.u,Sys.Pstl};
+            if ~isempty(Sys.u)
+                output = {Sys.x,Sys.alpha,Sys.Pstl,Sys.u};
+            else
+                output = {Sys.x,Sys.alpha,Sys.Pstl};
+            end
             % setup optimizer
             Sys.optimizer = optimizer(constraints,objective,options,Sys.Ostl, output);
         end
@@ -85,8 +89,10 @@ classdef Koopman_lti
                 
                 assign(Sys.x,double(sol_control{1}));
                 assign(Sys.alpha,double(sol_control{2}));
-                assign(Sys.u,double(sol_control{3}));
-                assign(Sys.Pstl,double(sol_control{4}));
+                assign(Sys.Pstl,double(sol_control{3}));
+                if ~isempty(Sys.u)
+                    assign(Sys.u,double(sol_control{4}));
+                end
                 if errorflag1 ~= 0
                    disp(['Yalmip error: ' yalmiperror(errorflag1)]); % some other error
                 end
