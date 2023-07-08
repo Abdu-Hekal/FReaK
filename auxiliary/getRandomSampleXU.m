@@ -5,7 +5,7 @@ x0 = randPoint(kfModel.R0);
 %generate random input if kfModel has input.
 u=[];
 if ~isempty(kfModel.U)
-    all_steps = kfModel.T/kfModel.ak.dt;
+    all_steps = (kfModel.T/kfModel.ak.dt)+1;
     if kfModel.pulseInput
         u = randPoint(kfModel.U,all_steps)';
         u = u.*kfModel.cpBool;
@@ -16,13 +16,13 @@ if ~isempty(kfModel.U)
             if all_steps > kfModel.cp(k)
                 step = all_steps/kfModel.cp(k);
                 assert(floor(step)==step,'number of control points (cp) must be a factor of T/ak.dt');
-                u(:,k) = interp1((0:kfModel.ak.dt*step:kfModel.T-kfModel.ak.dt)', cpVal, linspace(0,kfModel.T-kfModel.ak.dt,all_steps)',kfModel.inputInterpolation,"extrap");
+                u(:,k) = interp1((0:kfModel.ak.dt*step:kfModel.T)', cpVal, linspace(0,kfModel.T,all_steps)',kfModel.inputInterpolation,"extrap");
             else
                 u(:,k) = cpVal;
             end
         end
     end
-    u = [linspace(0,kfModel.T-kfModel.ak.dt,all_steps)',u];
+    u = [linspace(0,kfModel.T,all_steps)',u];
 else
     u = [];
 end

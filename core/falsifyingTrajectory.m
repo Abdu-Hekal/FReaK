@@ -69,11 +69,13 @@ if ~isempty(U)
 else
     u = [];
 end
-%append zeros for remaining steps if no input given.
 if ~isempty(u)
     all_steps = kfModel.T/kfModel.ak.dt;
-    u = [u';zeros(size(u,1),all_steps-size(u,2))'];
     %append time points as first column
-    u = [linspace(0,kfModel.T-kfModel.ak.dt,all_steps)',u];
+    tp_=linspace(0,kfModel.T-kfModel.ak.dt,all_steps); %time points without last time step
+    tp = linspace(0,kfModel.T,all_steps+1);
+    u = interp1(tp_',u',tp',kfModel.inputInterpolation,"extrap"); %interpolate and extrapolate input points
+    u =  max(kfModel.U.inf',min(kfModel.U.sup',u)); %ensure that extrapolation is within input bounds
+    u = [tp',u];
 end
 end

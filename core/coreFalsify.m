@@ -67,9 +67,8 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
                 usim =  max(kfModel.U.inf',min(kfModel.U.sup',usim)); %ensure that extrapolation is within input bounds
                 usim = [tsim,usim];
             else
-                usim=critU; %no input for the modek
+                usim=critU; %no input for the model
             end
-            usim
             % run most critical inputs on the real system
             [t, critX, kfModel] = simulate(kfModel, critX0, usim);
 %             testDraw(critU,critX,t,tak,x0,A,B,g,R); %test plot: delete me
@@ -220,9 +219,7 @@ function trainset=appendToTrainset(trainset,t,x,u)
 %add trajectory to koopman trainset
 trainset.t{end+1} = t;
 trainset.X{end+1} = x';
-%append zeros at end to account for last time point (which has no
-%inputs), but length must be consistant with trajectory states
-trainset.XU{end+1} = [u(:,2:end)', zeros(size(u,2)-1,1)];
+trainset.XU{end+1} = u(:,2:end)';
 end
 
 function [kfModel,trainset] = neighborhoodTrain(kfModel,trainset,robustness,critX,critU)

@@ -61,8 +61,8 @@ for i = 1:size(spec,1)
     elseif strcmp(spec(i,1).type,'logic')
         %compute max time required to falsify stl and use it if less than
         %sim time (avoids unnecessary optim variables)
-        maxStlSteps = ceil(min((maxStlTime(spec(i,1).set)/kfModel.ak.dt)+1,length(R.zono)));
-%         maxStlSteps =length(R.zono);
+%         maxStlSteps = ceil(min((maxStlTime(spec(i,1).set)/kfModel.ak.dt)+1,length(R.zono)));
+        maxStlSteps =length(R.zono);
 
         %get prev solns
         prevSpecSol = kfModel.specSolns(kfModel.spec(i,1));
