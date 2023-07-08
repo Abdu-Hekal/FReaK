@@ -8,8 +8,6 @@ for k=1:L+1
     % x = c + G * \alpha, 
     c = Sys.reachZonos{k}.center;
     G = Sys.reachZonos{k}.generators;
-    size(c)
-    size(G)
     Freach = [Freach, x(:,k) == (c+G*alpha(1:size(G,2))')];
 end
 

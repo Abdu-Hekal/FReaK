@@ -19,11 +19,11 @@ function model = modelNeural()
 
     model.T=40; 
     model.dt = 0.01; 
-    model.ak.dt= 40/6; %40/12;
+    model.ak.dt=40/12;% 40/12; %40/12;
     model.nResets=5;
 %     model.solver.dt=10;
-    model.cp=6;
+    model.cp=12;
 
-    model.inputInterpolation='pchip';
+    model.inputInterpolation='previous';
 
 end

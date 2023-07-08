@@ -17,13 +17,13 @@ function model = modelPowertrain()
     model.R0 = interval([0;0],[0;0]); 
     model.U = interval([0;900],[61.1;1100]); 
 
-    model.T=50; 
+    model.T=30; 
     model.dt = 0.01; 
-    model.ak.dt= 1; %40/12;
+    model.ak.dt= 10; %40/12;
     model.nResets=5;
 %     model.solver.dt=10;
-    model.cp=[50,50];
+    model.cp=[3000,3000];
 
-    model.inputInterpolation='pchip';
+    model.inputInterpolation='previous';
 
 end

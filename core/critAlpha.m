@@ -62,6 +62,8 @@ for i = 1:size(spec,1)
         %compute max time required to falsify stl and use it if less than
         %sim time (avoids unnecessary optim variables)
         maxStlSteps = ceil(min((maxStlTime(spec(i,1).set)/kfModel.ak.dt)+1,length(R.zono)));
+%         maxStlSteps =length(R.zono);
+
         %get prev solns
         prevSpecSol = kfModel.specSolns(kfModel.spec(i,1));
         %setup and run bluSTL
@@ -69,9 +71,6 @@ for i = 1:size(spec,1)
         %if no prev soln for this spec, setup alpha & stl milp vars/constrs
         try
             Sys=prevSpecSol.lti; %get previously setup milp problem with stl
-            if ~kfModel.useOptimizer
-                Sys=setupStl(Sys,true); %encode stl using milp
-            end
         catch
             Sys=Koopman_lti(R.zono(1:maxStlSteps),kfModel.U,kfModel.ak.dt,kfModel.solver.dt);
             if ~kfModel.pulseInput %if not pulse input, set cpBool
@@ -96,7 +95,7 @@ for i = 1:size(spec,1)
             set=spec(i,1).set;
         end
         bluStl = coraBlustlConvert(set); %convert from cora syntax to blustl
-        if ~isequal(bluStl,Sys.stl)
+        if ~isequal(bluStl,Sys.stl) || (~kfModel.useOptimizer && Sys.offsetMap.Count>0)
             Sys.stl = bluStl;
             Sys=setupStl(Sys,~kfModel.useOptimizer); %encode stl using milp
         end

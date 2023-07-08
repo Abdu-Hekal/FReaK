@@ -7,7 +7,7 @@ function [tout, yout] = run_powertrain(T,~,u)
     assignin('base','fuel_inj_tol',1);
     assignin('base','MAF_sensor_tol',1);
     assignin('base','AF_sensor_tol',1);
-    
+
     assignin('base','u',u);
     assignin('base','T',T);
     

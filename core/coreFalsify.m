@@ -28,8 +28,9 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
         [x0,u] = getSampleXU(kfModel);
         tsim = (0:kfModel.dt:kfModel.T)'; %define time points for interpolating simulation
         if ~isempty(u)
-            usim = interp1(u(:,1),u(:,2:end),tsim(1:end-1),kfModel.inputInterpolation,"extrap"); %interpolate and extrapolate input points
-            usim = [tsim(1:end-1),usim];
+            usim = interp1(u(:,1),u(:,2:end),tsim,kfModel.inputInterpolation,"extrap"); %interpolate and extrapolate input points
+            usim =  max(kfModel.U.inf',min(kfModel.U.sup',usim)); %ensure that extrapolation is within input bounds
+            usim = [tsim,usim];
         else
             usim=u; %no input for the model
         end
@@ -62,12 +63,13 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
             [critX0, critU] = falsifyingTrajectory(kfModel);
             %extrap and interp input for all timesteps T/dt
             if size(critU,2) > 1 %not just time
-                usim = interp1(critU(:,1),critU(:,2:end),tsim(1:end-1),kfModel.inputInterpolation,"extrap"); %interpolate and extrapolate input points
-                usim = [tsim(1:end-1),usim];
+                usim = interp1(critU(:,1),critU(:,2:end),tsim,kfModel.inputInterpolation,"extrap"); %interpolate and extrapolate input points
+                usim =  max(kfModel.U.inf',min(kfModel.U.sup',usim)); %ensure that extrapolation is within input bounds
+                usim = [tsim,usim];
             else
                 usim=critU; %no input for the modek
             end
-
+            usim
             % run most critical inputs on the real system
             [t, critX, kfModel] = simulate(kfModel, critX0, usim);
 %             testDraw(critU,critX,t,tak,x0,A,B,g,R); %test plot: delete me
@@ -81,7 +83,7 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
                 falsified = ~all(spec.set.contains(interpCritX')); %check this
             elseif strcmp(spec.type,'logic')
 
-                [Bdata,phi,robustness] = bReachRob(spec,tsim,interpCritX,[usim(:,2:end)', zeros(size(usim,2)-1,1)]);
+                [Bdata,phi,robustness] = bReachRob(spec,tsim,interpCritX,usim(:,2:end)');
                 robustness
                 kfModel.specSolns(spec).realRob=robustness; %store real robustness value
                 falsified = ~isreal(sqrt(robustness)); %sqrt of -ve values are imaginary
