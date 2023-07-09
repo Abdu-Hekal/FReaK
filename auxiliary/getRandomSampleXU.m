@@ -5,24 +5,24 @@ x0 = randPoint(kfModel.R0);
 %generate random input if kfModel has input.
 u=[];
 if ~isempty(kfModel.U)
-    all_steps = (kfModel.T/kfModel.ak.dt)+1;
+    all_steps = kfModel.T/kfModel.ak.dt;
     if kfModel.pulseInput
         u = randPoint(kfModel.U,all_steps)';
         u = u.*kfModel.cpBool;
     else %piecewise constant input
         for k=1:length(kfModel.cp)
             cp = min(all_steps, kfModel.cp(k)); %control points is minimum of maximum control points and koopman time points (can't have more control points than steps)
-            cpVal = randPoint(kfModel.U(k),cp)';
+            cpVal = randPoint(kfModel.U(k),cp+1)'; %add 1 to cp for last timestep.
             if all_steps > kfModel.cp(k)
                 step = all_steps/kfModel.cp(k);
                 assert(floor(step)==step,'number of control points (cp) must be a factor of T/ak.dt');
-                u(:,k) = interp1((0:kfModel.ak.dt*step:kfModel.T)', cpVal, linspace(0,kfModel.T,all_steps)',kfModel.inputInterpolation,"extrap");
+                u(:,k) = interp1((0:kfModel.ak.dt*step:kfModel.T)', cpVal, linspace(0,kfModel.T,all_steps+1)',kfModel.inputInterpolation,"extrap");
             else
                 u(:,k) = cpVal;
             end
         end
     end
-    u = [linspace(0,kfModel.T,all_steps)',u];
+    u = [linspace(0,kfModel.T,all_steps+1)',u];
 else
     u = [];
 end
