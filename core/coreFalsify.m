@@ -43,19 +43,19 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
     end
     trainset=appendToTrainset(trainset,tak,xak,u);
 
-    try
-        %run autokoopman and learn linearized model
-        [kfModel, A, B, g] = symbolicRFF(kfModel, trainset);
-        % find predicted falsifying initial set and inputs
-        % compute reachable set for Koopman linearized model
-        R = reachKoopman(A,B,g,kfModel);
-        % determine most critical reachable set and specification
-        kfModel = critAlpha(R,kfModel);
-    catch
-        disp("error encountered whilst setup/solving, resetting training data")
-        trainIter=0;
-        continue;
-    end
+    %     try
+    %run autokoopman and learn linearized model
+    [kfModel, A, B, g] = symbolicRFF(kfModel, trainset);
+    % find predicted falsifying initial set and inputs
+    % compute reachable set for Koopman linearized model
+    R = reachKoopman(A,B,g,kfModel);
+    % determine most critical reachable set and specification
+    kfModel = critAlpha(R,kfModel);
+    %     catch
+    %         disp("error encountered whilst setup/solving, resetting training data")
+    %         trainIter=0;
+    %         continue;
+    %     end
 
     if kfModel.soln.rob<inf %found a viable solution
         offsetIter = 0;
@@ -134,7 +134,7 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
     trainIter=trainIter+1;
 end
 %close simulink kfModel
-close_system;
+close_system(' ErrorIfShadowed',0);
 %assign solution result
 kfModel.soln.t=t;
 kfModel.soln.x=critX;
@@ -258,7 +258,7 @@ end
 end
 
 function testDraw(critU,critX,t,xt,x0,A,B,g,R)
-plotVars=[1]; %[3];
+plotVars=[12]; %[3];
 drawu=critU(:,2:end)';
 x = g(x0);
 for i = 1:size(xt)-1

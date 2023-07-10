@@ -11,7 +11,6 @@ alpha=kfModel.soln.alpha;
 
 % determine most critical initial state
 alphaInit = zeros(size(set.expMat,1),1);
-
 temp = prod(ones(size(set.expMat))-mod(set.expMat,2),1);
 expMat = set.expMat(:,temp == 0);
 
@@ -27,13 +26,14 @@ end
 
 R0 = zonotope(R0);
 G_R0_ = generators(R0);
-%AH modification, ensures that generators is n*n matrix, appends zeros for
+%FIXME: AH modification, ensures that generators is n*n matrix, appends zeros for
 %dimensions with exact x0
 G_R0 = zeros(size(generators(R0),1));
 [row ,col]=find(G_R0_);
 for ii=1:numel(row)
     G_R0(row(ii),row(ii)) = G_R0_(row(ii),col(ii));
 end
+
 %AH modification, checks if R0 is not exact, to avoid error
 if isempty(generators(R0))
     x0 = center(R0);

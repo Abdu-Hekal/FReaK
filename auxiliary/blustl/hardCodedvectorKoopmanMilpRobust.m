@@ -1,4 +1,4 @@
-function [F,P] = hardCodedvectorKoopmanMilpRobust(phi,kList,kMax,ts,var,M,normz,offsetMap)
+function [F,P] = hardCodedvectorKoopmanMilpRobust(phi,kList,kMax,ts,var,M,offsetMap)
 % hardCodedvectorKoopmanMilpRobust  constructs MILP constraints in YALMIP that compute
 %                  the robustness of satisfaction for specification phi
 %
@@ -48,31 +48,31 @@ end
 switch (phi.type)
 
     case 'predicate'
-        [F,P] = pred(phi.st,kList,var,normz,offsetMap);
+        [F,P] = pred(phi.st,kList,var,offsetMap);
 
     case 'not'
-        [Frest,Prest] = hardCodedvectorKoopmanMilpRobust(phi.phi,kList,kMax,ts, var,M,normz,offsetMap);
+        [Frest,Prest] = hardCodedvectorKoopmanMilpRobust(phi.phi,kList,kMax,ts, var,M,offsetMap);
         [Fnot, Pnot] = not(Prest);
         F = [F, Fnot, Frest];
         P = Pnot;
 
     case 'or'
-        [Fdis1,Pdis1] = hardCodedvectorKoopmanMilpRobust(phi.phi1,kList,kMax,ts, var,M,normz,offsetMap);
-        [Fdis2,Pdis2] = hardCodedvectorKoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M,normz,offsetMap);
+        [Fdis1,Pdis1] = hardCodedvectorKoopmanMilpRobust(phi.phi1,kList,kMax,ts, var,M,offsetMap);
+        [Fdis2,Pdis2] = hardCodedvectorKoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M,offsetMap);
         [For, Por] = or([Pdis1;Pdis2],M);
         F = [F, For, Fdis1, Fdis2];
         P = Por;
 
     case 'and'
-        [Fcon1,Pcon1] = hardCodedvectorKoopmanMilpRobust(phi.phi1,kList,kMax,ts, var,M,normz,offsetMap);
-        [Fcon2,Pcon2] = hardCodedvectorKoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M,normz,offsetMap);
+        [Fcon1,Pcon1] = hardCodedvectorKoopmanMilpRobust(phi.phi1,kList,kMax,ts, var,M,offsetMap);
+        [Fcon2,Pcon2] = hardCodedvectorKoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M,offsetMap);
         [Fand, Pand] = and([Pcon1;Pcon2],M);
         F = [F, Fand, Fcon1, Fcon2];
         P = Pand;
 
     case '=>'
-        [Fant,Pant] = hardCodedvectorKoopmanMilpRobust(phi.phi1,kList,kMax,ts,var,M,normz,offsetMap);
-        [Fcons,Pcons] = hardCodedvectorKoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M,normz,offsetMap);
+        [Fant,Pant] = hardCodedvectorKoopmanMilpRobust(phi.phi1,kList,kMax,ts,var,M,offsetMap);
+        [Fcons,Pcons] = hardCodedvectorKoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M,offsetMap);
         [Fnotant,Pnotant] = not(Pant);
         [Fimp, Pimp] = or([Pnotant;Pcons],M);
         F = [F, Fant, Fnotant, Fcons, Fimp];
@@ -80,7 +80,7 @@ switch (phi.type)
 
     case 'always'
         kListAlw = unique(cell2mat(arrayfun(@(k) {min(kMax,k + a): min(kMax,k + b)}, kList)));
-        [Frest,Prest] = hardCodedvectorKoopmanMilpRobust(phi.phi,kListAlw,kMax,ts, var,M,normz,offsetMap);
+        [Frest,Prest] = hardCodedvectorKoopmanMilpRobust(phi.phi,kListAlw,kMax,ts, var,M,offsetMap);
         [Falw, Palw] = always(Prest,a,b,kList,kMax,M);
         F = [F, Falw];
         P = [Palw, P];
@@ -88,22 +88,22 @@ switch (phi.type)
 
     case 'eventually'
         kListEv = unique(cell2mat(arrayfun(@(k) {min(kMax,k + a): min(kMax,k + b)}, kList)));
-        [Frest,Prest] = hardCodedvectorKoopmanMilpRobust(phi.phi,kListEv,kMax,ts, var,M,normz,offsetMap);
+        [Frest,Prest] = hardCodedvectorKoopmanMilpRobust(phi.phi,kListEv,kMax,ts, var,M,offsetMap);
         [Fev, Pev] = eventually(Prest,a,b,kList,kMax,M);
         F = [F, Fev];
         P = [Pev, P];
         F = [F, Frest];
 
     case 'until'
-        [Fp,Pp] = hardCodedvectorKoopmanMilpRobust(phi.phi1,kList,kMax,ts, var,M,normz,offsetMap);
-        [Fq,Pq] = hardCodedvectorKoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M,normz,offsetMap);
+        [Fp,Pp] = hardCodedvectorKoopmanMilpRobust(phi.phi1,kList,kMax,ts, var,M,offsetMap);
+        [Fq,Pq] = hardCodedvectorKoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M,offsetMap);
         [Funtil, Puntil] = until(Pp,Pq,a,b,kList,kMax,M);
         F = [F, Funtil, Fp, Fq];
         P = Puntil;
 end
 end
 
-function [F,z] = pred(st,kList,var,normz,offsetMap)
+function [F,z] = pred(st,kList,var,offsetMap)
 % Enforce constraints based on predicates
 % var is the variable dictionary
 fnames = fieldnames(var);

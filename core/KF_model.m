@@ -30,7 +30,7 @@ classdef KF_model
         %         .nObs: number of observables (default=100)
         %         .gridSlices: number of slices for grid parameter search (default=5)
         %         .opt: tuner of type "grid", "bopt", or "monte-carlo" (default=grid)
-        %         .rank: set of ranks to try of DMD rank parameter (default=[1,200,20])
+        %         .rank: set of ranks to try of DMD rank parameter (default=[1,200,20]) 
 
         %solver/optimizer (struct)
         solver
@@ -108,14 +108,7 @@ classdef KF_model
 
         function [tout, yout] = randSimulation(obj)
             [x0,u] = getRandomSampleXU(obj);
-            tsim = (0:obj.dt:obj.T)'; %define time points for interpolating simulation
-            if ~isempty(u)   
-                usim = interp1(u(:,1),u(:,2:end),tsim(1:end-1),obj.inputInterpolation,"extrap"); %interpolate and extrapolate input points
-                usim = [tsim(1:end-1),usim];
-            else
-                usim=u; %no input for the model
-            end
-            [tout, yout,~] = simulate(obj, x0, usim);
+            [tout, yout,~] = simulate(obj, x0, u);
         end
 
         function [obj,trainset]=falsify(obj)
