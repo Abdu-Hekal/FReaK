@@ -11,7 +11,7 @@ def run(times, trajectories, param_dict, inputs_list):
     training_data = []
     for i, (time, trajectory) in enumerate(zip(times, trajectories)):
         inputs = np.atleast_2d(inputs_list[i]).T if inputs_list else None
-        training_data.append(traj.Trajectory(np.asarray(time), np.asarray(trajectory).T, inputs))
+        training_data.append(traj.Trajectory(np.asarray(time), np.atleast_2d(trajectory).T, inputs))
         
     ids = np.arange(0, len(training_data)).tolist()
     training_data = traj.TrajectoriesData(dict(zip(ids, training_data)))

@@ -39,7 +39,7 @@ a = interval(1);
 b = interval(2);
 
 a = max([0 floor(a/ts)]);
-b = ceil(b/ts);
+b = ceil(b/ts); %floor(b/ts);
 
 if b==Inf
     b = kMax;

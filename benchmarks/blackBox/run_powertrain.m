@@ -18,5 +18,5 @@ function [tout, yout] = run_powertrain(T,~,u)
         'SaveOutput', 'on', 'OutputSaveName', 'yout', ...
         'SaveFormat', 'Array');
     tout = result.tout;
-    yout = result.yout;
+    yout = result.yout(:,1);
 end
