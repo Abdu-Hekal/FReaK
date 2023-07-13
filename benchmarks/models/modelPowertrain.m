@@ -26,23 +26,13 @@ model.cp=[10,10];
 
 model.inputInterpolation='previous';
 
-% model.offsetStrat=0;
-
-% autokoopman settings
-model.ak.obsType="rff";
-model.ak.nObs=20;
-model.ak.gridSlices=5;
-model.ak.opt="grid"; %grid
-model.ak.rank=[1,20,4];
-
-
 %default optimizer options
 solver = 'gurobi';  % gurobi, cplex, glpk
 timeLimit = 60; %2000;
 gapLimit = 1e-20; %0.1;
 gapAbsLimit = 1e-20; %0.1;
 solnLimit = Inf;
-verb = 2;
+verb = 0;
 model.solver.opts = sdpsettings('verbose', verb,'solver', solver, ...
     'gurobi.TimeLimit', timeLimit, ...
     'gurobi.MIPGap', gapLimit, ...
