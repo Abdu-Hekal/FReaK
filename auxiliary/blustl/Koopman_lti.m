@@ -110,6 +110,9 @@ classdef Koopman_lti
                     bigM = 10^order;
                 end
             end
+            %make sure bigM is bigger also than inputs
+            inpmax = 10^(ceil(log10(max(Sys.U.sup))));
+            bigM=max(bigM,inpmax);
         end
         function nx = get.nx(Sys)
             nx=size(Sys.reachZonos{1}.center,1);

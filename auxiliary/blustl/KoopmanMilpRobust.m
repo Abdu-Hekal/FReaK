@@ -1,4 +1,4 @@
-function [F,P] = KoopmanMilpRobust(phi,kList,kMax,ts,var,M)
+function [F,P] = KoopmanMilpRobust(phi,kList,kMax,ts,var,M,offsetMap)
 % KoopmanMilpRobust  constructs MILP constraints in YALMIP that compute
 %                  the robustness of satisfaction for specification phi
 %
@@ -9,6 +9,9 @@ function [F,P] = KoopmanMilpRobust(phi,kList,kMax,ts,var,M)
 %       ts:     the interval (in seconds) used for discretizing time
 %       var:    a dictionary mapping strings to variables
 %       M:   	a large positive constant used for big-M constraints
+%       normz:  normalization values based on boundaries of reachable sets
+%       offsetMap: map that defines predicates to offset, key:number of
+%       predicate, value:offset value
 %
 % Output:
 %       F:  YALMIP constraints
@@ -36,7 +39,7 @@ a = interval(1);
 b = interval(2);
 
 a = max([0 floor(a/ts)]);
-b = ceil(b/ts);
+b = ceil(b/ts); %floor(b/ts);
 
 if b==Inf
     b = kMax;
@@ -45,31 +48,31 @@ end
 switch (phi.type)
 
     case 'predicate'
-        [F,P] = pred(phi.st,kList,var,M);
+        [F,P] = pred(phi.st,kList,var,offsetMap);
 
     case 'not'
-        [Frest,Prest] = KoopmanMilpRobust(phi.phi,kList,kMax,ts, var,M);
+        [Frest,Prest] = KoopmanMilpRobust(phi.phi,kList,kMax,ts, var,M,offsetMap);
         [Fnot, Pnot] = not(Prest);
         F = [F, Fnot, Frest];
         P = Pnot;
 
     case 'or'
-        [Fdis1,Pdis1] = KoopmanMilpRobust(phi.phi1,kList,kMax,ts, var,M);
-        [Fdis2,Pdis2] = KoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M);
+        [Fdis1,Pdis1] = KoopmanMilpRobust(phi.phi1,kList,kMax,ts, var,M,offsetMap);
+        [Fdis2,Pdis2] = KoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M,offsetMap);
         [For, Por] = or([Pdis1;Pdis2],M);
         F = [F, For, Fdis1, Fdis2];
         P = Por;
 
     case 'and'
-        [Fcon1,Pcon1] = KoopmanMilpRobust(phi.phi1,kList,kMax,ts, var,M);
-        [Fcon2,Pcon2] = KoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M);
+        [Fcon1,Pcon1] = KoopmanMilpRobust(phi.phi1,kList,kMax,ts, var,M,offsetMap);
+        [Fcon2,Pcon2] = KoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M,offsetMap);
         [Fand, Pand] = and([Pcon1;Pcon2],M);
         F = [F, Fand, Fcon1, Fcon2];
         P = Pand;
 
     case '=>'
-        [Fant,Pant] = KoopmanMilpRobust(phi.phi1,kList,kMax,ts,var,M);
-        [Fcons,Pcons] = KoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M);
+        [Fant,Pant] = KoopmanMilpRobust(phi.phi1,kList,kMax,ts,var,M,offsetMap);
+        [Fcons,Pcons] = KoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M,offsetMap);
         [Fnotant,Pnotant] = not(Pant);
         [Fimp, Pimp] = or([Pnotant;Pcons],M);
         F = [F, Fant, Fnotant, Fcons, Fimp];
@@ -77,7 +80,7 @@ switch (phi.type)
 
     case 'always'
         kListAlw = unique(cell2mat(arrayfun(@(k) {min(kMax,k + a): min(kMax,k + b)}, kList)));
-        [Frest,Prest] = KoopmanMilpRobust(phi.phi,kListAlw,kMax,ts, var,M);
+        [Frest,Prest] = KoopmanMilpRobust(phi.phi,kListAlw,kMax,ts, var,M,offsetMap);
         [Falw, Palw] = always(Prest,a,b,kList,kMax,M);
         F = [F, Falw];
         P = [Palw, P];
@@ -85,39 +88,46 @@ switch (phi.type)
 
     case 'eventually'
         kListEv = unique(cell2mat(arrayfun(@(k) {min(kMax,k + a): min(kMax,k + b)}, kList)));
-        [Frest,Prest] = KoopmanMilpRobust(phi.phi,kListEv,kMax,ts, var,M);
+        [Frest,Prest] = KoopmanMilpRobust(phi.phi,kListEv,kMax,ts, var,M,offsetMap);
         [Fev, Pev] = eventually(Prest,a,b,kList,kMax,M);
         F = [F, Fev];
         P = [Pev, P];
         F = [F, Frest];
 
     case 'until'
-        [Fp,Pp] = KoopmanMilpRobust(phi.phi1,kList,kMax,ts, var,M);
-        [Fq,Pq] = KoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M);
+        [Fp,Pp] = KoopmanMilpRobust(phi.phi1,kList,kMax,ts, var,M,offsetMap);
+        [Fq,Pq] = KoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M,offsetMap);
         [Funtil, Puntil] = until(Pp,Pq,a,b,kList,kMax,M);
         F = [F, Funtil, Fp, Fq];
         P = Puntil;
 end
 end
 
-function [F,z] = pred(st,kList,var,M)
+function [F,z] = pred(st,kList,var,offsetMap)
 % Enforce constraints based on predicates
 % var is the variable dictionary
-
 fnames = fieldnames(var);
 
 for ifield= 1:numel(fnames)
     eval([ fnames{ifield} '= var.' fnames{ifield} ';']);
 end
 
+global vkmrCount %globl count to track wihch subpred to offset in milp
+vkmrCount=vkmrCount+1; %increase count as pred found
+if isKey(offsetMap,vkmrCount)
+    robOffset=offsetMap(vkmrCount);
+else
+    robOffset=0;
+end
+
 st = regexprep(st,'\[t\]','\(t\)'); % Breach compatibility
 if strfind(st, '<')
     tokens = regexp(st, '(.+)\s*<\s*(.+)','tokens');
-    st = ['-(' tokens{1}{1} '- (' tokens{1}{2} '))'];
+    st = ['-(' tokens{1}{1} '- (' tokens{1}{2} ')+' num2str(robOffset) ')'];
 end
 if strfind(st, '>')
     tokens = regexp(st, '(.+)\s*>\s*(.+)','tokens');
-    st= [ '(' tokens{1}{1} ')-(' tokens{1}{2} ')' ];
+    st= [ '(' tokens{1}{1} ')-(' tokens{1}{2} ')+' num2str(robOffset)];
 end
 
 t_st = regexprep(st,'\<t\>',sprintf('%d:%d', kList(1),kList(end)));
@@ -125,6 +135,7 @@ try
     z_eval = eval(t_st);
 end
 zl = sdpvar(1,size(z_eval,2));
+% F = [zl == z_eval]:tag;
 F = zl == z_eval;
 z = zl;
 end
@@ -153,34 +164,34 @@ end
 % TEMPORAL OPERATIONS
 
 function [F,P_alw] = always(P, a,b,kList,kMax,M)
-    F = [];
-    k = size(kList,2);
-    P_alw = sdpvar(1,k);
-    kListAlw = unique(cell2mat(arrayfun(@(k) {min(kMax,k + a) : min(kMax,k + b)}, kList)));
-    
-    for i = 1:k
-        [ia, ib] = getIndices(kList(i),a,b,kMax);
-        ia_real = find(kListAlw==ia);
-        ib_real = find(kListAlw==ib);
-        [F0,P0] = and(P(ia_real:ib_real)',M);
-        F = [F;F0,P_alw(i)==P0];
-    end
+F = [];
+k = size(kList,2);
+P_alw = sdpvar(1,k);
+kListAlw = unique(cell2mat(arrayfun(@(k) {min(kMax,k + a) : min(kMax,k + b)}, kList)));
+
+for i = 1:k
+    [ia, ib] = getIndices(kList(i),a,b,kMax);
+    ia_real = find(kListAlw==ia);
+    ib_real = find(kListAlw==ib);
+    [F0,P0] = and(P(ia_real:ib_real)',M);
+    F = [F;F0,P_alw(i)==P0];
+end
 end
 
 
 function [F,P_ev] = eventually(P, a,b,kList,kMax,M)
-    F = [];
-    k = size(kList,2);
-    P_ev = sdpvar(1,k);
-    kListEv = unique(cell2mat(arrayfun(@(k) {min(kMax,k + a) : min(kMax,k + b)}, kList)));
-    
-    for i = 1:k
-        [ia, ib] = getIndices(i,a,b,kMax);
-        ia_real = find(kListEv==ia);
-        ib_real = find(kListEv==ib);
-        [F0,P0] = or(P(ia_real:ib_real)',M);
-        F = [F;F0,P_ev(i)==P0];
-    end
+F = [];
+k = size(kList,2);
+P_ev = sdpvar(1,k);
+kListEv = unique(cell2mat(arrayfun(@(k) {min(kMax,k + a) : min(kMax,k + b)}, kList)));
+
+for i = 1:k
+    [ia, ib] = getIndices(i,a,b,kMax);
+    ia_real = find(kListEv==ia);
+    ib_real = find(kListEv==ib);
+    [F0,P0] = or(P(ia_real:ib_real)',M);
+    F = [F;F0,P_ev(i)==P0];
+end
 end
 
 
@@ -215,14 +226,15 @@ m = size(p_list,1);
 P = sdpvar(1,k);
 z = binvar(m,k);
 
-repP=repmat(P,m,1);
-
 F = [sum(z,1) == ones(1,k)];
-F = [F, repP <= p_list];
-F = [F, p_list - (1-z)*M <= repP <= p_list + (1-z)*M];
+for i=1:m
+    F = [F, P(1,:) <= p_list(i,:)];
+    F = [F, p_list(i,:) - (1-z(i,:))*M <= P <= p_list(i,:) + (1-z(i,:))*M];
+end
 end
 
 function [F,P] = max_r(p_list,M)
+
 
 k = size(p_list,2);
 m = size(p_list,1);
@@ -231,10 +243,10 @@ P = sdpvar(1,k);
 z = binvar(m,k);
 
 F = [sum(z,1) == ones(1,k)];
-
-repP=repmat(P,m,1);
-F = [F, repP >= p_list];
-F = [F, p_list - (1-z)*M <= repP <= p_list + (1-z)*M];
+for i=1:m
+    F = [F, P(1,:) >= p_list(i,:)];
+    F = [F, p_list(i,:) - (1-z(i,:))*M <= P <= p_list(i,:) + (1-z(i,:))*M];
+end
 
 end
 
@@ -248,6 +260,5 @@ function [ia, ib] = getIndices(i,a,b,k)
 ia = min(k,i+a);
 ib = min(k,i+b);
 end
-
 
 

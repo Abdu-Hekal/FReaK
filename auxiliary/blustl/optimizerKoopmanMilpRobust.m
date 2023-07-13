@@ -1,6 +1,9 @@
-function [F,P,O] = vector_KoopmanMilpRobust(phi,kList,kMax,ts,var,M)
-% vector_KoopmanMilpRobust  constructs MILP constraints in YALMIP that compute
-%                  the robustness of satisfaction for specification phi
+function [F,P,O] = optimizerKoopmanMilpRobust(phi,kList,kMax,ts,var,M)
+% optimizerKoopmanMilpRobust  constructs MILP constraints for an optimizer object
+% in YALMIP that compute the robustness of satisfaction for specification phi
+%
+% The use of optimizer object means offset is encoded as parameters and not
+% hardcoded.
 %
 % Input:
 %       phi:    an STLformula
@@ -51,31 +54,31 @@ switch (phi.type)
         [F,P,O] = pred(phi.st,kList,var);
 
     case 'not'
-        [Frest,Prest,Orest] = vector_KoopmanMilpRobust(phi.phi,kList,kMax,ts, var,M);
+        [Frest,Prest,Orest] = optimizerKoopmanMilpRobust(phi.phi,kList,kMax,ts, var,M);
         [Fnot, Pnot] = not(Prest);
         F = [F, Fnot, Frest];
         P = Pnot;
         O = [O, Orest];
 
     case 'or'
-        [Fdis1,Pdis1,O1] = vector_KoopmanMilpRobust(phi.phi1,kList,kMax,ts, var,M);
-        [Fdis2,Pdis2,O2] = vector_KoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M);
+        [Fdis1,Pdis1,O1] = optimizerKoopmanMilpRobust(phi.phi1,kList,kMax,ts, var,M);
+        [Fdis2,Pdis2,O2] = optimizerKoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M);
         [For, Por] = or([Pdis1;Pdis2],M);
         F = [F, For, Fdis1, Fdis2];
         P = Por;
         O = [O, O1, O2];
 
     case 'and'
-        [Fcon1,Pcon1,O1] = vector_KoopmanMilpRobust(phi.phi1,kList,kMax,ts, var,M);
-        [Fcon2,Pcon2,O2] = vector_KoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M);
+        [Fcon1,Pcon1,O1] = optimizerKoopmanMilpRobust(phi.phi1,kList,kMax,ts, var,M);
+        [Fcon2,Pcon2,O2] = optimizerKoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M);
         [Fand, Pand] = and([Pcon1;Pcon2],M);
         F = [F, Fand, Fcon1, Fcon2];
         P = Pand;
         O = [O, O1, O2];
 
     case '=>'
-        [Fant,Pant,O1] = vector_KoopmanMilpRobust(phi.phi1,kList,kMax,ts,var,M);
-        [Fcons,Pcons,O2] = vector_KoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M);
+        [Fant,Pant,O1] = optimizerKoopmanMilpRobust(phi.phi1,kList,kMax,ts,var,M);
+        [Fcons,Pcons,O2] = optimizerKoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M);
         [Fnotant,Pnotant] = not(Pant);
         [Fimp, Pimp] = or([Pnotant;Pcons],M);
         F = [F, Fant, Fnotant, Fcons, Fimp];
@@ -84,7 +87,7 @@ switch (phi.type)
 
     case 'always'
         kListAlw = unique(cell2mat(arrayfun(@(k) {min(kMax,k + a): min(kMax,k + b)}, kList)));
-        [Frest,Prest,Orest] = vector_KoopmanMilpRobust(phi.phi,kListAlw,kMax,ts, var,M);
+        [Frest,Prest,Orest] = optimizerKoopmanMilpRobust(phi.phi,kListAlw,kMax,ts, var,M);
         [Falw, Palw] = always(Prest,a,b,kList,kMax,M);
         F = [F, Falw];
         P = [Palw, P];
@@ -93,7 +96,7 @@ switch (phi.type)
 
     case 'eventually'
         kListEv = unique(cell2mat(arrayfun(@(k) {min(kMax,k + a): min(kMax,k + b)}, kList)));
-        [Frest,Prest,Orest] = vector_KoopmanMilpRobust(phi.phi,kListEv,kMax,ts, var,M);
+        [Frest,Prest,Orest] = optimizerKoopmanMilpRobust(phi.phi,kListEv,kMax,ts, var,M);
         [Fev, Pev] = eventually(Prest,a,b,kList,kMax,M);
         F = [F, Fev];
         P = [Pev, P];
@@ -101,8 +104,8 @@ switch (phi.type)
         O = [O, Orest];
 
     case 'until'
-        [Fp,Pp,O1] = vector_KoopmanMilpRobust(phi.phi1,kList,kMax,ts, var,M);
-        [Fq,Pq,O2] = vector_KoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M);
+        [Fp,Pp,O1] = optimizerKoopmanMilpRobust(phi.phi1,kList,kMax,ts, var,M);
+        [Fq,Pq,O2] = optimizerKoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M);
         [Funtil, Puntil] = until(Pp,Pq,a,b,kList,kMax,M);
         F = [F, Funtil, Fp, Fq];
         P = Puntil;

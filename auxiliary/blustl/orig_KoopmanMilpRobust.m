@@ -36,7 +36,7 @@ function [F,P] = orig_KoopmanMilpRobust(phi,kList,kMax,ts,var,M)
     b = interval(2);
 
     a = max([0 floor(a/ts)]);
-    b = floor(b/ts); %floor(b/ts);
+    b = ceil(b/ts); %floor(b/ts);
 
     
     if b==Inf

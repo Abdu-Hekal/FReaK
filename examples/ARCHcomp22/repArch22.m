@@ -84,8 +84,8 @@ u = stl('u',2);
 rise = (u(1) < 8.8) & finally(u(1) > 40.0,interval(0,0.05));
 fall = (u(1) > 40.0) & finally(u(1) < 8.8,interval(0,0.05));
 
-rise2 = (u(1) < 8.8) & ~globally(u(1) < 40.0,interval(0,5));
-fall2 = (u(1) > 40.0) & ~globally(u(1) > 8.8,interval(0,5));
+rise2 = (u(1) < 8.8) & ~globally(u(1) < 40.0,interval(0,0.05));
+fall2 = (u(1) > 40.0) & ~globally(u(1) > 8.8,interval(0,0.05));
 
 beta=0.008;
 gamma=0.007;
