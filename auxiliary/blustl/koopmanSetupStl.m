@@ -15,8 +15,8 @@ phi = STLformula('phi', stl);
 if hardcoded
     global vkmrCount %globl count to track wihch subpred to offset in milp
     vkmrCount=0;
-    [Fstl, Pstl] = hardCodedvectorKoopmanMilpRobust(phi,1,L,Sys.solverdt,var,M,Sys.offsetMap);
-%     [Fstl, Pstl] = orig_KoopmanMilpRobust(phi,1,L,Sys.solverdt,var,M);
+%     [Fstl, Pstl] = hardCodedvectorKoopmanMilpRobust(phi,1,L,Sys.solverdt,var,M,Sys.offsetMap);
+    [Fstl, Pstl] = orig_KoopmanMilpRobust(phi,1,L,Sys.solverdt,var,M);
     Ostl = {};
 else
     [Fstl, Pstl, Ostl] = vector_KoopmanMilpRobust(phi, 1, L, Sys.solverdt, var,M);

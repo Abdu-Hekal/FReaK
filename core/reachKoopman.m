@@ -25,7 +25,7 @@ set{1} = R0; time{1} = interval(-dt/2,dt/2);
 
 for i = 1:length(t)-1
     % AH edit to check if system has external input
-    if B
+    if ~isempty(B)
         if kfModel.pulseInput
             cp_U = U.*cpBool(i,:)';
         else

@@ -23,22 +23,21 @@ for i = 1:size(set.expMat,1)
         end
     end
 end
-
 R0 = zonotope(R0);
 G_R0_ = generators(R0);
 %FIXME: AH modification, ensures that generators is n*n matrix, appends zeros for
 %dimensions with exact x0
-% G_R0 = zeros(size(generators(R0),1));
-% [row ,col]=find(G_R0_);
-% for ii=1:numel(row)
-%     G_R0(row(ii),row(ii)) = G_R0_(row(ii),col(ii));
-% end
+G_R0 = zeros(size(generators(R0),1));
+[row ,col]=find(G_R0_);
+for ii=1:numel(row)
+    G_R0(row(ii),row(ii)) = G_R0_(row(ii),col(ii));
+end
 
 %AH modification, checks if R0 is not exact, to avoid error
 if isempty(generators(R0))
     x0 = center(R0);
 else
-    x0 = center(R0) + G_R0_*alphaInit;
+    x0 = center(R0) + G_R0*alphaInit;
 end
 %check if kfModel has control input
 if ~isempty(U)

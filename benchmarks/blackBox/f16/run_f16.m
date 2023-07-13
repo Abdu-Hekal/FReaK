@@ -1,7 +1,8 @@
-function [tout, yout] = run_f16(T,x0,~)
+ function [tout, yout] = run_f16(T,x0,~)
     
-    altg = x0(12,:);
-    Vtg = x0(1,:);
+    altg = 4040;...
+    Vtg = 540;... 
+    %uncertain initial states
     phig = x0(4,:);
     thetag = x0(5,:);
     psig = x0(6,:);
@@ -12,10 +13,10 @@ function [tout, yout] = run_f16(T,x0,~)
     plotOn = false;
     backCalculateBestSamp = false;
 
-    powg = x0(13,:);                   % Power
+    powg = 9;                   % Power
     % Default alpha & beta
-    alphag = x0(2,:);   % Trim Angle of Attack (rad)
-    betag = x0(3,:);                  % Side slip angle (rad)
+    alphag = deg2rad(2.1215);   % Trim Angle of Attack (rad)
+    betag = 0;                  % Side slip angle (rad)
 
     t_vec = 0:0.01:T;
 
