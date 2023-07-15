@@ -24,6 +24,4 @@ function model = modelNeural()
 %     model.solver.dt=10;
     model.cp=12;
 
-    model.inputInterpolation='previous';
-
 end

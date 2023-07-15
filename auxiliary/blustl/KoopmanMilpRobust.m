@@ -178,7 +178,7 @@ for i = 1:k
 end
 end
 
-
+%AH: fixed this function from blustl version
 function [F,P_ev] = eventually(P, a,b,kList,kMax,M)
 F = [];
 k = size(kList,2);
@@ -186,7 +186,7 @@ P_ev = sdpvar(1,k);
 kListEv = unique(cell2mat(arrayfun(@(k) {min(kMax,k + a) : min(kMax,k + b)}, kList)));
 
 for i = 1:k
-    [ia, ib] = getIndices(i,a,b,kMax);
+    [ia, ib] = getIndices(kList(i),a,b,kMax);
     ia_real = find(kListEv==ia);
     ib_real = find(kListEv==ib);
     [F0,P0] = or(P(ia_real:ib_real)',M);
@@ -228,13 +228,12 @@ z = binvar(m,k);
 
 F = [sum(z,1) == ones(1,k)];
 for i=1:m
-    F = [F, P(1,:) <= p_list(i,:)];
+    F = [F, P <= p_list(i,:)];
     F = [F, p_list(i,:) - (1-z(i,:))*M <= P <= p_list(i,:) + (1-z(i,:))*M];
 end
 end
 
 function [F,P] = max_r(p_list,M)
-
 
 k = size(p_list,2);
 m = size(p_list,1);
@@ -244,7 +243,7 @@ z = binvar(m,k);
 
 F = [sum(z,1) == ones(1,k)];
 for i=1:m
-    F = [F, P(1,:) >= p_list(i,:)];
+    F = [F, P >= p_list(i,:)];
     F = [F, p_list(i,:) - (1-z(i,:))*M <= P <= p_list(i,:) + (1-z(i,:))*M];
 end
 
