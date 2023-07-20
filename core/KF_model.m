@@ -20,7 +20,7 @@ classdef KF_model
         useOptimizer %bool set to true to use optimizer object. Not using optimizer means stl needs to be setup for milp everytime for offset. setting up optimizer object also takes time. Time trade off? Note that using optimzier is most stable and not using can lead to problems when warmstart (usex0) is used.
         % interpolation types for input & trajectory. See "interp1" for supported types
         inputInterpolation % interpolate input between control points. default 'previous'. Note that control points may decrease with coarser koopman
-        trajInterpolation %interpolate output trajectory for stl analysis, default 'pchip'
+        trajInterpolation %interpolate output trajectory for stl analysis, default 'linear'
         pulseInput %boolean, set to true if the inputs are pulse inputs, otherwise input is piecewise-constant (default: false)
 
         %autokoopman settings (struct)
@@ -49,13 +49,13 @@ classdef KF_model
         function obj = KF_model(model)
             obj.model=model;
             obj.dt=0.01;
-            obj.maxSims=1500;
+            obj.maxSims=3000;
             obj.nResets=5;
             obj.trainRand=0;
             obj.offsetStrat=-1;
-            obj.useOptimizer=false;
+            obj.useOptimizer=true;
             obj.inputInterpolation='previous';
-            obj.trajInterpolation='pchip';
+            obj.trajInterpolation='linear';
             obj.pulseInput = false;
             obj.soln=struct;
             obj.soln.sims=0;
@@ -69,7 +69,7 @@ classdef KF_model
 
             %default optimizer options
             solver = 'gurobi';  % gurobi, cplex, glpk
-            timeLimit = 30; %2000;
+            timeLimit = 2000; %2000;
             gapLimit = 1e-4; %0.1;
             gapAbsLimit = 1e-10; %0.1;
             solnLimit = Inf;

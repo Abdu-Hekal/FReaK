@@ -86,7 +86,6 @@ classdef Koopman_lti
                     end
                 end
                 [sol_control, errorflag1,~,~,P] = Sys.optimizer{{param}}; %% call solver
-                
                 assign(Sys.x,double(sol_control{1}));
                 assign(Sys.alpha,double(sol_control{2}));
                 assign(Sys.Pstl,double(sol_control{3}));

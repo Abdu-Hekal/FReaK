@@ -35,6 +35,15 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
             usim=u; %no input for the model
         end
         [t, x, kfModel] = simulate(kfModel, x0, usim);
+        %check if random input falsifies system, and break if it does
+        falsified = checkFirst(kfModel,x,usim,t,tsim);
+
+        
+        if falsified
+            critX=x;
+            critU=u;
+            break
+        end
         tak = (0:kfModel.ak.dt:kfModel.T)'; %define autokoopman time points
         xak = interp1(t,x,tak,kfModel.trajInterpolation); %define autokoopman trajectory points
     else
@@ -81,7 +90,6 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
             elseif strcmp(spec.type,'safeSet')
                 falsified = ~all(spec.set.contains(interpCritX')); %check this
             elseif strcmp(spec.type,'logic')
-                x = stl('x',3);
                 [Bdata,phi,robustness] = bReachRob(spec,tsim,interpCritX,usim(:,2:end)');
 
                 kfModel.specSolns(spec).realRob=robustness; %store real robustness value
@@ -91,7 +99,7 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
                 end
                 gap = getMilpGap(kfModel.solver.opts);
                 if robustness > gap && abs(kfModel.offsetStrat) %not falsifed yet, robustness is greater than gap termination criteria for milp solver and an offset mode selected by user. Note that if robustness is less than gap, offset most likely is not benefecial.
-                    offsetMap=bReachCulprit2(Bdata,conjunctiveNormalForm(spec.set)); %get predicates responsible for robustness value
+                    offsetMap=bReachCulprit2(Bdata,spec.set); %get predicates responsible for robustness value
                     if offsetMap.Count > 0 %if there there exists predicates that are culprit for (+ve) robustness
                         kfModel.solver.opts.usex0=0; %avoid warmstarting if offsetting
                         Sys=kfModel.specSolns(spec).lti;
@@ -103,7 +111,7 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
                             end
                             Sys.offsetMap = offsetMap;
                             if kfModel.offsetStrat == 1 %if offset strategy in this iteration selected
-                                set = conjunctiveNormalForm(spec.set); %only use conjunctive form if we are offsetting
+                                set = spec.set;
                                 bluStl = coraBlustlConvert(set); %convert from cora syntax to blustl
                                 if ~isequal(bluStl,Sys.stl) || ~kfModel.useOptimizer
                                     Sys.stl = bluStl;
@@ -140,7 +148,6 @@ kfModel.soln.t=t;
 kfModel.soln.x=critX;
 kfModel.soln.u = critU;
 kfModel.soln.falsified=falsified;
-kfModel.soln.sims=kfModel.soln.sims-1; %last sim that finds critical trace not counted?
 kfModel.soln.runtime=toc(runtime); %record runtime
 fprintf("number of simulations to falsify %d \n",kfModel.soln.sims)
 end
@@ -213,6 +220,22 @@ kfModel.bestSoln=struct; kfModel.bestSoln.rob=inf; kfModel.bestSoln.timeRob=inf;
 kfModel.specSolns = dictionary(kfModel.spec,struct);
 %empty struct to store training data
 trainset.X = {}; trainset.XU={}; trainset.t = {};
+end
+
+function falsified = checkFirst(kfModel,x,usim,t,tsim)
+interpX = interp1(t,x,tsim,kfModel.trajInterpolation); %interpolate trajectory at granulated time points for checking correctness
+for ii=1:numel(kfModel.spec)
+    spec=kfModel.spec(ii);
+    % different types of specifications
+    if strcmp(spec.type,'unsafeSet')
+        falsified = any(spec.set.contains(interpX'));
+    elseif strcmp(spec.type,'safeSet')
+        falsified = ~all(spec.set.contains(interpX')); %check this
+    elseif strcmp(spec.type,'logic')
+        [~,~,robustness] = bReachRob(spec,tsim,interpX,usim(:,2:end)');
+        falsified = ~isreal(sqrt(robustness)); %sqrt of -ve values are imaginary
+    end
+end
 end
 
 function trainset=appendToTrainset(trainset,t,x,u)

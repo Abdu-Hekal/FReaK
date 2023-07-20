@@ -13,15 +13,13 @@ function model = modelCars()
 %
 %------------------------------------------------------------------
     
-    model = KF_model(@run_cars);
+    model = KF_model(@run_cars); 
     model.R0 = interval([0;10;20;30;40],[0;10;20;30;40]); 
     model.U = interval([0;0],[1;1]); 
 
     model.T=100; 
     model.dt = 0.01; 
-    model.ak.dt=5;
-    model.trainRand=0;
-    model.nResets=5;
+    model.ak.dt=0.1; %5
 %     model.solver.dt=10;
     model.cp=[10000 10000];
 

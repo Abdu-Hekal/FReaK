@@ -119,7 +119,6 @@ if isKey(offsetMap,vkmrCount)
 else
     robOffset=0;
 end
-
 st = regexprep(st,'\[t\]','\(t\)'); % Breach compatibility
 if strfind(st, '<')
     tokens = regexp(st, '(.+)\s*<\s*(.+)','tokens');
@@ -129,7 +128,6 @@ if strfind(st, '>')
     tokens = regexp(st, '(.+)\s*>\s*(.+)','tokens');
     st= [ '(' tokens{1}{1} ')-(' tokens{1}{2} ')+' num2str(robOffset)];
 end
-
 t_st = regexprep(st,'\<t\>',sprintf('%d:%d', kList(1),kList(end)));
 try
     z_eval = eval(t_st);

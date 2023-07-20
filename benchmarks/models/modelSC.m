@@ -19,11 +19,9 @@ function model = modelSC()
 
     model.T=35; 
     model.dt = 0.01; 
-    model.ak.dt= 0.25; %0.25;
+    model.ak.dt= 0.1; %0.25;
     model.nResets=5;
 %     model.solver.dt=10;
     model.cp=3500;
-
-    model.inputInterpolation='previous';
 
 end

@@ -89,11 +89,7 @@ for i = 1:size(spec,1)
             Sys = setupAlpha(Sys);
         end
 
-        if Sys.offsetMap.Count > 0 %there is an offset
-            set = conjunctiveNormalForm(spec(i,1).set); %only use conjunctive form if we are offsetting
-        else
-            set=spec(i,1).set;
-        end
+        set=spec(i,1).set;
         bluStl = coraBlustlConvert(set); %convert from cora syntax to blustl
         if ~isequal(bluStl,Sys.stl) || (~kfModel.useOptimizer && Sys.offsetMap.Count>0)
             Sys.stl = bluStl;

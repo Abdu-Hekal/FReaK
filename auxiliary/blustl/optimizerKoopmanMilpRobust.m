@@ -43,7 +43,8 @@ a = interval(1);
 b = interval(2);
 
 a = max([0 floor(a/ts)]);
-b = ceil(b/ts); %floor(b/ts);
+b = ceil(b/ts);
+
 
 if b==Inf
     b = kMax;
@@ -170,32 +171,29 @@ k = size(kList,2);
 P_alw = sdpvar(1,k);
 kListAlw = unique(cell2mat(arrayfun(@(k) {min(kMax,k + a) : min(kMax,k + b)}, kList)));
 
-[ia, ib] = getIndices(kList(1:k),a,b,kMax);
-ia_real = arrayfun(@(x) find(kListAlw==x, 1, 'first'), ia);
-ib_real = arrayfun(@(x) find(kListAlw==x, 1, 'first'), ib);
-max_size=size(unique(ib_real),2); %basically up to kmax, TODO: check this
-iaib_cell = arrayfun(@(x, y) x:y, ia_real(1:max_size), ib_real(1:max_size), 'UniformOutput', false);
-iaib_matrix = reshape(cell2mat(iaib_cell),max_size,[]);
-[F0,P0] = and(P(iaib_matrix)',M);
-F = [F;F0,P_alw(1:max_size)==P0];
-
+for i = 1:k
+    [ia, ib] = getIndices(kList(i),a,b,kMax);
+    ia_real = find(kListAlw==ia);
+    ib_real = find(kListAlw==ib);
+    [F0,P0] = and(P(ia_real:ib_real)',M);
+    F = [F;F0,P_alw(i)==P0];
+end
 end
 
 
 function [F,P_ev] = eventually(P, a,b,kList,kMax,M)
+F = [];
 k = size(kList,2);
 P_ev = sdpvar(1,k);
 kListEv = unique(cell2mat(arrayfun(@(k) {min(kMax,k + a) : min(kMax,k + b)}, kList)));
 
-[ia, ib] = getIndices(1:k,a,b,kMax);
-ia_real = arrayfun(@(x) find(kListEv==x, 1, 'first'), ia);
-ib_real = arrayfun(@(x) find(kListEv==x, 1, 'first'), ib);
-max_size=size(unique(ib_real),2); %basically up to kmax, TODO: check this
-iaib_cell = arrayfun(@(x, y) x:y, ia_real(1:max_size), ib_real(1:max_size), 'UniformOutput', false);
-iaib_matrix = reshape(cell2mat(iaib_cell),max_size,[]);
-[F0,P0] = or(P(iaib_matrix)',M);
-F = [F0,P_ev(1:max_size)==P0];
-
+for i = 1:k
+    [ia, ib] = getIndices(kList(i),a,b,kMax);
+    ia_real = find(kListEv==ia);
+    ib_real = find(kListEv==ib);
+    [F0,P0] = or(P(ia_real:ib_real)',M);
+    F = [F;F0,P_ev(i)==P0];
+end
 end
 
 
@@ -230,11 +228,11 @@ m = size(p_list,1);
 P = sdpvar(1,k);
 z = binvar(m,k);
 
-repP=repmat(P,m,1);
-
 F = [sum(z,1) == ones(1,k)];
-F = [F, repP <= p_list];
-F = [F, p_list - (1-z)*M <= repP <= p_list + (1-z)*M];
+for i=1:m
+    F = [F, P <= p_list(i,:)];
+    F = [F, p_list(i,:) - (1-z(i,:))*M <= P <= p_list(i,:) + (1-z(i,:))*M];
+end
 end
 
 function [F,P] = max_r(p_list,M)
@@ -246,11 +244,10 @@ P = sdpvar(1,k);
 z = binvar(m,k);
 
 F = [sum(z,1) == ones(1,k)];
-
-repP=repmat(P,m,1);
-F = [F, repP >= p_list];
-F = [F, p_list - (1-z)*M <= repP <= p_list + (1-z)*M];
-
+for i=1:m
+    F = [F, P >= p_list(i,:)];
+    F = [F, p_list(i,:) - (1-z(i,:))*M <= P <= p_list(i,:) + (1-z(i,:))*M];
+end
 end
 
 function [F,P] = until_mins(i,j,Pp,Pq,M)
