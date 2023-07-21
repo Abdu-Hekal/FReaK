@@ -91,7 +91,7 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
                 falsified = ~all(spec.set.contains(interpCritX')); %check this
             elseif strcmp(spec.type,'logic')
                 [Bdata,phi,robustness] = bReachRob(spec,tsim,interpCritX,usim(:,2:end)');
-
+                
                 kfModel.specSolns(spec).realRob=robustness; %store real robustness value
                 falsified = ~isreal(sqrt(robustness)); %sqrt of -ve values are imaginary
                 if kfModel.trainRand==2 %neighborhood training mode
@@ -281,7 +281,7 @@ end
 end
 
 function testDraw(critU,critX,t,xt,x0,A,B,g,R)
-plotVars=[3]; %[3];
+plotVars=[1,2]; %[3];
 drawu=critU(:,2:end)';
 x = g(x0);
 for i = 1:size(xt)-1

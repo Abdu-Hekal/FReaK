@@ -39,7 +39,7 @@ a = interval(1);
 b = interval(2);
 
 a = max([0 floor(a/ts)]);
-b = floor(b/ts); %floor(b/ts);
+b = ceil(b/ts); %floor(b/ts);
 
 if b==Inf
     b = kMax;
@@ -204,7 +204,7 @@ k = size(kList,2);
 P_ev = sdpvar(1,k);
 kListEv = unique(cell2mat(arrayfun(@(k) {min(kMax,k + a) : min(kMax,k + b)}, kList)));
 
-[ia, ib] = getIndices(1:k,a,b,kMax);
+[ia, ib] = getIndices(kList(1:k),a,b,kMax);
 ia_real = arrayfun(@(x) find(kListEv==x, 1, 'first'), ia);
 ib_real = arrayfun(@(x) find(kListEv==x, 1, 'first'), ib);
 max_size=size(unique(ib_real),2); %basically up to kmax, TODO: check this
@@ -263,7 +263,6 @@ P = sdpvar(1,k);
 z = binvar(m,k);
 
 F = [sum(z,1) == ones(1,k)];
-
 repP=repmat(P,m,1);
 F = [F, repP >= p_list];
 F = [F, p_list - (1-z)*M <= repP <= p_list + (1-z)*M];

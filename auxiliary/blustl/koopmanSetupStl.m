@@ -17,12 +17,11 @@ if hardcoded
     vkmrCount=0;
 %     [Fstl, Pstl] = hardCodedvectorKoopmanMilpRobust(phi,1,L,Sys.solverdt,var,M,Sys.offsetMap);
 %     [Fstl, Pstl] = orig_KoopmanMilpRobust(phi,1,L,Sys.solverdt,var,M);
-    [Fstl, Pstl] = KoopmanMilpRobust(phi,1,L,Sys.solverdt,var,M,Sys.offsetMap);
+%     [Fstl, Pstl] = KoopmanMilpRobust(phi,1,L,Sys.solverdt,var,M,Sys.offsetMap);
     Ostl = {};
 else
-%     [Fstl, Pstl, Ostl] = optimizerKoopmanMilpRobust(phi, 1, L, Sys.solverdt, var,M);
-      [Fstl, Pstl, Ostl] = vectorOptimizerKoopmanMilpRobust(phi, 1, L, Sys.solverdt, var,M);
-
+    [Fstl, Pstl, Ostl] = optimizerKoopmanMilpRobust(phi, 1, L, Sys.solverdt, var,M);
+%       [Fstl, Pstl, Ostl] = vectorOptimizerKoopmanMilpRobust(phi, 1, L, Sys.solverdt, var,M);
 end
 
 %assign stl optim variables and constraints
