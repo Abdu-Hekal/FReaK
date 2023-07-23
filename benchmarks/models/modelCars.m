@@ -19,7 +19,7 @@ function model = modelCars()
 
     model.T=100; 
     model.dt = 0.01; 
-    model.ak.dt=5; %5
+    model.ak.dt=0.5; %5
 %     model.solver.dt=10;
     model.cp=[10000 10000];
 
