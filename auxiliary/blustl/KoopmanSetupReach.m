@@ -12,5 +12,5 @@ for k=1:L+1
 end
 
 %% Reachset constraints
-Sys.Freach=Freach;
+Sys.Fdyn=Freach;
 

@@ -18,6 +18,7 @@ classdef KF_model
         trainRand %int, set to 3 to train with random trajectory, 2 to train with random neighborhood trajectory, 0 to train with previously found crit trajectory or 1 to alternate between prev and random. (default: 0)
         offsetStrat %int, set 1 to refine with offset, 0 for no offset, -1 to offset next iteration (after retraining koopman model). (default: 1). Note that offset strategy 1 is most stable and strategy -1 can lead to problems when warmstart (usex0) is used.
         useOptimizer %bool set to true to use optimizer object. Not using optimizer means stl needs to be setup for milp everytime for offset. setting up optimizer object also takes time. Time trade off? Note that using optimzier is most stable and not using can lead to problems when warmstart (usex0) is used.
+        reach %use reachability for encoding of MILP (default:true)
         % interpolation types for input & trajectory. See "interp1" for supported types
         inputInterpolation % interpolate input between control points. default 'previous'. Note that control points may decrease with coarser koopman
         trajInterpolation %interpolate output trajectory for stl analysis, default 'linear'
@@ -54,6 +55,7 @@ classdef KF_model
             obj.trainRand=0;
             obj.offsetStrat=-1;
             obj.useOptimizer=true;
+            obj.reach=true;
             obj.inputInterpolation='previous';
             obj.trajInterpolation='linear';
             obj.pulseInput = false;
@@ -63,7 +65,7 @@ classdef KF_model
             % autokoopman settings
             obj.ak.obsType="rff";
             obj.ak.nObs=20;
-            obj.ak.gridSlices=5;
+            obj.ak.gridSlices=10;
             obj.ak.opt="grid"; %grid
             obj.ak.rank=[1,20,4];
 
@@ -83,6 +85,7 @@ classdef KF_model
                 'gurobi.MIPFocus',3,...
                 'gurobi.NumericFocus',2,...
                 'gurobi.BarHomogeneous', 1,...
+                'cachesolvers',1,...
                 'usex0', 0 ...
                 );
             %                'gurobi.NumericFocus',3,...

@@ -6,7 +6,7 @@ runtime=tic;
 
 falsified = false;
 trainIter = 0;
-epsilon = 1.01; %epsilon % for offset, offset=epsilon*robustness
+epsilon = 1; %epsilon % for offset, offset=epsilon*robustness
 while kfModel.soln.sims <= kfModel.maxSims && falsified==false
     %reset after size of trainset==nResets;
     if numel(trainset.X) == kfModel.nResets
@@ -55,11 +55,14 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
     %     try
     %run autokoopman and learn linearized model
     [kfModel, A, B, g] = symbolicRFF(kfModel, trainset);
-    % find predicted falsifying initial set and inputs
-    % compute reachable set for Koopman linearized model
-    R = reachKoopman(A,B,g,kfModel);
+    % compute reachable set for Koopman linearized model (if reachability is used)
+    if kfModel.reach
+        R = reachKoopman(A,B,g,kfModel);
+    else
+        R=[];
+    end
     % determine most critical reachable set and specification
-    kfModel = critAlpha(R,kfModel);
+    kfModel = critAlpha(R,A,B,g,kfModel);
     %     catch
     %         disp("error encountered whilst setup/solving, resetting training data")
     %         trainIter=0;
@@ -91,7 +94,8 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
                 falsified = ~all(spec.set.contains(interpCritX')); %check this
             elseif strcmp(spec.type,'logic')
                 [Bdata,phi,robustness] = bReachRob(spec,tsim,interpCritX,usim(:,2:end)');
-                
+                robustness
+
                 kfModel.specSolns(spec).realRob=robustness; %store real robustness value
                 falsified = ~isreal(sqrt(robustness)); %sqrt of -ve values are imaginary
                 if kfModel.trainRand==2 %neighborhood training mode

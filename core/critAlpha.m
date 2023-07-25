@@ -1,10 +1,11 @@
-function kfModel = critAlpha(R,kfModel)
+function kfModel = critAlpha(R,A,B,g,kfModel)
 % detemrine most critical reachable set and specification based on the
 % robustnes
 
 % loop over all specifications
 spec=kfModel.spec;
 rob = inf;
+uCrit = []; %initialise critical input.
 
 for i = 1:size(spec,1)
 
@@ -59,11 +60,6 @@ for i = 1:size(spec,1)
         end
 
     elseif strcmp(spec(i,1).type,'logic')
-        %compute max time required to falsify stl and use it if less than
-        %sim time (avoids unnecessary optim variables)
-%         maxStlSteps = ceil(min((maxStlTime(spec(i,1).set)/kfModel.ak.dt)+1,length(R.zono)));
-        maxStlSteps =length(R.zono);
-
         %get prev solns
         prevSpecSol = kfModel.specSolns(kfModel.spec(i,1));
         %setup and run bluSTL
@@ -72,21 +68,35 @@ for i = 1:size(spec,1)
         try
             Sys=prevSpecSol.lti; %get previously setup milp problem with stl
         catch
-            Sys=Koopman_lti(R.zono(1:maxStlSteps),kfModel.U,kfModel.ak.dt,kfModel.solver.dt);
+            Sys=Koopman_lti(kfModel.T,kfModel.ak.dt,kfModel.solver.dt,kfModel.R0,kfModel.U);
             if ~kfModel.pulseInput %if not pulse input, set cpBool
                 Sys.cpBool=kfModel.cpBool;
             end
-            Sys = setupAlpha(Sys);
+            if kfModel.reach
+                Sys.reachZonos=R.zono; %update reach zonos with new
+                Sys = setupAlpha(Sys);
+            else
+                Sys.nObs = kfModel.ak.nObs;
+                Sys = setupInit(Sys);
+            end
         end
 
         %setup problem from scratch if number of generators is no longer
         %the same. TODO: check and clean this section
-        if size(Sys.alpha,2) ~= size(generators(R.zono{end}),2)
-            Sys=Koopman_lti(R.zono(1:maxStlSteps),kfModel.U,kfModel.ak.dt,kfModel.solver.dt);
-            if ~kfModel.pulseInput %if not pulse input, set cpBool
-                Sys.cpBool=kfModel.cpBool;
+        if kfModel.reach
+            if size(Sys.alpha,2) ~= size(generators(R.zono{end}),2)
+                Sys=Koopman_lti(kfModel.T,kfModel.ak.dt,kfModel.solver.dt,kfModel.R0,kfModel.U);
+                if ~kfModel.pulseInput %if not pulse input, set cpBool
+                    Sys.cpBool=kfModel.cpBool;
+                end
+                if kfModel.reach
+                    Sys.reachZonos=R.zono; %update reach zonos with new
+                    Sys = setupAlpha(Sys);
+                else
+                    Sys.nObs = kfModel.ak.nObs;
+                    Sys = setupInit(Sys);
+                end
             end
-            Sys = setupAlpha(Sys);
         end
 
         set=spec(i,1).set;
@@ -96,8 +106,16 @@ for i = 1:size(spec,1)
             Sys=setupStl(Sys,~kfModel.useOptimizer); %encode stl using milp
         end
 
-        Sys.reachZonos=R.zono(1:maxStlSteps); %update reach zonos with new
-        Sys = setupReach(Sys);
+        if kfModel.reach
+            Sys.reachZonos=R.zono; %update reach zonos with new
+            Sys = setupReach(Sys);
+        else
+            Sys.A=A;
+            Sys.B=B;
+            Sys.g=g;
+            Sys=setupDynamics(Sys);
+        end
+
         kfModel.soln.milpSetupTime = kfModel.soln.milpSetupTime+toc;
 
         tic
@@ -111,127 +129,118 @@ for i = 1:size(spec,1)
         %get results
         rob_ = value(Sys.Pstl);
         alpha = value(Sys.alpha);
+        u = value(Sys.u);
+
 
         %TODO: how can we compare stl robustness and reachset robustness.
         if rob_ < rob
             alphaCrit = alpha';
-            setCrit = R.set{end};
-            rob = rob_;
-            specCrit=spec(i,1);
+            uCrit = u;
+            if ~isempty(R)
+                setCrit = R.set{end};
+            else
+                setCrit=[];
+            end
+                rob = rob_;
+                specCrit=spec(i,1);
+            end
+        else
+            error('This type of specification is not supported!');
         end
-    else
-        error('This type of specification is not supported!');
+
+        %store solution for this iteration for each spec.
+        specSoln.rob=rob_; specSoln.alpha=alpha;
+        kfModel.specSolns(kfModel.spec(i,1)) = specSoln;
     end
-
-    %store solution for this iteration for each spec.
-    specSoln.rob=rob_; specSoln.alpha=alpha;
-    kfModel.specSolns(kfModel.spec(i,1)) = specSoln;
-end
-%store solution for this iteration
-kfModel.soln.rob=rob; kfModel.soln.alpha=alphaCrit;
-kfModel.soln.set=setCrit; kfModel.soln.spec=specCrit;
+    %store solution for this iteration
+    kfModel.soln.rob=rob; kfModel.soln.alpha=alphaCrit; kfModel.soln.u=uCrit;
+    kfModel.soln.set=setCrit; kfModel.soln.spec=specCrit;
 end
 
-function [r,alpha] = robustness(P,Z)
-% compute robustness of the zonotope Z with respect to an unsafe polytope P
+    function [r,alpha] = robustness(P,Z)
+        % compute robustness of the zonotope Z with respect to an unsafe polytope P
 
-% catch special case of a halfspace to accelearte computation
-%     if size(P.P.A,1) == 1
-%         disp("halfspace")
-%     end
-if size(P.P.A,1) == 1
+        % catch special case of a halfspace to accelearte computation
+        %     if size(P.P.A,1) == 1
+        %         disp("halfspace")
+        %     end
+        if size(P.P.A,1) == 1
 
-    r = infimum(interval(P.P.A*Z)) - P.P.b;
-    alpha = -sign(P.P.A*generators(Z))';
+            r = infimum(interval(P.P.A*Z)) - P.P.b;
+            alpha = -sign(P.P.A*generators(Z))';
 
-else
-    if isIntersecting(P,Z)
+        else
+            if isIntersecting(P,Z)
 
-        % solve linear program with variables [x;r;\alpha]
-        %
-        %   max r s.t. A(i,:)*x + ||A(i,:)||*r <= b,
-        %              x = c + G * \alpha,
-        %              r >= 0,
-        %              -1 <= \alpha <= 1
+                % solve linear program with variables [x;r;\alpha]
+                %
+                %   max r s.t. A(i,:)*x + ||A(i,:)||*r <= b,
+                %              x = c + G * \alpha,
+                %              r >= 0,
+                %              -1 <= \alpha <= 1
 
-        A = P.P.A; b = P.P.b; n = size(A,2);
-        c = center(Z); G = generators(Z); m = size(G,2);
+                A = P.P.A; b = P.P.b; n = size(A,2);
+                c = center(Z); G = generators(Z); m = size(G,2);
 
-        % constraint A(i,:)*x+||A(i,:)||*r <= b
-        C1 = [A,sum(A.^2,2)]; d1 = b;
+                % constraint A(i,:)*x+||A(i,:)||*r <= b
+                C1 = [A,sum(A.^2,2)]; d1 = b;
 
-        % constraint r >= 0
-        C2 = [zeros(1,size(A,2)),-1]; d2 = 0;
+                % constraint r >= 0
+                C2 = [zeros(1,size(A,2)),-1]; d2 = 0;
 
-        % constraint -1 <= \alpha <= 1
-        C3 = [eye(m);-eye(m)]; d3 = ones(2*m,1);
+                % constraint -1 <= \alpha <= 1
+                C3 = [eye(m);-eye(m)]; d3 = ones(2*m,1);
 
-        % constraint x = c + G * \alpha,
-        Ceq = [eye(n),zeros(n,1),-G]; deq = c;
+                % constraint x = c + G * \alpha,
+                Ceq = [eye(n),zeros(n,1),-G]; deq = c;
 
-        % combined inequality constraints
-        C = blkdiag([C1;C2],C3); d = [d1;d2;d3];
+                % combined inequality constraints
+                C = blkdiag([C1;C2],C3); d = [d1;d2;d3];
 
-        % objective function
-        f = zeros(size(Ceq,2),1); f(n+1) = -1;
+                % objective function
+                f = zeros(size(Ceq,2),1); f(n+1) = -1;
 
-        % solve linear program
-        options = optimoptions('linprog','display','off');
+                % solve linear program
+                options = optimoptions('linprog','display','off');
 
-        [x,r] = linprog(f,C,d,Ceq,deq,[],[],options);
+                [x,r] = linprog(f,C,d,Ceq,deq,[],[],options);
 
-        alpha = x(n+2:end);
+                alpha = x(n+2:end);
 
-    else
+            else
 
-        % solve quadratic program with variables [d;x;\alpha]
-        %
-        %   min ||d||^2 s.t. d = c + G*\alpha - x,
-        %                    A*x <= b,
-        %                    -1 <= \alpha <= 1
+                % solve quadratic program with variables [d;x;\alpha]
+                %
+                %   min ||d||^2 s.t. d = c + G*\alpha - x,
+                %                    A*x <= b,
+                %                    -1 <= \alpha <= 1
 
-        A = P.P.A; b = P.P.b; n = size(A,2);
-        c = center(Z); G = generators(Z); m = size(G,2);
+                A = P.P.A; b = P.P.b; n = size(A,2);
+                c = center(Z); G = generators(Z); m = size(G,2);
 
-        % constraint d = c + G*\alpha - x
-        Ceq = [eye(n),eye(n),-G]; deq = c;
+                % constraint d = c + G*\alpha - x
+                Ceq = [eye(n),eye(n),-G]; deq = c;
 
-        % constraint A*x <= b
-        C1 = [zeros(size(A,1),n),A]; d1 = b;
+                % constraint A*x <= b
+                C1 = [zeros(size(A,1),n),A]; d1 = b;
 
-        % constraint -1 <= \alpha <= 1
-        C2 = [eye(m);-eye(m)]; d2 = ones(2*m,1);
+                % constraint -1 <= \alpha <= 1
+                C2 = [eye(m);-eye(m)]; d2 = ones(2*m,1);
 
-        % combined inequality constraints
-        C = blkdiag(C1,C2); d = [d1;d2];
+                % combined inequality constraints
+                C = blkdiag(C1,C2); d = [d1;d2];
 
-        % objective function
-        H = blkdiag(2*eye(n),zeros(n+m));
-        f = zeros(2*n+m,1);
+                % objective function
+                H = blkdiag(2*eye(n),zeros(n+m));
+                f = zeros(2*n+m,1);
 
-        % solve quadratic program
-        options = optimoptions('quadprog','display','off');
+                % solve quadratic program
+                options = optimoptions('quadprog','display','off');
 
-        [x,r] = quadprog(H,f,C,d,Ceq,deq,[],[],[],options);
+                [x,r] = quadprog(H,f,C,d,Ceq,deq,[],[],[],options);
 
-        r = sqrt(r);
-        alpha = x(2*n+1:end);
-    end
-end
-    function maxTime = maxStlTime(stl)
-        maxTime=0;
-        timedOp = {'finally', 'globally', 'release', 'until'};
-        isMember = ismember(stl.type, timedOp);
-
-        if isMember
-            maxTime=maxTime+obj.to;
-        end
-        if ~isempty(obj.lhs)
-            maxTime=maxTime(obj.lhs);
-        end
-        if ~isempty(obj.rhs)
-            maxTime=maxTime(obj.rhs);
+                r = sqrt(r);
+                alpha = x(2*n+1:end);
+            end
         end
     end
-
-end

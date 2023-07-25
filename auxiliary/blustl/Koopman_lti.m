@@ -1,17 +1,26 @@
 classdef Koopman_lti
     properties
         reachZonos = [] %reachable zonotopes
+        % A and B matrices in linear evolution of system, Ax+Bu
+        A
+        B
+        g % observables function
+        X0 %initial set (not that it should be a point if reachability is not used)
         U %set of admissible control inputs (class:interval or Zonotope)
         koopdt %koopman time_step
         solverdt %solver time step for setting up stl, i.e. points where to evaluate stl
+        nx %number of state variables
+        nu %number of inputs
+        nObs %number of observables
+        L %number of control points
 
         stl %stl to falsify
         cpBool %boolean array representing cp points
 
         %milp sdpvars and constraints
-        Falpha %constraints on alpha
+        Finit %constraints on alpha or inputs
         Fstl %constraints for stl
-        Freach %constraints states according to reachable sets
+        Fdyn %constraints on states
         x %states optim var
         alpha %alpha optim var
         u %inputs optim var
@@ -29,20 +38,23 @@ classdef Koopman_lti
         bigM %bigM value for milp
         xlabel %variables label name from bluSTL
         ulabel %input label names
-        nx %number of state variables
-        L %number of control points
         normz %normalization values based on boundaries of reachable sets
     end
 
     methods
         % Constructor
-        function Sys = Koopman_lti(reachZonos,U,koopdt,solverdt)
-            Sys.reachZonos = reachZonos;
-            Sys.U = U;
+        function Sys = Koopman_lti(T,koopdt,solverdt,X0,U)
+            Sys.L=ceil(T/koopdt);
             Sys.koopdt=koopdt;
             Sys.solverdt=solverdt;
 
-            %intitalise offset map to empty 
+            Sys.X0 = X0;
+            Sys.U = U;
+
+            Sys.nx=size(X0,1);
+            Sys.nu=size(U,1);
+
+            %intitalise offset map to empty
             Sys.offsetMap = containers.Map('KeyType', 'double', 'ValueType', 'double');
         end
 
@@ -58,13 +70,25 @@ classdef Koopman_lti
             Sys = KoopmanSetupReach(Sys);
         end
 
+        function Sys = setupInit(Sys)
+            Sys = KoopmanSetupInit(Sys);
+        end
+
+        function Sys = setupDynamics(Sys)
+            Sys = KoopmanSetupDynamics(Sys);
+        end
+
         function Sys = setupOptimizer(Sys,options)
-            constraints=[Sys.Falpha, Sys.Fstl, Sys.Freach];
+            constraints=[Sys.Finit, Sys.Fstl, Sys.Fdyn];
             objective = Sys.Pstl; %objective is to minimize robustness of stl formula (falsification)
-            if ~isempty(Sys.u)
-                output = {Sys.x,Sys.alpha,Sys.Pstl,Sys.u};
+            if ~isempty(Sys.reachZonos)
+                if ~isempty(Sys.u)
+                    output = {Sys.x,Sys.Pstl,Sys.alpha,Sys.u};
+                else
+                    output = {Sys.x,Sys.Pstl,Sys.alpha};
+                end
             else
-                output = {Sys.x,Sys.alpha,Sys.Pstl};
+                output = {Sys.x,Sys.Pstl,Sys.u};
             end
             % setup optimizer
             Sys.optimizer = optimizer(constraints,objective,options,Sys.Ostl, output);
@@ -72,7 +96,7 @@ classdef Koopman_lti
 
         function Sys = optimize(Sys,options)
             if isempty(Sys.optimizer) %no optimizer object, optimize directly
-                constraints=[Sys.Falpha, Sys.Fstl, Sys.Freach];
+                constraints=[Sys.Finit, Sys.Fstl, Sys.Fdyn];
                 objective = Sys.Pstl; %objective is to minimize robustness of stl formula (falsification)
                 %% call solverarch
                 optimize(constraints,objective,options);
@@ -87,39 +111,41 @@ classdef Koopman_lti
                 end
                 [sol_control, errorflag1,~,~,P] = Sys.optimizer{{param}}; %% call solver
                 assign(Sys.x,double(sol_control{1}));
-                assign(Sys.alpha,double(sol_control{2}));
-                assign(Sys.Pstl,double(sol_control{3}));
-                if ~isempty(Sys.u)
-                    assign(Sys.u,double(sol_control{4}));
+                assign(Sys.Pstl,double(sol_control{2}));
+                if ~isempty(Sys.reachZonos)
+                    assign(Sys.alpha,double(sol_control{3}));
+                    if ~isempty(Sys.u)
+                        assign(Sys.u,double(sol_control{4}));
+                    end
+                else
+                    assign(Sys.u,double(sol_control{3}));    
                 end
                 if errorflag1 ~= 0
-                   disp(['Yalmip error: ' yalmiperror(errorflag1)]); % some other error
+                    disp(['Yalmip error: ' yalmiperror(errorflag1)]); % some other error
                 end
             end
         end
 
         %getters for dependent properties
         function bigM = get.bigM(Sys)
-            %find suitable bigM based on zonotope boundaries
-            bigM=0;
-            for i=1:length(Sys.reachZonos)
-                zono=Sys.reachZonos{i};
-                if norm(zono,inf) > bigM
-                    order = ceil(log10(norm(zono)));
-                    bigM = 10^order;
+            if ~isempty(Sys.reachZonos)
+                %find suitable bigM based on zonotope boundaries
+                bigM=0;
+                for i=1:length(Sys.reachZonos)
+                    zono=Sys.reachZonos{i};
+                    if norm(zono,inf) > bigM
+                        order = ceil(log10(norm(zono)));
+                        bigM = 10^order;
+                    end
                 end
+                %make sure bigM is bigger also than inputs
+                inpmax = 10^(ceil(log10(max(Sys.U.sup))));
+                bigM=max(bigM,inpmax);
+            else
+                bigM = 10e6;
             end
-            %make sure bigM is bigger also than inputs
-            inpmax = 10^(ceil(log10(max(Sys.U.sup))));
-            bigM=max(bigM,inpmax);
         end
-        function nx = get.nx(Sys)
-            nx=size(Sys.reachZonos{1}.center,1);
-        end
-        function L=get.L(Sys)
-            L=size(Sys.reachZonos,1)-1;
 
-        end
         function xlabel=get.xlabel(Sys)
             % default label names
             xlabel = cell(1,Sys.nx);

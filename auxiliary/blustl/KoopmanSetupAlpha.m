@@ -17,7 +17,7 @@ if ~isempty(Sys.U)
     c_u = repmat(c_u,1,size(alphaU,2));
 
     %append empty sdpvar for consistent length with states X
-    Sys.u = [c_u + G_u*alphaU,sdpvar(size(alphaU,1),1)];
+    Sys.u=c_u + G_u*alphaU;
 end
 
 %constraints for alpha
@@ -40,7 +40,7 @@ if ~isempty(cpBool) %piecewise constant signal and not pulse.
 end
 
 %assign optim variables and outputs to system
-Sys.Falpha=Falpha; Sys.alpha=alpha;
+Sys.Finit=Falpha; Sys.alpha=alpha;
 
 
 
