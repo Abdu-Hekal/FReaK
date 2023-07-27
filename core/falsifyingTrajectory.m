@@ -73,14 +73,16 @@ else
 end
 if ~isempty(u)
     all_steps = kfModel.T/kfModel.ak.dt;
-    %append time points as first column
-    if numel(u) == all_steps
-        tp_=linspace(0,kfModel.T-kfModel.ak.dt,all_steps); %time points without last time step
-    elseif numel(u)==all_steps+1 %inputs returned include last time step
-        tp_=linspace(0,kfModel.T,all_steps+1);
+    %check that correct number of inputs is returned, sometimes we have a
+    %final dummy input so that number of inputs is equal to state variables
+    %for MILP stl encoding, we remove it.
+    if size(u,2) == all_steps
+    elseif size(u,2)==all_steps+1 %inputs returned include last time step
+        u=u(:,1:end-1);
     else
         error('incorrect number of inputs returned from solver, investigate error')
     end
+    tp_=linspace(0,kfModel.T-kfModel.ak.dt,all_steps); %time points without last time step
     tp = linspace(0,kfModel.T,all_steps+1);
     u = interp1(tp_',u',tp',kfModel.inputInterpolation,"extrap"); %interpolate and extrapolate input points
     u =  max(kfModel.U.inf',min(kfModel.U.sup',u)); %ensure that extrapolation is within input bounds

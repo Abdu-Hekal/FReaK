@@ -151,7 +151,6 @@ kfModel.soln.x=critX;
 kfModel.soln.u = critU;
 kfModel.soln.falsified=falsified;
 kfModel.soln.runtime=toc(runtime); %record runtime
-fprintf("number of simulations to falsify %d \n",kfModel.soln.sims)
 end
 
 function repeatedTraj = checkRepeatedTraj(critX,critU, trainset)

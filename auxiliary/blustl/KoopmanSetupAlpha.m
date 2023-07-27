@@ -17,13 +17,11 @@ if ~isempty(Sys.U)
     c_u_ = repmat(c_u,1,size(alphaU,2));
 
     %append empty sdpvar for consistent length with states X
-    addAlphaU = sdpvar(1,1);
-    Falpha= -1<=addAlphaU<= 1;
-    Sys.u = [c_u_ + G_u*alphaU, c_u+G_u*addAlphaU];
+    Sys.u = [c_u_ + G_u*alphaU, sdpvar(size(c_u,1),size(c_u,2))];
 end
 
 %constraints for alpha
-Falpha= [Falpha,-1<=alpha<=1];
+Falpha= -1<=alpha<=1;
 
 %constraint for control points
 cpBool = cpBool(1:L,:); %get cpbool corresponding to number of steps
