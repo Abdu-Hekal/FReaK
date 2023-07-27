@@ -60,7 +60,6 @@ classdef KF_model
             obj.trajInterpolation='linear';
             obj.pulseInput = false;
             obj.soln=struct;
-            obj.soln.sims=0;
 
             % autokoopman settings
             obj.ak.obsType="rff";

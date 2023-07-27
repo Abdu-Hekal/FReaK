@@ -14,14 +14,16 @@ if ~isempty(Sys.U)
     alphaU = alpha(size(reachZonos{1}.generators,2)+1:end);
     U = zonotope(Sys.U); c_u = center(U); G_u = generators(U);
     alphaU = reshape(alphaU,[size(G_u,2),length(alphaU)/size(G_u,2)]);
-    c_u = repmat(c_u,1,size(alphaU,2));
+    c_u_ = repmat(c_u,1,size(alphaU,2));
 
     %append empty sdpvar for consistent length with states X
-    Sys.u = [c_u + G_u*alphaU,sdpvar(size(alphaU,1),1)];
+    addAlphaU = sdpvar(1,1);
+    Falpha= -1<=addAlphaU<= 1;
+    Sys.u = [c_u_ + G_u*alphaU, c_u+G_u*addAlphaU];
 end
 
 %constraints for alpha
-Falpha= -1<=alpha<=1;
+Falpha= [Falpha,-1<=alpha<=1];
 
 %constraint for control points
 cpBool = cpBool(1:L,:); %get cpbool corresponding to number of steps
