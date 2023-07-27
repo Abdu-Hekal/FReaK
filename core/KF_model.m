@@ -50,7 +50,7 @@ classdef KF_model
         function obj = KF_model(model)
             obj.model=model;
             obj.dt=0.01;
-            obj.maxSims=3000;
+            obj.maxSims=5000;
             obj.nResets=5;
             obj.trainRand=0;
             obj.offsetStrat=-1;
@@ -101,6 +101,7 @@ classdef KF_model
         %simulate function for model, a custom simulate function can be
         %used for a subclass of this class. Ensure that the outputs are consistent
         function [tout, yout, obj] = simulate(obj, x0, u)
+            tic
             if isa(obj.model, 'string') || isa(obj.model,"char")
                 [tout, yout] = run_simulink(obj.model, obj.T, x0, u);
             elseif isa(obj.model,'function_handle')
@@ -110,6 +111,7 @@ classdef KF_model
                 error('model not supported')
             end
             obj.soln.sims = obj.soln.sims+1;
+            obj.soln.simTime = obj.soln.simTime+toc;
         end
 
         function [tout, yout] = randSimulation(obj)

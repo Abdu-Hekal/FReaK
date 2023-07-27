@@ -17,7 +17,7 @@ if ~isempty(Sys.U)
     c_u = repmat(c_u,1,size(alphaU,2));
 
     %append empty sdpvar for consistent length with states X
-    Sys.u=c_u + G_u*alphaU;
+    Sys.u = [c_u + G_u*alphaU,sdpvar(size(alphaU,1),1)];
 end
 
 %constraints for alpha

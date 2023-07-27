@@ -9,7 +9,12 @@ trainIter = 0;
 while kfModel.soln.sims <= kfModel.maxSims && falsified==false
     %reset after size of trainset==nResets;
     if numel(trainset.X) == kfModel.nResets
-        trainIter = 0;
+        trainIter = 0; 
+        %reset offsets
+        for ii=1:numel(kfModel.spec)
+            spec=kfModel.spec(ii);
+            kfModel.specSolns(spec).lti.offsetMap=containers.Map('KeyType', 'double', 'ValueType', 'double'); 
+        end
     end
     %if nonrandom training technique is used, empty trainset after first iter because it is random trajectory.
     if trainIter <= 1 && kfModel.trainRand == 0
@@ -93,7 +98,6 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
                 falsified = ~all(spec.set.contains(interpCritX')); %check this
             elseif strcmp(spec.type,'logic')
                 [Bdata,phi,robustness] = bReachRob(spec,tsim,interpCritX,usim(:,2:end)');
-                robustness
 
                 kfModel.specSolns(spec).realRob=robustness; %store real robustness value
                 falsified = ~isreal(sqrt(robustness)); %sqrt of -ve values are imaginary
@@ -210,7 +214,7 @@ end
 
 %create empty struct to store prev soln
 kfModel.soln=struct;
-kfModel.soln.koopTime=0; kfModel.soln.milpSetupTime=0; kfModel.soln.milpSolvTime=0;
+kfModel.soln.koopTime=0; kfModel.soln.milpSetupTime=0; kfModel.soln.milpSolvTime=0; kfModel.soln.simTime=0;
 kfModel.soln.sims=0;
 %create empty struct to store best soln
 kfModel.bestSoln=struct; kfModel.bestSoln.rob=inf; kfModel.bestSoln.timeRob=inf;

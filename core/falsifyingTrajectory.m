@@ -74,7 +74,13 @@ end
 if ~isempty(u)
     all_steps = kfModel.T/kfModel.ak.dt;
     %append time points as first column
-    tp_=linspace(0,kfModel.T-kfModel.ak.dt,all_steps); %time points without last time step
+    if numel(u) == all_steps
+        tp_=linspace(0,kfModel.T-kfModel.ak.dt,all_steps); %time points without last time step
+    elseif numel(u)==all_steps+1 %inputs returned include last time step
+        tp_=linspace(0,kfModel.T,all_steps+1);
+    else
+        error('incorrect number of inputs returned from solver, investigate error')
+    end
     tp = linspace(0,kfModel.T,all_steps+1);
     u = interp1(tp_',u',tp',kfModel.inputInterpolation,"extrap"); %interpolate and extrapolate input points
     u =  max(kfModel.U.inf',min(kfModel.U.sup',u)); %ensure that extrapolation is within input bounds
