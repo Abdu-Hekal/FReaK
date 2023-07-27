@@ -6,7 +6,6 @@ runtime=tic;
 
 falsified = false;
 trainIter = 0;
-epsilon = 1; %epsilon % for offset, offset=epsilon*robustness
 while kfModel.soln.sims <= kfModel.maxSims && falsified==false
     %reset after size of trainset==nResets;
     if numel(trainset.X) == kfModel.nResets
@@ -108,11 +107,6 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
                         kfModel.solver.opts.usex0=0; %avoid warmstarting if offsetting
                         Sys=kfModel.specSolns(spec).lti;
                         if offsetIter==0 %if first offset iteration, re-solve with offset if offsetStrat==1 or save offset for next iter if offsetStrat==-1
-                            keys = offsetMap.keys;
-                            for ii=1:offsetMap.Count
-                                key = keys{ii};
-                                offsetMap(key) = offsetMap(key)*epsilon;
-                            end
                             Sys.offsetMap = offsetMap;
                             if kfModel.offsetStrat == 1 %if offset strategy in this iteration selected
                                 set = spec.set;

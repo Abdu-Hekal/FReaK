@@ -65,7 +65,7 @@ classdef KF_model
             % autokoopman settings
             obj.ak.obsType="rff";
             obj.ak.nObs=20;
-            obj.ak.gridSlices=10;
+            obj.ak.gridSlices=5;
             obj.ak.opt="grid"; %grid
             obj.ak.rank=[1,20,4];
 

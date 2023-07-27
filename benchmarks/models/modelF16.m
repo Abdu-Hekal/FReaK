@@ -23,7 +23,7 @@ function model = modelF16()
 
     model.T=15; 
     model.dt = 0.01; 
-    model.ak.dt= 0.1; %40/12;
+    model.ak.dt= 0.1; 
     model.nResets=5;
 %     model.solver.dt=10;
     model.cp=1500;
