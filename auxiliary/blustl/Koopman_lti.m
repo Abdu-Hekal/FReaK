@@ -120,9 +120,6 @@ classdef Koopman_lti
                 else
                     assign(Sys.u,double(sol_control{3}));    
                 end
-                if errorflag1 ~= 0
-                    disp(['Yalmip error: ' yalmiperror(errorflag1)]); % some other error
-                end
             end
         end
 
