@@ -86,7 +86,7 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
             end
             % run most critical inputs on the real system
             [t, critX, kfModel] = simulate(kfModel, critX0, usim);
-            testDraw(critU,critX,t,tak,x0,A,B,g,R); %test plot: delete me
+%             testDraw(critU,critX,t,tak,x0,A,B,g,R); %test plot: delete me
 
             interpCritX = interp1(t,critX,tsim,kfModel.trajInterpolation); %interpolate trajectory at granulated time points for checking correctness
             spec=kfModel.soln.spec; %critical spec found with best value of robustness
