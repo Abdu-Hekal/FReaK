@@ -118,7 +118,7 @@ classdef Koopman_lti
                         assign(Sys.u,double(sol_control{4}));
                     end
                 else
-                    assign(Sys.u,double(sol_control{3}));    
+                    assign(Sys.u,double(sol_control{3}));
                 end
             end
         end
@@ -135,9 +135,12 @@ classdef Koopman_lti
                         bigM = 10^order;
                     end
                 end
-                %make sure bigM is bigger also than inputs
-                inpmax = 10^(ceil(log10(max(Sys.U.sup))));
-                bigM=max(bigM,inpmax);
+                %if input is not empty
+                if ~isempty(Sys.U)
+                    %make sure bigM is bigger also than inputs
+                    inpmax = 10^(ceil(log10(max(Sys.U.sup))));
+                    bigM=max(bigM,inpmax);
+                end
             else
                 bigM = 10e6;
             end
