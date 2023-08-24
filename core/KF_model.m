@@ -54,7 +54,7 @@ classdef KF_model
             obj.nResets=5;
             obj.trainRand=0;
             obj.offsetStrat=-1;
-            obj.useOptimizer=true;
+            obj.useOptimizer=false;
             obj.reach=true;
             obj.inputInterpolation='previous';
             obj.trajInterpolation='linear';

@@ -16,8 +16,8 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
             kfModel.specSolns(spec).lti.offsetMap=containers.Map('KeyType', 'double', 'ValueType', 'double'); 
         end
     end
-    %if nonrandom training technique is used, empty trainset after first iter because it is random trajectory.
-    if trainIter <= 1 && kfModel.trainRand == 0
+    % empty trainset at reset and if nonrandom training technique is used, empty trainset after first iter because it is random trajectory.
+    if  trainIter ==0 || (trainIter == 1 && kfModel.trainRand == 0)
         trainset.X = {}; trainset.XU={}; trainset.t = {};
     end
 
@@ -41,7 +41,6 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
         [t, x, kfModel] = simulate(kfModel, x0, usim);
         %check if random input falsifies system, and break if it does
         falsified = checkFirst(kfModel,x,usim,t,tsim);
-
         
         if falsified
             critX=x;
@@ -98,7 +97,7 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
                 falsified = ~all(spec.set.contains(interpCritX')); %check this
             elseif strcmp(spec.type,'logic')
                 [Bdata,phi,robustness] = bReachRob(spec,tsim,interpCritX,usim(:,2:end)');
-
+                
                 kfModel.specSolns(spec).realRob=robustness; %store real robustness value
                 falsified = ~isreal(sqrt(robustness)); %sqrt of -ve values are imaginary
                 if kfModel.trainRand==2 %neighborhood training mode

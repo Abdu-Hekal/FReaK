@@ -20,7 +20,6 @@ function model = modelNeural()
     model.T=40; 
     model.dt = 0.01; 
     model.ak.dt=40/12; %40/12;
-    model.nResets=5;
 %     model.solver.dt=10;
     model.cp=12;
 

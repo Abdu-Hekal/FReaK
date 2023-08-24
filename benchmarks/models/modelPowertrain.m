@@ -20,7 +20,6 @@ model.U = interval([0;900],[61.1;1100]);
 model.T=50;
 model.dt = 0.01;
 model.ak.dt= 5;
-model.nResets=5;
 %     model.solver.dt=10;
 model.cp=[10,10];
 
