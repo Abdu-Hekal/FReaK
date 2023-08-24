@@ -210,13 +210,13 @@ if ~isempty(kfModel.U) %check if kfModel has inputs
     assert(length(kfModel.U)==length(kfModel.cp),'Number of control points (kfModel.cp) must be equal to number of inputs (kfModel.U)')
 end
 
-%create empty struct to store prev soln
+%reset struct to store prev soln
 kfModel.soln=struct;
 kfModel.soln.koopTime=0; kfModel.soln.milpSetupTime=0; kfModel.soln.milpSolvTime=0; kfModel.soln.simTime=0;
 kfModel.soln.sims=0;
-%create empty struct to store best soln
+%reset struct to store best soln
 kfModel.bestSoln=struct; kfModel.bestSoln.rob=inf; kfModel.bestSoln.timeRob=inf;
-%create empty dict to store prev soln for each spec
+%reset dict to store prev soln for each spec
 kfModel.specSolns = dictionary(kfModel.spec,struct);
 %empty struct to store training data
 trainset.X = {}; trainset.XU={}; trainset.t = {};
