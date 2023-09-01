@@ -18,7 +18,6 @@ function model = modelNeural()
     model.U = interval(1,3); 
 
     model.T=40; 
-    model.dt = 0.01; 
     model.ak.dt=40/12; %40/12;
 %     model.solver.dt=10;
     model.cp=12;

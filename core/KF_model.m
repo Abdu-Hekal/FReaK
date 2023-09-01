@@ -49,7 +49,7 @@ classdef KF_model
         % Constructor
         function obj = KF_model(model)
             obj.model=model;
-            obj.dt=0.01;
+            obj.dt=0.01; 
             obj.maxSims=5000;
             obj.nResets=5;
             obj.trainRand=0;
