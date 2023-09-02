@@ -31,7 +31,7 @@ classdef KF_model
         %         .nObs: number of observables (default=100)
         %         .gridSlices: number of slices for grid parameter search (default=5)
         %         .opt: tuner of type "grid", "bopt", or "monte-carlo" (default=grid)
-        %         .rank: set of ranks to try of DMD rank parameter (default=[1,200,20]) 
+        %         .rank: set of ranks to try of DMD rank parameter (default=[1,200,20])
 
         %solver/optimizer (struct)
         solver
@@ -95,6 +95,16 @@ classdef KF_model
             %                 'gurobi.DualReductions', 0,...
             %                'cachesolvers',1,...
             %                 'gurobi.InputFile', 'alpha.sol' ...
+
+
+            %create empty struct to store prev soln
+            obj.soln=struct;
+            obj.soln.koopTime=0; obj.soln.milpSetupTime=0; obj.soln.milpSolvTime=0; obj.soln.simTime=0;
+            obj.soln.sims=0;
+            %create empty struct to store best soln
+            obj.bestSoln=struct; obj.bestSoln.rob=inf; obj.bestSoln.timeRob=inf;
+            %create empty dict to store prev soln for each spec
+            obj.specSolns = dictionary(obj.spec,struct);
         end
 
         %simulate function for model, a custom simulate function can be
@@ -113,7 +123,7 @@ classdef KF_model
             obj.soln.simTime = obj.soln.simTime+toc;
         end
 
-        function [tout, yout] = randSimulation(obj)
+        function [tout, yout, x0, u] = randSimulation(obj)
             [x0,u] = getRandomSampleXU(obj);
             [tout, yout,~] = simulate(obj, x0, u);
         end
