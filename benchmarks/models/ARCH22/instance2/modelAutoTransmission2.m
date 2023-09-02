@@ -1,4 +1,4 @@
-function model = modelAutoTransmission()
+function model = modelAutoTransmission2()
 % model_AutoTransmission - model parameters for the Autotransmission benchmark
 %
 % Syntax:

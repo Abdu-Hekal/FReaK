@@ -1,4 +1,4 @@
-function model = modelF16()
+function model = modelF16_2()
 % modelCars - model parameters for the Aircraft Ground Collision Avoidance System (F16).
 %
 % Syntax:

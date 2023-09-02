@@ -1,4 +1,4 @@
-function model = modelPowertrain()
+function model = modelPowertrain2()
 % modelCars - model parameters for the Fuel Control of an Automotive Powertrain (AFC).
 %
 % Syntax:

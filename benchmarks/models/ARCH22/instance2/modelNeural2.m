@@ -1,4 +1,4 @@
-function model = modelNeural()
+function model = modelNeural2()
 % modelCars - model parameters for the Neural-network Controller (NN).
 %
 % Syntax:

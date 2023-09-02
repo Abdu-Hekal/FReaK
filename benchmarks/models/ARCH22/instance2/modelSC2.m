@@ -1,4 +1,4 @@
-function model = modelSC()
+function model = modelSC2()
 % modelCars - model parameters for the Steam condenser with Recurrent Neural Network Controller (SC).
 %
 % Syntax:

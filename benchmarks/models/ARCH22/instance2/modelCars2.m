@@ -1,4 +1,4 @@
-function model = modelCars()
+function model = modelCars2()
 % modelCars - model parameters for the chasing cars benchmark
 %
 % Syntax:
