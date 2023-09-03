@@ -281,7 +281,7 @@ end
 end
 
 function testDraw(critU,critX,t,xt,x0,A,B,g,R)
-plotVars=[12,13]; %[3];
+plotVars=[3]; %[3];
 drawu=critU(:,2:end)';
 x = g(x0);
 for i = 1:size(xt)-1

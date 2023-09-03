@@ -17,6 +17,12 @@ usim =  max(kfModel.U.inf',min(kfModel.U.sup',usim)); %ensure that extrapolation
 usim = [tsim,usim];
 interpX = interp1(tout,yout,tsim,kfModel.trajInterpolation); %interpolate trajectory at granulated time points for checking correctness
 
+
+save('tsim.mat','tsim')
+save('usim.mat','usim')
+save('interpX.mat','interpX')
+
+
 [~,~,rob] = bReachRob(spec,tsim,interpX,usim(:,2:end)');
 [~,~,conjunctRob] = bReachRob(conjunctiveSpec,tsim,interpX,usim(:,2:end)');
 
