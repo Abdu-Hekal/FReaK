@@ -19,8 +19,8 @@ function model = modelModulator()
 
     model.T=9; 
     model.dt = 0.01;
-    model.ak.dt=0.01; %2.5
-    model.cp=90;
+    model.ak.dt=0.09; %2.5
+    model.cp=100;
 
     x = stl('x',3);
     eq = globally(x(1) >=-1 & x(1) <=1 & x(2) >=-1 & x(2) <=1 & x(3) >=-1 & x(3) <=1,interval(0,9));
