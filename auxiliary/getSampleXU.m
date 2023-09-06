@@ -15,7 +15,7 @@ x0Range = kfModel.R0;
 u1 = size(u, 1);      % Number of time points
 u2 = size(u, 2);      % Number of inputs
 
-perturb = 0.1; %max perturbation percentage
+perturb = 0.01; %max perturbation percentage
 lowerBound = [repmat(uRange.inf,size(u,1),1); x0Range.inf];
 upperBound = [repmat(uRange.sup,size(u,1),1); x0Range.sup];
 
