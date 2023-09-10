@@ -31,7 +31,7 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
             disp('Turned off warmstarting due to repeated solutions')
         end
         [x0,u] = getSampleXU(kfModel);
-        tsim = (0:kfModel.dt:kfModel.T)'; %define time points for interpolating simulation
+        tsim = (0:kfModel.dt:kfModel.T)'; %define time points for interpolating input
         if ~isempty(u)
             usim = interp1(u(:,1),u(:,2:end),tsim,kfModel.inputInterpolation,"extrap"); %interpolate and extrapolate input points
             usim =  max(kfModel.U.inf',min(kfModel.U.sup',usim)); %ensure that extrapolation is within input bounds
@@ -41,7 +41,7 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
         end
         [t, x, kfModel] = simulate(kfModel, x0, usim);
         %check if random input falsifies system, and break if it does
-        falsified = checkFirst(kfModel,x,usim,t,tsim);
+        falsified = checkFirst(kfModel,x,usim,t);
         
         if falsified
             critX=x;
@@ -89,15 +89,15 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
             [t, critX, kfModel] = simulate(kfModel, critX0, usim);
 %             testDraw(critU,critX,t,tak,x0,A,B,g,R); %test plot: delete me
 
-            interpCritX = interp1(t,critX,tsim,kfModel.trajInterpolation); %interpolate trajectory at granulated time points for checking correctness
+            interpU = interp1(usim(:,1),usim(:,2:end),t,kfModel.inputInterpolation); %interpolate input at same time points as trajectory
             spec=kfModel.soln.spec; %critical spec found with best value of robustness
             % different types of specifications
             if strcmp(spec.type,'unsafeSet')
-                falsified = any(spec.set.contains(interpCritX'));
+                falsified = any(spec.set.contains(critX'));
             elseif strcmp(spec.type,'safeSet')
-                falsified = ~all(spec.set.contains(interpCritX')); %check this
+                falsified = ~all(spec.set.contains(critX')); %check this
             elseif strcmp(spec.type,'logic')
-                [Bdata,phi,robustness] = bReachRob(spec,tsim,interpCritX,usim(:,2:end)');  
+                [Bdata,phi,robustness] = bReachRob(spec,t,critX,interpU');  
                 
                 kfModel.specSolns(spec).realRob=robustness; %store real robustness value
                 falsified = ~isreal(sqrt(robustness)); %sqrt of -ve values are imaginary
@@ -223,17 +223,17 @@ kfModel.specSolns = dictionary(kfModel.spec,struct);
 trainset.X = {}; trainset.XU={}; trainset.t = {};
 end
 
-function falsified = checkFirst(kfModel,x,usim,t,tsim)
-interpX = interp1(t,x,tsim,kfModel.trajInterpolation); %interpolate trajectory at granulated time points for checking correctness
+function falsified = checkFirst(kfModel,x,usim,t)
+interpU = interp1(usim(:,1),usim(:,2:end),t,kfModel.inputInterpolation); %interpolate input at same time points as trajectory
 for ii=1:numel(kfModel.spec)
     spec=kfModel.spec(ii);
     % different types of specifications
     if strcmp(spec.type,'unsafeSet')
-        falsified = any(spec.set.contains(interpX'));
+        falsified = any(spec.set.contains(x'));
     elseif strcmp(spec.type,'safeSet')
-        falsified = ~all(spec.set.contains(interpX')); %check this
+        falsified = ~all(spec.set.contains(x')); %check this
     elseif strcmp(spec.type,'logic')
-        [~,~,robustness] = bReachRob(spec,tsim,interpX,usim(:,2:end)');
+        [~,~,robustness] = bReachRob(spec,t,x,interpU');
         falsified = ~isreal(sqrt(robustness)); %sqrt of -ve values are imaginary
     end
 end

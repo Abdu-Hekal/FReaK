@@ -21,7 +21,7 @@ classdef KF_model
         reach %use reachability for encoding of MILP (default:true)
         % interpolation types for input & trajectory. See "interp1" for supported types
         inputInterpolation % interpolate input between control points. default 'previous'. Note that control points may decrease with coarser koopman
-        trajInterpolation %interpolate output trajectory for stl analysis, default 'linear'
+        trajInterpolation %interpolate output trajectory for learning autokoopman model, default 'linear'
         pulseInput %boolean, set to true if the inputs are pulse inputs, otherwise input is piecewise-constant (default: false)
 
         %autokoopman settings (struct)
