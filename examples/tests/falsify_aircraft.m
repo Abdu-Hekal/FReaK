@@ -16,5 +16,8 @@ for j = 1:10
     end
 end
 avgSims=mean(simsreq);
+medSims = median(simsreq);
 fprintf('Avg Number of simulations: %.2f\n', avgSims);
+fprintf('Median Number of simulations: %.2f\n', medSims);
+
 

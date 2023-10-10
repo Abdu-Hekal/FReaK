@@ -18,7 +18,7 @@ function model = modelSC2()
     model.U = interval(3.99,4.01); 
 
     model.T=35; 
-    model.ak.dt= 0.05; %0.25;
+    model.ak.dt= 0.1; %0.25;
 %     model.solver.dt=10;
     model.cp=20;
 

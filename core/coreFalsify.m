@@ -97,7 +97,7 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
             elseif strcmp(spec.type,'safeSet')
                 falsified = ~all(spec.set.contains(critX')); %check this
             elseif strcmp(spec.type,'logic')
-                [Bdata,phi,robustness] = bReachRob(spec,t,critX,interpU');  
+                [Bdata,phi,robustness] = bReachRob(spec,t,critX,interpU'); 
                 
                 kfModel.specSolns(spec).realRob=robustness; %store real robustness value
                 falsified = ~isreal(sqrt(robustness)); %sqrt of -ve values are imaginary

@@ -18,7 +18,7 @@ function model = modelCars2()
     model.U = interval([0;0],[1;1]); 
 
     model.T=100; 
-    model.ak.dt=0.5; %5
+    model.ak.dt=1; %5
     model.cp=[20 20];
 
     x = stl('x',5); 
