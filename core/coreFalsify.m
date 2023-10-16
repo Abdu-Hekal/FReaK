@@ -283,7 +283,7 @@ end
 
 function testDraw(critU,critX,t,xt,x0,A,B,g,R)
 clf;
-plotVars=[1]; %[3];
+plotVars=[1,2]; %[3];
 drawu=critU(:,2:end)';
 x = g(x0);
 for i = 1:size(xt)-1
@@ -298,9 +298,9 @@ if ~any(size(plotVars)>[1,1]) %singular plot var, plot against time
     plot(xt,x(plotVars(1),1:end),'r','LineWidth',2);
     plot(t,critX(1:end,plotVars(1)),'g','LineWidth',2)
 else
-    for i=1:size(xt)-1
-        plot(R.zono{i},plotVars)
-    end
+%     for i=1:size(xt)-1
+%         plot(R.zono{i},plotVars)
+%     end
     plot(x(plotVars(1),1:end),x(plotVars(2),1:end),'r','LineWidth',2);
     plot(critX(1:end,plotVars(1)),critX(1:end,plotVars(2)),'g','LineWidth',2)
 end
