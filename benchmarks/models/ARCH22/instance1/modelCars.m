@@ -18,8 +18,9 @@ function model = modelCars()
     model.U = interval([0;0],[1;1]); 
 
     model.T=100; 
-    model.ak.dt=1; %5
-    model.cp=[10000 10000];
+    model.ak.dt=10;
+    model.cp=[100 100];
+    model.inputInterpolation='pchip';
 
     x = stl('x',5); 
     eq = globally(x(5)-x(4)<=40,interval(0,100));

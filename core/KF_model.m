@@ -14,9 +14,12 @@ classdef KF_model
 
         %settings
         maxSims %maximum number of simulations for training before terminating (default: 100)
+        timeout %timeout
         nResets %reset training set after n trajectories (default: 20), note that we also reset if milp fails to solve (model is bad)
         trainRand %int, set to 3 to train with random trajectory, 2 to train with random neighborhood trajectory, 0 to train with previously found crit trajectory or 1 to alternate between prev and random. (default: 0)
+        rmRand %remove first random trajectory when training
         offsetStrat %int, set 1 to refine with offset, 0 for no offset, -1 to offset next iteration (after retraining koopman model). (default: 1). Note that offset strategy 1 is most stable and strategy -1 can lead to problems when warmstart (usex0) is used.
+        normalize %normalize optimization objective in milp solver using reachable set bounds
         useOptimizer %bool set to true to use optimizer object. Not using optimizer means stl needs to be setup for milp everytime for offset. setting up optimizer object also takes time. Time trade off? Note that using optimzier is most stable and not using can lead to problems when warmstart (usex0) is used.
         reach %use reachability for encoding of MILP (default:true)
         % interpolation types for input & trajectory. See "interp1" for supported types
@@ -51,11 +54,14 @@ classdef KF_model
             obj.model=model;
             obj.dt=0.01; 
             obj.maxSims=5000;
-            obj.nResets=5;
+            obj.timeout=2000;
+            obj.nResets=5; %5
             obj.trainRand=0;
-            obj.offsetStrat=-1;
+            obj.rmRand=1; %1
+            obj.offsetStrat=-1; %-1
+            obj.normalize=0; %0
             obj.useOptimizer=true;
-            obj.reach=true;
+            obj.reach=true; %true
             obj.inputInterpolation='previous';
             obj.trajInterpolation='linear';
             obj.pulseInput = false;
