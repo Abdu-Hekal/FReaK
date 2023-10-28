@@ -6,7 +6,7 @@ runtime=tic;
 
 falsified = false;
 trainIter = 0;
-% figure;
+
 while kfModel.soln.sims <= kfModel.maxSims && falsified==false
     %reset after size of trainset==nResets;
     if numel(trainset.X) == kfModel.nResets
@@ -87,7 +87,9 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
             end
             % run most critical inputs on the real system
             [t, critX, kfModel] = simulate(kfModel, critX0, usim);
-%             testDraw(critU,critX,t,tak,x0,A,B,g,R); %test plot: delete me
+
+%             corePlotFalsify(critU,critX,t,tak,x0,A,B,g,R); %test plot: delete me
+            corePlotReach(critU,critX,t,tak,x0,A,B,g,R); %test plot: delete me
 
             interpU = interp1(usim(:,1),usim(:,2:end),t,kfModel.inputInterpolation); %interpolate input at same time points as trajectory
             spec=kfModel.soln.spec; %critical spec found with best value of robustness
@@ -98,6 +100,7 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
                 falsified = ~all(spec.set.contains(critX')); %check this
             elseif strcmp(spec.type,'logic')
                 [Bdata,phi,robustness] = bReachRob(spec,t,critX,interpU'); 
+                robustness
                 
                 kfModel.specSolns(spec).realRob=robustness; %store real robustness value
                 falsified = ~isreal(sqrt(robustness)); %sqrt of -ve values are imaginary
@@ -279,31 +282,5 @@ elseif opts.solver == "cplex"
 else
     gap=0.1;
 end
-end
-
-function testDraw(critU,critX,t,xt,x0,A,B,g,R)
-clf;
-plotVars=[1,2]; %[3];
-drawu=critU(:,2:end)';
-x = g(x0);
-for i = 1:size(xt)-1
-    if ~isempty(drawu)
-        x = [x, A*x(:,end) + B*drawu(:,i)];
-    else
-        x = [x, A*x(:,end)];
-    end
-end
-hold on; box on;
-if ~any(size(plotVars)>[1,1]) %singular plot var, plot against time
-    plot(xt,x(plotVars(1),1:end),'r','LineWidth',2);
-    plot(t,critX(1:end,plotVars(1)),'g','LineWidth',2)
-else
-%     for i=1:size(xt)-1
-%         plot(R.zono{i},plotVars)
-%     end
-    plot(x(plotVars(1),1:end),x(plotVars(2),1:end),'r','LineWidth',2);
-    plot(critX(1:end,plotVars(1)),critX(1:end,plotVars(2)),'g','LineWidth',2)
-end
-drawnow;
 end
 
