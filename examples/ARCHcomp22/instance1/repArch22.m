@@ -23,7 +23,7 @@ benches = {}; %empty cell to store benchmarks
 bench.kfModel = @modelAutoTransmission;
 x = stl('x',3);
 bench.requirements = {; ...
-    "AT1", 1, globally(x(1) < 120,interval(0,20)); ...
+    %     "AT1", 1, globally(x(1) < 120,interval(0,20)); ...
     "AT2", 1,globally(x(2) < 4750,interval(0,10)); ...
     "AT51", 1,globally(implies(~(x(3)>=1 & x(3)<=1) & finally(x(3)>=1 & x(3)<=1,interval(0.001,0.1)),finally(globally(x(3)>=1 & x(3)<=1,interval(0,2.5)),interval(0.001,0.1))),interval(0,30)); ...
     "AT52", 1, globally(implies(~(x(3)>=2 & x(3)<=2) & finally(x(3)>=2 & x(3)<=2,interval(0.001,0.1)),finally(globally(x(3)>=2 & x(3)<=2,interval(0,2.5)),interval(0.001,0.1))),interval(0,30)); ...
@@ -57,7 +57,7 @@ beta2=0.04;
 bench.requirements = {; ...
     "NN", 40/12, globally(implies(abs(x(1)-u(1))>alpha+beta*abs(u(1)),finally(globally(~(alpha+beta*abs(u(1))<=abs(x(1)-u(1))),interval(0,1)),interval(0,2))),interval(1,37)); ...
     "NN2", 40/12, globally(implies(abs(x(1)-u(1))>alpha+beta2*abs(u(1)),finally(globally(~(alpha+beta2*abs(u(1))<=abs(x(1)-u(1))),interval(0,1)),interval(0,2))),interval(1,37)); ...
-%     "NNx", 40/12, (finally(x(1)>3.2,interval(0,1))) & (finally(globally(x(1)>1.75 & x(1)<2.25,interval(0,0.5)),interval(1,1.5))) & (globally(x(1)>1.825 & x(1)<2.175,interval(2,3))) ; ...
+    %     "NNx", 40/12, (finally(x(1)>3.2,interval(0,1))) & (finally(globally(x(1)>1.75 & x(1)<2.25,interval(0,0.5)),interval(1,1.5))) & (globally(x(1)>1.825 & x(1)<2.175,interval(2,3))) ; ...
     };
 benches{end+1} = bench;
 
@@ -112,42 +112,15 @@ for b = 1:length(benches)
             fprintf("number of simulations to falsify %d \n",kfModel.soln.sims)
             fprintf('falsified iteration %d \n',j);
         end
-        if ~isempty(solns(name))
-            avgKoopTime=mean(getMetrics(solns(name),'koopTime'));
-            avgMilpSetupTime=mean(getMetrics(solns(name),'milpSetupTime'));
-            avgMilpSolveTime=mean(getMetrics(solns(name),'milpSolvTime'));
-            avgSimTime=mean(getMetrics(solns(name),'simTime'));
-            avgRuntime=mean(getMetrics(solns(name),'runtime'));
-            sims=getMetrics(solns(name),'sims');
-            avgSims=mean(sims);
-            medianSims=median(sims);
-            avgFalsified=sum(getMetrics(solns(name),'falsified'));
-        end
         %print info
         fprintf('Benchmark: %s\n', name);
         fprintf('Number of runs: %d\n', j);
         if ~isempty(solns(name))
-            fprintf('Avg koopman time: %.2f seconds\n', avgKoopTime);
-            fprintf('Avg milp setup time: %.2f seconds\n', avgMilpSetupTime);
-            fprintf('Avg milp solve time: %.2f seconds\n', avgMilpSolveTime);
-            fprintf('Avg simulation time: %.2f seconds\n', avgSimTime);
-            fprintf('Avg total runtime: %.2f seconds\n', avgRuntime);
-            fprintf('Number of successful falsified traces: %d/%d\n', avgFalsified,j);
-            fprintf('Avg Number of simulations: %.2f\n', avgSims);
-            fprintf('Median Number of simulations: %.2f\n', medianSims);
-            fprintf('R: %.2f\n',100*avgSimTime/avgRuntime)
+            printInfo(solns(name))
         else
             fprintf('Number of successful falsified traces: 0/%d\n',j)
         end
-
     end
-    save("solns.mat","solns")
 end
 end
 
-function list = getMetrics(solns,metric)
-list=[];
-for i=1:length(solns{1})
-    list=[list,solns{1}{i}.(metric)];
-end
-end

@@ -10,11 +10,11 @@ trainIter = 0;
 while kfModel.soln.sims <= kfModel.maxSims && falsified==false
     %reset after size of trainset==nResets;
     if numel(trainset.X) == kfModel.nResets
-        trainIter = 0; 
+        trainIter = 0;
         %reset offsets
         for ii=1:numel(kfModel.spec)
             spec=kfModel.spec(ii);
-            kfModel.specSolns(spec).lti.offsetMap=containers.Map('KeyType', 'double', 'ValueType', 'double'); 
+            kfModel.specSolns(spec).lti.offsetMap=containers.Map('KeyType', 'double', 'ValueType', 'double');
         end
     end
     % empty trainset at reset and if nonrandom training technique is used, empty trainset after first iter because it is random trajectory.
@@ -42,7 +42,7 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
         [t, x, kfModel] = simulate(kfModel, x0, usim);
         %check if random input falsifies system, and break if it does
         falsified = checkFirst(kfModel,x,usim,t);
-        
+
         if falsified
             critX=x;
             critU=u;
@@ -88,10 +88,14 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
             % run most critical inputs on the real system
             [t, critX, kfModel] = simulate(kfModel, critX0, usim);
 
-%             corePlotFalsify(critU,critX,t,tak,x0,A,B,g,R); %test plot: delete me
-            corePlotReach(critU,critX,t,tak,x0,A,B,g,R); %test plot: delete me
+            %             corePlotFalsify(critU,critX,t,tak,x0,A,B,g,R); %test plot: delete me
+            %             corePlotReach(critU,critX,t,tak,x0,A,B,g,R); %test plot: delete me
 
-            interpU = interp1(usim(:,1),usim(:,2:end),t,kfModel.inputInterpolation); %interpolate input at same time points as trajectory
+            if ~isempty(usim)
+                interpU = interp1(usim(:,1),usim(:,2:end),t,kfModel.inputInterpolation); %interpolate input at same time points as trajectory
+            else
+                interpU=usim;
+            end
             spec=kfModel.soln.spec; %critical spec found with best value of robustness
             % different types of specifications
             if strcmp(spec.type,'unsafeSet')
@@ -99,9 +103,8 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
             elseif strcmp(spec.type,'safeSet')
                 falsified = ~all(spec.set.contains(critX')); %check this
             elseif strcmp(spec.type,'logic')
-                [Bdata,phi,robustness] = bReachRob(spec,t,critX,interpU'); 
-                robustness
-                
+                [Bdata,phi,robustness] = bReachRob(spec,t,critX,interpU');
+
                 kfModel.specSolns(spec).realRob=robustness; %store real robustness value
                 falsified = ~isreal(sqrt(robustness)); %sqrt of -ve values are imaginary
                 if kfModel.trainRand==2 %neighborhood training mode
@@ -227,7 +230,11 @@ trainset.X = {}; trainset.XU={}; trainset.t = {};
 end
 
 function falsified = checkFirst(kfModel,x,usim,t)
-interpU = interp1(usim(:,1),usim(:,2:end),t,kfModel.inputInterpolation); %interpolate input at same time points as trajectory
+if ~isempty(usim)
+    interpU = interp1(usim(:,1),usim(:,2:end),t,kfModel.inputInterpolation); %interpolate input at same time points as trajectory
+else
+    interpU=usim;
+end
 for ii=1:numel(kfModel.spec)
     spec=kfModel.spec(ii);
     % different types of specifications

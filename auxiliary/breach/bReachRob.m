@@ -5,7 +5,11 @@ uvars=arrayfun(@(i) ['u', num2str(i)], 1:size(u,1), 'UniformOutput', false)';
 vars=[xvars;uvars];
 
 Bdata = BreachTraceSystem(vars');
-trace = [t,x,u'];
+if ~isempty(u)
+    trace = [t,x,u'];
+else
+    trace = [t,x];
+end
 Bdata.AddTrace(trace);
 stl=replace(coraBlustlConvert(coraSpec.set),"(t)","[t]");
 phi = STL_Formula('phi',stl);

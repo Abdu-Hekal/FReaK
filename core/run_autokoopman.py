@@ -16,6 +16,8 @@ def run(times, trajectories, param_dict, inputs_list):
     ids = np.arange(0, len(training_data)).tolist()
     training_data = traj.TrajectoriesData(dict(zip(ids, training_data)))
 
+    traj.TrajectoriesData.to_csv(training_data,'AT1_trajectories.csv')
+
     if training_data.n_trajs > 3:
         n_splits = int(training_data.n_trajs/2) if training_data.n_trajs%2==0 else None
     else:
@@ -47,6 +49,7 @@ def run(times, trajectories, param_dict, inputs_list):
 
     params = experiment_results['hyperparameters']
     paramVals = experiment_results['hyperparameter_values']
+
 #     print(params)
 #     print(paramVals)
 

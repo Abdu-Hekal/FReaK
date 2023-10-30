@@ -29,6 +29,10 @@ function model = modelF16()
     model.cp=1500;
     model.trainRand = 0;
 
+    x = stl('x',16);
+    eq = globally(x(12)>0,interval(0,15));
+    model.spec = specification(eq,'logic');
+
         % autokoopman settings
     model.ak.obsType="rff";
     model.ak.nObs=20;

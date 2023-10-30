@@ -3,7 +3,7 @@
 % py.importlib.import_module('autokoopman');
 
 kfModel = modelF16();
-kfModel.spec = specification(halfspace([0;0;0;0;0;0;0;0;0;0;0;1;0;0;0;0],0),'unsafeSet');
+% kfModel.spec = specification(halfspace([0;0;0;0;0;0;0;0;0;0;0;1;0;0;0;0],0),'unsafeSet');
 plot_vars = [12,13];
 
 [kfModel,trainset] = falsify(kfModel);

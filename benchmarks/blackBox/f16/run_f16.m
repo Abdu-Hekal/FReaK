@@ -34,6 +34,6 @@
     [output, passFail] = RunF16Sim(initialState, t_vec, orient, 'stevens',...
         flightLimits, ctrlLimits, autopilot, printOn, plotOn);
 
-	tout = t_vec;
+	tout = t_vec';
 	yout = output';
 end

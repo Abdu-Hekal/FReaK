@@ -54,7 +54,7 @@ classdef KF_model
             obj.model=model;
             obj.dt=0.01; 
             obj.maxSims=5000;
-            obj.timeout=2000;
+            obj.timeout=inf;
             obj.nResets=5; %5
             obj.trainRand=0;
             obj.rmRand=1; %1
