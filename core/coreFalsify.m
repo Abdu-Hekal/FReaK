@@ -8,6 +8,10 @@ falsified = false;
 trainIter = 0;
 
 while kfModel.soln.sims <= kfModel.maxSims && falsified==false
+    %timeout
+    if toc(runtime) > kfModel.timeout
+        break
+    end
     %reset after size of trainset==nResets;
     if numel(trainset.X) == kfModel.nResets
         trainIter = 0;
@@ -18,7 +22,7 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
         end
     end
     % empty trainset at reset and if nonrandom training technique is used, empty trainset after first iter because it is random trajectory.
-    if  trainIter ==0 || (trainIter == 1 && kfModel.trainRand == 0)
+    if  trainIter ==0 || (trainIter == 1 && kfModel.trainRand == 0 && kfModel.rmRand)
         trainset.X = {}; trainset.XU={}; trainset.t = {};
     end
 

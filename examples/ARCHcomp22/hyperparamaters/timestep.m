@@ -1,9 +1,8 @@
-function repArch22()
-% arch22ModelTransmission - runs all requirement formula for the
-%  benchmarks of the ARCH'22 falsification Category
+function timestep()
+% timestep - runs experiments in paper on timestep
 %
 % Syntax:
-%   results = repArch22()
+%   results = timestep()
 %
 % Inputs:
 %    -
@@ -13,7 +12,7 @@ function repArch22()
 %
 
 % Author:       Abdelrahman Hekal
-% Written:      23-Feb-2023
+% Written:      30-Oct-2023
 % Last update:  ---
 % Last revision:---
 
@@ -23,7 +22,7 @@ benches = {}; %empty cell to store benchmarks
 bench.kfModel = @modelAutoTransmission;
 x = stl('x',3);
 bench.requirements = {; ...
-    %     "AT1", 1, globally(x(1) < 120,interval(0,20)); ...
+    "AT1", 1, globally(x(1) < 120,interval(0,20)); ...
     "AT2", 1,globally(x(2) < 4750,interval(0,10)); ...
     "AT51", 1,globally(implies(~(x(3)>=1 & x(3)<=1) & finally(x(3)>=1 & x(3)<=1,interval(0.001,0.1)),finally(globally(x(3)>=1 & x(3)<=1,interval(0,2.5)),interval(0.001,0.1))),interval(0,30)); ...
     "AT52", 1, globally(implies(~(x(3)>=2 & x(3)<=2) & finally(x(3)>=2 & x(3)<=2,interval(0.001,0.1)),finally(globally(x(3)>=2 & x(3)<=2,interval(0,2.5)),interval(0.001,0.1))),interval(0,30)); ...
@@ -68,59 +67,57 @@ bench.requirements = {; ...
     };
 benches{end+1} = bench;
 
-bench.kfModel = @modelF16;
-x = stl('x',16);
-bench.requirements = {; ...
-    %     "F16", globally(x(12)>0,interval(0,15)) ; ...
-    };
-benches{end+1} = bench;
+% Start recording the command line output to a file
+diary('timestep.txt');
 
-solns=dictionary(string.empty,cell.empty);
-for b = 1:length(benches)
-    bench = benches{b};
-    req = bench.requirements;
-    for i = 1:size(req, 1)
-        % initialize seeds
-        rng(0)
-        pyrunfile("seed.py")
-        disp("--------------------------------------------------------")
-        for j = 1:10
-            kfModel = bench.kfModel();
-            name = req{i, 1};
-            kfModel.ak.dt = req{i, 2};
-            eq = req{i, 3};
+timesteps=[0.1,0.5,1,2.5,5,10];
+for t = 1:numel(timesteps)
+    solns=dictionary(string.empty,cell.empty);
+    for b = 1:length(benches)
+        bench = benches{b};
+        req = bench.requirements;
+        for i = 1:size(req, 1)
+            % initialize seeds
+            rng(0)
+            pyrunfile("seed.py")
+            disp("--------------------------------------------------------")
+            for j = 1:10
+                kfModel = bench.kfModel();
+                name = req{i, 1};
+                eq = req{i, 3};
+                %settings
+                kfModel.timeout=1000;
+                kfModel.ak.dt=timesteps(t);
 
-            if name == "NNx"
-                kfModel.U = interval(1.95,2.05);
-            end
-            if name == "AFC33"
-                kfModel.U = interval([61.2;900],[81.2;1100]);
-            end
+                if name == "NNx"
+                    kfModel.U = interval(1.95,2.05);
+                end
 
-            kfModel.spec = specification(eq,'logic');
-            [kfModel,~] = falsify(kfModel);
+                kfModel.spec = specification(eq,'logic');
+                [kfModel,~] = falsify(kfModel);
 
-            if j==1
-                solns(name)={{kfModel.soln}};
-            else
-                if kfModel.soln.falsified
-                    soln=solns(name);
-                    soln{1}{end+1}=kfModel.soln;
-                    solns(name)=soln;
+                if j==1
+                    solns(name)={{kfModel.soln}};
+                else
+                    if kfModel.soln.falsified
+                        soln=solns(name);
+                        soln{1}{end+1}=kfModel.soln;
+                        solns(name)=soln;
+                    end
                 end
             end
-            fprintf("number of simulations to falsify %d \n",kfModel.soln.sims)
-            fprintf('falsified iteration %d \n',j);
-        end
-        %print info
-        fprintf('Benchmark: %s\n', name);
-        fprintf('Number of runs: %d\n', j);
-        if ~isempty(solns(name))
-            printInfo(solns(name),j)
-        else
-            fprintf('Number of successful falsified traces: 0/%d\n',j)
+            %print info
+            fprintf('Benchmark: %s\n', name);
+            fprintf('Timestep=%d \n',timesteps(t));
+            if ~isempty(solns(name))
+                printInfo(solns(name),j)
+            else
+                fprintf('Number of successful falsified traces: 0/%d\n',j)
+            end
         end
     end
 end
+% Stop recording the command line output
+diary off;
 end
 

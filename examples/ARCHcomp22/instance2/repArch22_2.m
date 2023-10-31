@@ -133,7 +133,7 @@ for b = 1:length(benches)
         fprintf('Benchmark: %s\n', name);
         fprintf('Number of runs: %d\n', j);
         if ~isempty(solns(name))
-            printInfo(solns(name))
+            printInfo(solns(name),j)
         else
             fprintf('Number of successful falsified traces: 0/%d\n',j)
         end
