@@ -116,7 +116,7 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
                 end
                 gap = getMilpGap(kfModel.solver.opts);
                 if robustness > gap && abs(kfModel.offsetStrat) %not falsifed yet, robustness is greater than gap termination criteria for milp solver and an offset mode selected by user. Note that if robustness is less than gap, offset most likely is not benefecial.
-                    offsetMap=bReachCulprit2(Bdata,spec.set); %get predicates responsible for robustness value
+                    offsetMap=bReachCulprit(Bdata,spec.set); %get predicates responsible for robustness value
                     if offsetMap.Count > 0 %if there there exists predicates that are culprit for (+ve) robustness
                         kfModel.solver.opts.usex0=0; %avoid warmstarting if offsetting
                         Sys=kfModel.specSolns(spec).lti;

@@ -1,4 +1,4 @@
-function [offsetMap]=bReachCulprit2(Bdata,set)
+function [offsetMap]=bReachCulprit(Bdata,set)
 %function that gets idx of predicate (subformula) that is responsible for robustness value
 
 offsetMap = containers.Map('KeyType', 'double', 'ValueType', 'double');
