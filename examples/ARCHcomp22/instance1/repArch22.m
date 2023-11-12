@@ -23,7 +23,7 @@ benches = {}; %empty cell to store benchmarks
 bench.kfModel = @modelAutoTransmission;
 x = stl('x',3);
 bench.requirements = {; ...
-    %     "AT1", 1, globally(x(1) < 120,interval(0,20)); ...
+    "AT1", 1, globally(x(1) < 120,interval(0,20)); ...
     "AT2", 1,globally(x(2) < 4750,interval(0,10)); ...
     "AT51", 1,globally(implies(~(x(3)>=1 & x(3)<=1) & finally(x(3)>=1 & x(3)<=1,interval(0.001,0.1)),finally(globally(x(3)>=1 & x(3)<=1,interval(0,2.5)),interval(0.001,0.1))),interval(0,30)); ...
     "AT52", 1, globally(implies(~(x(3)>=2 & x(3)<=2) & finally(x(3)>=2 & x(3)<=2,interval(0.001,0.1)),finally(globally(x(3)>=2 & x(3)<=2,interval(0,2.5)),interval(0.001,0.1))),interval(0,30)); ...
@@ -75,6 +75,9 @@ bench.requirements = {; ...
     };
 benches{end+1} = bench;
 
+% Start recording the command line output to a file
+diary('instance1.txt');
+
 solns=dictionary(string.empty,cell.empty);
 for b = 1:length(benches)
     bench = benches{b};
@@ -101,14 +104,14 @@ for b = 1:length(benches)
             [kfModel,~] = falsify(kfModel);
 
             if j==1
-                solns(name)={{kfModel.soln}};
-            else
-                if kfModel.soln.falsified
-                    soln=solns(name);
-                    soln{1}{end+1}=kfModel.soln;
-                    solns(name)=soln;
-                end
+                solns(name)={{}};
             end
+            if kfModel.soln.falsified
+                soln=solns(name);
+                soln{1}{end+1}=kfModel.soln;
+                solns(name)=soln;
+            end
+            
             fprintf("number of simulations to falsify %d \n",kfModel.soln.sims)
             fprintf('falsified iteration %d \n',j);
         end
@@ -122,5 +125,6 @@ for b = 1:length(benches)
         end
     end
 end
+% Stop recording the command line output
+diary off;
 end
-

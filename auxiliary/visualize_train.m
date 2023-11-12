@@ -33,7 +33,7 @@ for r = 1:length(trainset.X)
 
         p2=plot(trainset.X{r}(plot_vars(1),:),trainset.X{r}(plot_vars(2),:));
     end
-    %style plots 
+    %style plots
     set(p1, 'LineWidth', 1, 'Color', PS.DGrey5);
     set(p2, 'LineWidth', 1, 'Color',PS.MyGreen3);
 
