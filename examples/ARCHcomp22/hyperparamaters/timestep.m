@@ -47,23 +47,10 @@ bench.requirements = {; ...
     };
 benches{end+1} = bench;
 
-bench.kfModel = @modelNeural;
-x = stl('x',2);
-u = stl('u',1);
-alpha=0.005;
-beta=0.03;
-beta2=0.04;
-bench.requirements = {; ...
-%     "NN", 40/12, globally(implies(abs(x(1)-u(1))>alpha+beta*abs(u(1)),finally(globally(~(alpha+beta*abs(u(1))<=abs(x(1)-u(1))),interval(0,1)),interval(0,2))),interval(1,37)); ...
-%     "NN2", 40/12, globally(implies(abs(x(1)-u(1))>alpha+beta2*abs(u(1)),finally(globally(~(alpha+beta2*abs(u(1))<=abs(x(1)-u(1))),interval(0,1)),interval(0,2))),interval(1,37)); ...
-    %     "NNx", 40/12, (finally(x(1)>3.2,interval(0,1))) & (finally(globally(x(1)>1.75 & x(1)<2.25,interval(0,0.5)),interval(1,1.5))) & (globally(x(1)>1.825 & x(1)<2.175,interval(2,3))) ; ...
-    };
-benches{end+1} = bench;
-
 bench.kfModel = @modelSC;
 x = stl('x',4);
 bench.requirements = {; ...
-%     "SC",0.1, globally(x(4)>=87 & x(4)<=87.5,interval(30,35)) ; ...
+    %     "SC",0.1, globally(x(4)>=87 & x(4)<=87.5,interval(30,35)) ; ...
     };
 benches{end+1} = bench;
 
@@ -71,8 +58,6 @@ benches{end+1} = bench;
 diary('timestep.txt');
 
 timesteps=[0.1,0.5,1,2.5,5,10];
-timesteps=[0.5,1,2.5,5,10];
-
 for t = 1:numel(timesteps)
     solns=dictionary(string.empty,cell.empty);
     for b = 1:length(benches)
@@ -99,13 +84,12 @@ for t = 1:numel(timesteps)
                 [kfModel,~] = falsify(kfModel);
 
                 if j==1
-                    solns(name)={{kfModel.soln}};
-                else
-                    if kfModel.soln.falsified
-                        soln=solns(name);
-                        soln{1}{end+1}=kfModel.soln;
-                        solns(name)=soln;
-                    end
+                    solns(name)={{}};
+                end
+                if kfModel.soln.falsified
+                    soln=solns(name);
+                    soln{1}{end+1}=kfModel.soln;
+                    solns(name)=soln;
                 end
             end
             %print info

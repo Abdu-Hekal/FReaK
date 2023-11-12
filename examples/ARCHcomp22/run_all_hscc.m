@@ -1,7 +1,11 @@
 %run all experiments in the paper
-repArch22()
-repArch22_2()
+
+%run benchmarks
+repArch22() %instance 1
+repArch22_2() %instance 2
+
+% run experiments for different hyper-parameters 
 nobservables()
 nresets()
-enhancement()
 timestep()
+enhancement()

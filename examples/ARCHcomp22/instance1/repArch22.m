@@ -104,14 +104,14 @@ for b = 1:length(benches)
             [kfModel,~] = falsify(kfModel);
 
             if j==1
-                solns(name)={{kfModel.soln}};
-            else
-                if kfModel.soln.falsified
-                    soln=solns(name);
-                    soln{1}{end+1}=kfModel.soln;
-                    solns(name)=soln;
-                end
+                solns(name)={{}};
             end
+            if kfModel.soln.falsified
+                soln=solns(name);
+                soln{1}{end+1}=kfModel.soln;
+                solns(name)=soln;
+            end
+            
             fprintf("number of simulations to falsify %d \n",kfModel.soln.sims)
             fprintf('falsified iteration %d \n',j);
         end

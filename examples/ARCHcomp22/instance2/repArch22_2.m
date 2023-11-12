@@ -89,7 +89,7 @@ gamma=0.007;
 bench.requirements = {; ...
     "AFC27",1, globally(implies(rise|fall,globally(abs(x(1))<beta,interval(1,5))),interval(11,50)); ...
     "AFC29",1,globally(abs(x(1))<gamma,interval(11,50)) ; ...
-    "AFC33",1, globally(abs(x(1))<gamma,interval(11,50)) ; ...
+%     "AFC33",1, globally(abs(x(1))<gamma,interval(11,50)) ; ...
     };
 benches{end+1} = bench;
 
@@ -123,8 +123,9 @@ for b = 1:length(benches)
             [kfModel,~] = falsify(kfModel);
 
             if j==1
-                solns(name)={{kfModel.soln}};
-            else
+                solns(name)={{}};
+            end
+            if kfModel.soln.falsified
                 soln=solns(name);
                 soln{1}{end+1}=kfModel.soln;
                 solns(name)=soln;
