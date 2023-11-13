@@ -13,7 +13,7 @@ function model = modelPowertrain2()
 %
 %------------------------------------------------------------------
 
-model = KF_model(@run_powertrain);
+model = KF(@run_powertrain);
 model.R0 = interval(0,0);
 model.U = interval([0;900],[61.1;1100]);
 

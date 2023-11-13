@@ -13,7 +13,7 @@ function model = modelAutoTransmission()
 %
 %------------------------------------------------------------------
     
-    model = KF_model('Autotrans_shift');
+    model = KF('Autotrans_shift');
     model.R0 = interval([0;1000;1],[0;1000;1]); 
     model.U = interval([0;0],[100;325]); 
 

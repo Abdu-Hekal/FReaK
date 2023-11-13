@@ -62,13 +62,14 @@ for i = 1:size(spec,1)
     elseif strcmp(spec(i,1).type,'logic')
         %get prev solns
         prevSpecSol = kfModel.specSolns(kfModel.spec(i,1));
-        %setup and run bluSTL
+        %setup and run milp
         tic
         %if no prev soln for this spec, setup alpha & stl milp vars/constrs
         try
             Sys=prevSpecSol.lti; %get previously setup milp problem with stl
         catch
             Sys=Koopman_lti(kfModel.T,kfModel.ak.dt,kfModel.solver.dt,kfModel.R0,kfModel.U);
+            Sys.normalize = kfModel.normalize; %set normalization setting
             if ~kfModel.pulseInput %if not pulse input, set cpBool
                 Sys.cpBool=kfModel.cpBool;
             end
@@ -100,9 +101,8 @@ for i = 1:size(spec,1)
         end
 
         set=spec(i,1).set;
-        bluStl = coraBlustlConvert(set); %convert from cora syntax to blustl
-        if ~isequal(bluStl,Sys.stl) || (~kfModel.useOptimizer && Sys.offsetMap.Count>0)
-            Sys.stl = bluStl;
+        if ~isequal(set,Sys.stl) || (~kfModel.useOptimizer && Sys.offsetMap.Count>0)
+            Sys.stl = set;
             Sys=setupStl(Sys,~kfModel.useOptimizer); %encode stl using milp
         end
 
@@ -141,106 +141,106 @@ for i = 1:size(spec,1)
             else
                 setCrit=[];
             end
-                rob = rob_;
-                specCrit=spec(i,1);
-            end
-        else
-            error('This type of specification is not supported!');
+            rob = rob_;
+            specCrit=spec(i,1);
         end
-
-        %store solution for this iteration for each spec.
-        specSoln.rob=rob_; specSoln.alpha=alpha;
-        kfModel.specSolns(kfModel.spec(i,1)) = specSoln;
+    else
+        error('This type of specification is not supported!');
     end
-    %store solution for this iteration
-    kfModel.soln.rob=rob; kfModel.soln.alpha=alphaCrit; kfModel.soln.u=uCrit;
-    kfModel.soln.set=setCrit; kfModel.soln.spec=specCrit;
+
+    %store solution for this iteration for each spec.
+    specSoln.rob=rob_; specSoln.alpha=alpha;
+    kfModel.specSolns(kfModel.spec(i,1)) = specSoln;
+end
+%store solution for this iteration
+kfModel.soln.rob=rob; kfModel.soln.alpha=alphaCrit; kfModel.soln.u=uCrit;
+kfModel.soln.set=setCrit; kfModel.soln.spec=specCrit;
 end
 
-    function [r,alpha] = robustness(P,Z)
-        % compute robustness of the zonotope Z with respect to an unsafe polytope P
+function [r,alpha] = robustness(P,Z)
+% compute robustness of the zonotope Z with respect to an unsafe polytope P
 
-        % catch special case of a halfspace to accelearte computation
-        %     if size(P.P.A,1) == 1
-        %         disp("halfspace")
-        %     end
-        if size(P.P.A,1) == 1
+% catch special case of a halfspace to accelearte computation
+%     if size(P.P.A,1) == 1
+%         disp("halfspace")
+%     end
+if size(P.P.A,1) == 1
 
-            r = infimum(interval(P.P.A*Z)) - P.P.b;
-            alpha = -sign(P.P.A*generators(Z))';
+    r = infimum(interval(P.P.A*Z)) - P.P.b;
+    alpha = -sign(P.P.A*generators(Z))';
 
-        else
-            if isIntersecting(P,Z)
+else
+    if isIntersecting(P,Z)
 
-                % solve linear program with variables [x;r;\alpha]
-                %
-                %   max r s.t. A(i,:)*x + ||A(i,:)||*r <= b,
-                %              x = c + G * \alpha,
-                %              r >= 0,
-                %              -1 <= \alpha <= 1
+        % solve linear program with variables [x;r;\alpha]
+        %
+        %   max r s.t. A(i,:)*x + ||A(i,:)||*r <= b,
+        %              x = c + G * \alpha,
+        %              r >= 0,
+        %              -1 <= \alpha <= 1
 
-                A = P.P.A; b = P.P.b; n = size(A,2);
-                c = center(Z); G = generators(Z); m = size(G,2);
+        A = P.P.A; b = P.P.b; n = size(A,2);
+        c = center(Z); G = generators(Z); m = size(G,2);
 
-                % constraint A(i,:)*x+||A(i,:)||*r <= b
-                C1 = [A,sum(A.^2,2)]; d1 = b;
+        % constraint A(i,:)*x+||A(i,:)||*r <= b
+        C1 = [A,sum(A.^2,2)]; d1 = b;
 
-                % constraint r >= 0
-                C2 = [zeros(1,size(A,2)),-1]; d2 = 0;
+        % constraint r >= 0
+        C2 = [zeros(1,size(A,2)),-1]; d2 = 0;
 
-                % constraint -1 <= \alpha <= 1
-                C3 = [eye(m);-eye(m)]; d3 = ones(2*m,1);
+        % constraint -1 <= \alpha <= 1
+        C3 = [eye(m);-eye(m)]; d3 = ones(2*m,1);
 
-                % constraint x = c + G * \alpha,
-                Ceq = [eye(n),zeros(n,1),-G]; deq = c;
+        % constraint x = c + G * \alpha,
+        Ceq = [eye(n),zeros(n,1),-G]; deq = c;
 
-                % combined inequality constraints
-                C = blkdiag([C1;C2],C3); d = [d1;d2;d3];
+        % combined inequality constraints
+        C = blkdiag([C1;C2],C3); d = [d1;d2;d3];
 
-                % objective function
-                f = zeros(size(Ceq,2),1); f(n+1) = -1;
+        % objective function
+        f = zeros(size(Ceq,2),1); f(n+1) = -1;
 
-                % solve linear program
-                options = optimoptions('linprog','display','off');
+        % solve linear program
+        options = optimoptions('linprog','display','off');
 
-                [x,r] = linprog(f,C,d,Ceq,deq,[],[],options);
+        [x,r] = linprog(f,C,d,Ceq,deq,[],[],options);
 
-                alpha = x(n+2:end);
+        alpha = x(n+2:end);
 
-            else
+    else
 
-                % solve quadratic program with variables [d;x;\alpha]
-                %
-                %   min ||d||^2 s.t. d = c + G*\alpha - x,
-                %                    A*x <= b,
-                %                    -1 <= \alpha <= 1
+        % solve quadratic program with variables [d;x;\alpha]
+        %
+        %   min ||d||^2 s.t. d = c + G*\alpha - x,
+        %                    A*x <= b,
+        %                    -1 <= \alpha <= 1
 
-                A = P.P.A; b = P.P.b; n = size(A,2);
-                c = center(Z); G = generators(Z); m = size(G,2);
+        A = P.P.A; b = P.P.b; n = size(A,2);
+        c = center(Z); G = generators(Z); m = size(G,2);
 
-                % constraint d = c + G*\alpha - x
-                Ceq = [eye(n),eye(n),-G]; deq = c;
+        % constraint d = c + G*\alpha - x
+        Ceq = [eye(n),eye(n),-G]; deq = c;
 
-                % constraint A*x <= b
-                C1 = [zeros(size(A,1),n),A]; d1 = b;
+        % constraint A*x <= b
+        C1 = [zeros(size(A,1),n),A]; d1 = b;
 
-                % constraint -1 <= \alpha <= 1
-                C2 = [eye(m);-eye(m)]; d2 = ones(2*m,1);
+        % constraint -1 <= \alpha <= 1
+        C2 = [eye(m);-eye(m)]; d2 = ones(2*m,1);
 
-                % combined inequality constraints
-                C = blkdiag(C1,C2); d = [d1;d2];
+        % combined inequality constraints
+        C = blkdiag(C1,C2); d = [d1;d2];
 
-                % objective function
-                H = blkdiag(2*eye(n),zeros(n+m));
-                f = zeros(2*n+m,1);
+        % objective function
+        H = blkdiag(2*eye(n),zeros(n+m));
+        f = zeros(2*n+m,1);
 
-                % solve quadratic program
-                options = optimoptions('quadprog','display','off');
+        % solve quadratic program
+        options = optimoptions('quadprog','display','off');
 
-                [x,r] = quadprog(H,f,C,d,Ceq,deq,[],[],[],options);
+        [x,r] = quadprog(H,f,C,d,Ceq,deq,[],[],[],options);
 
-                r = sqrt(r);
-                alpha = x(2*n+1:end);
-            end
-        end
+        r = sqrt(r);
+        alpha = x(2*n+1:end);
     end
+end
+end

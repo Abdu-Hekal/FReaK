@@ -11,7 +11,7 @@ else
     trace = [t,x];
 end
 Bdata.AddTrace(trace);
-stl=replace(coraBlustlConvert(coraSpec.set),"(t)","[t]");
+stl=coraBreachConvert(coraSpec.set);
 phi = STL_Formula('phi',stl);
 Rphi = BreachRequirement(phi);
 rob=Rphi.Eval(Bdata);

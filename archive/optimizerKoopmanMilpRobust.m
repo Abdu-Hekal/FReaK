@@ -1,5 +1,5 @@
-function [F,P,O] = vectorOptimizerKoopmanMilpRobust(phi,kList,kMax,ts,var,M)
-% vectorOptimizerKoopmanMilpRobust  constructs MILP constraints for an optimizer object
+function [F,P,O] = optimizerKoopmanMilpRobust(phi,kList,kMax,ts,var,M)
+% optimizerKoopmanMilpRobust constructs MILP constraints for an optimizer object
 % in YALMIP that compute the robustness of satisfaction for specification phi
 %
 % The use of optimizer object means offset is encoded as parameters and not
@@ -12,6 +12,7 @@ function [F,P,O] = vectorOptimizerKoopmanMilpRobust(phi,kList,kMax,ts,var,M)
 %       ts:     the interval (in seconds) used for discretizing time
 %       var:    a dictionary mapping strings to variables
 %       M:   	a large positive constant used for big-M constraints
+%       normz:  normalization values based on boundaries of reachable sets
 %
 % Output:
 %       F:  YALMIP constraints
@@ -32,70 +33,59 @@ F = [];
 P = [];
 O = [];
 
-if ischar(phi.interval)
-    interval = [str2num(phi.interval)];
+a = phi.from;
+b = phi.to;
+
+if isempty(a)
+    a=0;
 else
-    interval = phi.interval;
+    a = max([0 floor(a/ts)]);
 end
-
-a = interval(1);
-b = interval(2);
-
-a = max([0 floor(a/ts)]);
-b = ceil(b/ts);
-
-if b==Inf
+if isempty(b)
     b = kMax;
+else
+    b = ceil(b/ts);
 end
 
 switch (phi.type)
-    case 'predicate'
-        [F,P,O] = pred(phi.st,kList,var);
+    case {'<', '>', '<=', '>='} %predicate
+        [F,P,O] = pred(phi,kList,var);
 
-    case 'not'
-        [Frest,Prest,Orest] = vectorOptimizerKoopmanMilpRobust(phi.phi,kList,kMax,ts, var,M);
+    case '~'
+        [Frest,Prest,Orest] = optimizerKoopmanMilpRobust(phi.lhs,kList,kMax,ts, var,M);
         [Fnot, Pnot] = not(Prest);
         F = [F, Fnot, Frest];
         P = Pnot;
         O = [O, Orest];
 
-    case 'or'
-        [Fdis1,Pdis1,O1] = vectorOptimizerKoopmanMilpRobust(phi.phi1,kList,kMax,ts, var,M);
-        [Fdis2,Pdis2,O2] = vectorOptimizerKoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M);
+    case '|'
+        [Fdis1,Pdis1,O1] = optimizerKoopmanMilpRobust(phi.lhs,kList,kMax,ts, var,M);
+        [Fdis2,Pdis2,O2] = optimizerKoopmanMilpRobust(phi.rhs,kList,kMax,ts, var,M);
         [For, Por] = or([Pdis1;Pdis2],M);
         F = [F, For, Fdis1, Fdis2];
         P = Por;
         O = [O, O1, O2];
 
-    case 'and'
-        [Fcon1,Pcon1,O1] = vectorOptimizerKoopmanMilpRobust(phi.phi1,kList,kMax,ts, var,M);
-        [Fcon2,Pcon2,O2] = vectorOptimizerKoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M);
+    case '&'
+        [Fcon1,Pcon1,O1] = optimizerKoopmanMilpRobust(phi.lhs,kList,kMax,ts, var,M);
+        [Fcon2,Pcon2,O2] = optimizerKoopmanMilpRobust(phi.rhs,kList,kMax,ts, var,M);
         [Fand, Pand] = and([Pcon1;Pcon2],M);
         F = [F, Fand, Fcon1, Fcon2];
         P = Pand;
         O = [O, O1, O2];
 
-    case '=>'
-        [Fant,Pant,O1] = vectorOptimizerKoopmanMilpRobust(phi.phi1,kList,kMax,ts,var,M);
-        [Fcons,Pcons,O2] = vectorOptimizerKoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M);
-        [Fnotant,Pnotant] = not(Pant);
-        [Fimp, Pimp] = or([Pnotant;Pcons],M);
-        F = [F, Fant, Fnotant, Fcons, Fimp];
-        P = [Pimp,P];
-        O = [O, O1, O2];
-
-    case 'always'
+    case 'globally'
         kListAlw = unique(cell2mat(arrayfun(@(k) {min(kMax,k + a): min(kMax,k + b)}, kList)));
-        [Frest,Prest,Orest] = vectorOptimizerKoopmanMilpRobust(phi.phi,kListAlw,kMax,ts, var,M);
+        [Frest,Prest,Orest] = optimizerKoopmanMilpRobust(phi.lhs,kListAlw,kMax,ts, var,M);
         [Falw, Palw] = always(Prest,a,b,kList,kMax,M);
         F = [F, Falw];
         P = [Palw, P];
         F = [F, Frest];
         O = [O, Orest];
 
-    case 'eventually'
+    case 'finally'
         kListEv = unique(cell2mat(arrayfun(@(k) {min(kMax,k + a): min(kMax,k + b)}, kList)));
-        [Frest,Prest,Orest] = vectorOptimizerKoopmanMilpRobust(phi.phi,kListEv,kMax,ts, var,M);
+        [Frest,Prest,Orest] = optimizerKoopmanMilpRobust(phi.lhs,kListEv,kMax,ts, var,M);
         [Fev, Pev] = eventually(Prest,a,b,kList,kMax,M);
         F = [F, Fev];
         P = [Pev, P];
@@ -103,8 +93,8 @@ switch (phi.type)
         O = [O, Orest];
 
     case 'until'
-        [Fp,Pp,O1] = vectorOptimizerKoopmanMilpRobust(phi.phi1,kList,kMax,ts, var,M);
-        [Fq,Pq,O2] = vectorOptimizerKoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M);
+        [Fp,Pp,O1] = optimizerKoopmanMilpRobust(phi.lhs,kList,kMax,ts, var,M);
+        [Fq,Pq,O2] = optimizerKoopmanMilpRobust(phi.rhs,kList,kMax,ts, var,M);
         [Funtil, Puntil] = until(Pp,Pq,a,b,kList,kMax,M);
         F = [F, Funtil, Fp, Fq];
         P = Puntil;
@@ -113,7 +103,7 @@ switch (phi.type)
 end
 end
 
-function [F,z,robOffset] = pred(st,kList,var)
+function [F,z,robOffset] = pred(phi,kList,var)
 % Enforce constraints based on predicates
 % var is the variable dictionary
 fnames = fieldnames(var);
@@ -123,16 +113,20 @@ for ifield= 1:numel(fnames)
 end
 
 robOffset=sdpvar(1,1); %setup rob offset
-st = regexprep(st,'\[t\]','\(t\)'); % Breach compatibility
-if strfind(st, '<')
+st=str(phi);
+if contains(st, '<')
     tokens = regexp(st, '(.+)\s*<\s*(.+)','tokens');
     st = ['-(' tokens{1}{1} '- (' tokens{1}{2} ')+robOffset)'];
 end
-if strfind(st, '>')
+if contains(st, '>')
     tokens = regexp(st, '(.+)\s*>\s*(.+)','tokens');
     st= [ '(' tokens{1}{1} ')-(' tokens{1}{2} ')+robOffset' ];
 end
-t_st = regexprep(st,'\<t\>',sprintf('%d:%d', kList(1),kList(end)));
+
+t_st = regexprep(st,'x(\w*)','x($1,t)'); %add time to state variables
+t_st = regexprep(t_st,'u(\w*)','u($1,t)'); %add time to inputs
+t_st = regexprep(t_st,'\<t\>',sprintf('%d:%d', kList(1),kList(end))); %add time points
+
 try
     z_eval = eval(t_st);
 end
@@ -169,30 +163,29 @@ k = size(kList,2);
 P_alw = sdpvar(1,k);
 kListAlw = unique(cell2mat(arrayfun(@(k) {min(kMax,k + a) : min(kMax,k + b)}, kList)));
 
-[ia, ib] = getIndices(kList(1:k),a,b,kMax);
-ia_real = arrayfun(@(x) find(kListAlw==x, 1, 'first'), ia);
-ib_real = arrayfun(@(x) find(kListAlw==x, 1, 'first'), ib);
-max_size=size(unique(ib_real),2); %basically up to kmax, TODO: check this
-iaib_cell = arrayfun(@(x, y) x:y, ia_real(1:max_size), ib_real(1:max_size), 'UniformOutput', false);
-iaib_matrix = reshape(cell2mat(iaib_cell),max_size,[]);
-[F0,P0] = and(P(iaib_matrix)',M);
-F = [F;F0,P_alw(1:max_size)==P0];
+for i = 1:k
+    [ia, ib] = getIndices(kList(i),a,b,kMax);
+    ia_real = find(kListAlw==ia);
+    ib_real = find(kListAlw==ib);
+    [F0,P0] = and(P(ia_real:ib_real)',M);
+    F = [F;F0,P_alw(i)==P0];
+end
 end
 
 
 function [F,P_ev] = eventually(P, a,b,kList,kMax,M)
+F = [];
 k = size(kList,2);
 P_ev = sdpvar(1,k);
 kListEv = unique(cell2mat(arrayfun(@(k) {min(kMax,k + a) : min(kMax,k + b)}, kList)));
 
-[ia, ib] = getIndices(kList(1:k),a,b,kMax);
-ia_real = arrayfun(@(x) find(kListEv==x, 1, 'first'), ia);
-ib_real = arrayfun(@(x) find(kListEv==x, 1, 'first'), ib);
-max_size=size(unique(ib_real),2); %basically up to kmax, TODO: check this
-iaib_cell = arrayfun(@(x, y) x:y, ia_real(1:max_size), ib_real(1:max_size), 'UniformOutput', false);
-iaib_matrix = reshape(cell2mat(iaib_cell),max_size,[]);
-[F0,P0] = or(P(iaib_matrix)',M);
-F = [F0,P_ev(1:max_size)==P0];
+for i = 1:k
+    [ia, ib] = getIndices(kList(i),a,b,kMax);
+    ia_real = find(kListEv==ia);
+    ib_real = find(kListEv==ib);
+    [F0,P0] = or(P(ia_real:ib_real)',M);
+    F = [F;F0,P_ev(i)==P0];
+end
 end
 
 
@@ -227,11 +220,11 @@ m = size(p_list,1);
 P = sdpvar(1,k);
 z = binvar(m,k);
 
-repP=repmat(P,m,1);
-
 F = [sum(z,1) == ones(1,k)];
-F = [F, repP <= p_list];
-F = [F, p_list - (1-z)*M <= repP <= p_list + (1-z)*M];
+for i=1:m
+    F = [F, P <= p_list(i,:)];
+    F = [F, p_list(i,:) - (1-z(i,:))*M <= P <= p_list(i,:) + (1-z(i,:))*M];
+end
 end
 
 function [F,P] = max_r(p_list,M)
@@ -242,11 +235,11 @@ m = size(p_list,1);
 P = sdpvar(1,k);
 z = binvar(m,k);
 
-repP=repmat(P,m,1);
-
 F = [sum(z,1) == ones(1,k)];
-F = [F, repP >= p_list];
-F = [F, p_list - (1-z)*M <= repP <= p_list + (1-z)*M];
+for i=1:m
+    F = [F, P >= p_list(i,:)];
+    F = [F, p_list(i,:) - (1-z(i,:))*M <= P <= p_list(i,:) + (1-z(i,:))*M];
+end
 end
 
 function [F,P] = until_mins(i,j,Pp,Pq,M)

@@ -1,9 +1,6 @@
-function [F,P,O] = optimizerKoopmanMilpRobust(phi,kList,kMax,ts,var,M)
-% optimizerKoopmanMilpRobust  constructs MILP constraints for an optimizer object
-% in YALMIP that compute the robustness of satisfaction for specification phi
-%
-% The use of optimizer object means offset is encoded as parameters and not
-% hardcoded.
+function [F,P] = KoopmanMilpRobust(phi,kList,kMax,ts,var,M,normz,offsetMap)
+% KoopmanMilpRobust  constructs MILP constraints in YALMIP that compute
+%                  the robustness of satisfaction for specification phi
 %
 % Input:
 %       phi:    an STLformula
@@ -13,14 +10,14 @@ function [F,P,O] = optimizerKoopmanMilpRobust(phi,kList,kMax,ts,var,M)
 %       var:    a dictionary mapping strings to variables
 %       M:   	a large positive constant used for big-M constraints
 %       normz:  normalization values based on boundaries of reachable sets
+%       offsetMap: map that defines predicates to offset, key:number of
+%       predicate, value:offset value
 %
 % Output:
 %       F:  YALMIP constraints
 %       P:  a struct containing YALMIP decision variables representing
 %           the quantitative satisfaction of phi over each time step in
 %           kList
-%       O:  a struct containing YALMIP parameter variables representing the
-%       offset for each inequality.
 %
 % :copyright: TBD
 % :license: TBD
@@ -31,91 +28,72 @@ end
 
 F = [];
 P = [];
-O = [];
 
-if ischar(phi.interval)
-    interval = [str2num(phi.interval)];
+a = phi.from;
+b = phi.to;
+
+if isempty(a)
+    a=0;
 else
-    interval = phi.interval;
+    a = max([0 floor(a/ts)]);
 end
-
-a = interval(1);
-b = interval(2);
-
-a = max([0 floor(a/ts)]);
-b = ceil(b/ts);
-
-
-if b==Inf
+if isempty(b)
     b = kMax;
+else
+    b = ceil(b/ts);
 end
 
 switch (phi.type)
-    case 'predicate'
-        [F,P,O] = pred(phi.st,kList,var);
 
-    case 'not'
-        [Frest,Prest,Orest] = optimizerKoopmanMilpRobust(phi.phi,kList,kMax,ts, var,M);
+    case {'<', '>', '<=', '>='} %predicate
+        [F,P] = pred(phi,kList,var,normz,offsetMap);
+
+    case '~'
+        [Frest,Prest] = KoopmanMilpRobust(phi.lhs,kList,kMax,ts, var,M,normz,offsetMap);
         [Fnot, Pnot] = not(Prest);
         F = [F, Fnot, Frest];
         P = Pnot;
-        O = [O, Orest];
 
-    case 'or'
-        [Fdis1,Pdis1,O1] = optimizerKoopmanMilpRobust(phi.phi1,kList,kMax,ts, var,M);
-        [Fdis2,Pdis2,O2] = optimizerKoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M);
+    case '|'
+        [Fdis1,Pdis1] = KoopmanMilpRobust(phi.lhs,kList,kMax,ts, var,M,normz,offsetMap);
+        [Fdis2,Pdis2] = KoopmanMilpRobust(phi.rhs,kList,kMax,ts, var,M,normz,offsetMap);
         [For, Por] = or([Pdis1;Pdis2],M);
         F = [F, For, Fdis1, Fdis2];
         P = Por;
-        O = [O, O1, O2];
 
-    case 'and'
-        [Fcon1,Pcon1,O1] = optimizerKoopmanMilpRobust(phi.phi1,kList,kMax,ts, var,M);
-        [Fcon2,Pcon2,O2] = optimizerKoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M);
+    case '&'
+        [Fcon1,Pcon1] = KoopmanMilpRobust(phi.lhs,kList,kMax,ts, var,M,normz,offsetMap);
+        [Fcon2,Pcon2] = KoopmanMilpRobust(phi.rhs,kList,kMax,ts, var,M,normz,offsetMap);
         [Fand, Pand] = and([Pcon1;Pcon2],M);
         F = [F, Fand, Fcon1, Fcon2];
         P = Pand;
-        O = [O, O1, O2];
 
-    case '=>'
-        [Fant,Pant,O1] = optimizerKoopmanMilpRobust(phi.phi1,kList,kMax,ts,var,M);
-        [Fcons,Pcons,O2] = optimizerKoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M);
-        [Fnotant,Pnotant] = not(Pant);
-        [Fimp, Pimp] = or([Pnotant;Pcons],M);
-        F = [F, Fant, Fnotant, Fcons, Fimp];
-        P = [Pimp,P];
-        O = [O, O1, O2];
-
-    case 'always'
+    case 'globally'
         kListAlw = unique(cell2mat(arrayfun(@(k) {min(kMax,k + a): min(kMax,k + b)}, kList)));
-        [Frest,Prest,Orest] = optimizerKoopmanMilpRobust(phi.phi,kListAlw,kMax,ts, var,M);
+        [Frest,Prest] = KoopmanMilpRobust(phi.lhs,kListAlw,kMax,ts, var,M,normz,offsetMap);
         [Falw, Palw] = always(Prest,a,b,kList,kMax,M);
         F = [F, Falw];
         P = [Palw, P];
         F = [F, Frest];
-        O = [O, Orest];
 
-    case 'eventually'
+    case 'finally'
         kListEv = unique(cell2mat(arrayfun(@(k) {min(kMax,k + a): min(kMax,k + b)}, kList)));
-        [Frest,Prest,Orest] = optimizerKoopmanMilpRobust(phi.phi,kListEv,kMax,ts, var,M);
+        [Frest,Prest] = KoopmanMilpRobust(phi.lhs,kListEv,kMax,ts, var,M,normz,offsetMap);
         [Fev, Pev] = eventually(Prest,a,b,kList,kMax,M);
         F = [F, Fev];
         P = [Pev, P];
         F = [F, Frest];
-        O = [O, Orest];
 
     case 'until'
-        [Fp,Pp,O1] = optimizerKoopmanMilpRobust(phi.phi1,kList,kMax,ts, var,M);
-        [Fq,Pq,O2] = optimizerKoopmanMilpRobust(phi.phi2,kList,kMax,ts, var,M);
+        [Fp,Pp] = KoopmanMilpRobust(phi.lhs,kList,kMax,ts, var,M,normz,offsetMap);
+        [Fq,Pq] = KoopmanMilpRobust(phi.rhs,kList,kMax,ts, var,M,normz,offsetMap);
         [Funtil, Puntil] = until(Pp,Pq,a,b,kList,kMax,M);
         F = [F, Funtil, Fp, Fq];
         P = Puntil;
-        O = [O, O1, O2];
-
 end
 end
 
-function [F,z,robOffset] = pred(st,kList,var)
+function [F,z] = pred(phi,kList,var,normz,offsetMap)
 % Enforce constraints based on predicates
 % var is the variable dictionary
 fnames = fieldnames(var);
@@ -124,24 +102,51 @@ for ifield= 1:numel(fnames)
     eval([ fnames{ifield} '= var.' fnames{ifield} ';']);
 end
 
-robOffset=sdpvar(1,1); %setup rob offset
-st = regexprep(st,'\[t\]','\(t\)'); % Breach compatibility
-if strfind(st, '<')
+global vkmrCount %globl count to track wihch subpred to offset in milp
+vkmrCount=vkmrCount+1; %increase count as pred found
+if isKey(offsetMap,vkmrCount)
+    robOffset=offsetMap(vkmrCount);
+else
+    robOffset=0;
+end
+
+st=str(phi);
+if contains(st, '<')
     tokens = regexp(st, '(.+)\s*<\s*(.+)','tokens');
-    st = ['-(' tokens{1}{1} '- (' tokens{1}{2} ')+robOffset)'];
+    st = ['-(' tokens{1}{1} '- (' tokens{1}{2} ')+' num2str(robOffset) ')'];
 end
-if strfind(st, '>')
+if contains(st, '>')
     tokens = regexp(st, '(.+)\s*>\s*(.+)','tokens');
-    st= [ '(' tokens{1}{1} ')-(' tokens{1}{2} ')+robOffset' ];
+    st= [ '(' tokens{1}{1} ')-(' tokens{1}{2} ')+' num2str(robOffset)];
 end
-t_st = regexprep(st,'\<t\>',sprintf('%d:%d', kList(1),kList(end)));
+
+t_st = regexprep(st,'x(\w*)','x($1,t)'); %add time to state variables
+t_st = regexprep(t_st,'u(\w*)','u($1,t)'); %add time to inputs
+t_st = regexprep(t_st,'\<t\>',sprintf('%d:%d', kList(1),kList(end))); %add time points
+
+%AH: Normalize
+if isempty(normz)
+else
+    matches = regexp(t_st, 'x\((\d+),', 'tokens');
+    tag = 'pred';
+    normVal=0;
+    for i=1:length(matches)
+        idx = str2double(matches{i});
+        tag = strcat(tag,',',num2str(idx));
+        normVal = normVal + normz(idx);
+    end
+    t_st = strcat(t_st,'/',num2str(normVal));
+end
+
 try
     z_eval = eval(t_st);
 end
 zl = sdpvar(1,size(z_eval,2));
+% F = [zl == z_eval]:tag;
 F = zl == z_eval;
 z = zl;
 end
+
 
 % BOOLEAN OPERATIONS
 
@@ -157,7 +162,6 @@ end
 
 function [F,P] = not(p_list)
 k = size(p_list,2);
-m = size(p_list,1);
 P = sdpvar(1,k);
 F = [P(:) == -p_list(:)];
 end
@@ -180,7 +184,7 @@ for i = 1:k
 end
 end
 
-
+%AH: fixed this function from blustl version
 function [F,P_ev] = eventually(P, a,b,kList,kMax,M)
 F = [];
 k = size(kList,2);
@@ -248,6 +252,7 @@ for i=1:m
     F = [F, P >= p_list(i,:)];
     F = [F, p_list(i,:) - (1-z(i,:))*M <= P <= p_list(i,:) + (1-z(i,:))*M];
 end
+
 end
 
 function [F,P] = until_mins(i,j,Pp,Pq,M)

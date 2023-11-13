@@ -124,9 +124,8 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
                             Sys.offsetMap = offsetMap;
                             if kfModel.offsetStrat == 1 %if offset strategy in this iteration selected
                                 set = spec.set;
-                                bluStl = coraBlustlConvert(set); %convert from cora syntax to blustl
-                                if ~isequal(bluStl,Sys.stl) || ~kfModel.useOptimizer
-                                    Sys.stl = bluStl;
+                                if ~isequal(set,Sys.stl) || ~kfModel.useOptimizer
+                                    Sys.stl = set;
                                     Sys=setupStl(Sys,~kfModel.useOptimizer); %encode stl using milp
                                 end
                                 Sys=optimize(Sys,kfModel.solver.opts);

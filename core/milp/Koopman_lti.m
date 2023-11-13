@@ -17,6 +17,8 @@ classdef Koopman_lti
         stl %stl to falsify
         cpBool %boolean array representing cp points
 
+        normalize %bool set to true to normalize optimization objective using reachable set bounds
+
         %milp sdpvars and constraints
         Finit %constraints on alpha or inputs
         Fstl %constraints for stl
@@ -56,6 +58,8 @@ classdef Koopman_lti
 
             %intitalise offset map to empty
             Sys.offsetMap = containers.Map('KeyType', 'double', 'ValueType', 'double');
+            % default not to use normalization
+            Sys.normalize=false;
         end
 
         function Sys = setupAlpha(Sys)

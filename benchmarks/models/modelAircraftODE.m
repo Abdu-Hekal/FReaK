@@ -13,7 +13,7 @@ function model = modelAircraftODE()
 %
 %------------------------------------------------------------------
 
-model = KF_model(@run_aircraft);
+model = KF(@run_aircraft);
 model.R0 = interval([200;-10;120],[260;10;150]);
 model.U = interval([34386;0],[53973;16]);
 

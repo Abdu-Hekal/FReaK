@@ -6,7 +6,7 @@ idx=0;
 clauses = getClauses(set);
 for ij=1:numel(clauses)
     clause = clauses{ij};
-    stl=replace(coraBlustlConvert(clause),"(t)","[t]");
+    stl=coraBreachConvert(clause);
     phi = STL_Formula('phi',stl);
 
     % no point of offset if only one clause with one predicate

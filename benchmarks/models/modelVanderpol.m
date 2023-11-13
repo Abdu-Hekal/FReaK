@@ -1,4 +1,4 @@
-function model = model_vanderpol()
+function model = modelVanderpol()
 % model_vanderpol - model parameters for the vanderpol benchmark
 %
 % Syntax:
@@ -13,7 +13,7 @@ function model = model_vanderpol()
 %
 %------------------------------------------------------------------
 
-    model = KF_model('vanderpol');
+    model = KF('vanderpol');
     model.R0 = interval([1.25;2.25],[1.55;2.35]); 
     
     model.T=7; 

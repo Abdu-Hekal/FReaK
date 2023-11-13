@@ -1,6 +1,6 @@
-function blu_stl = coraBlustlConvert(cora_stl)
+function blu_stl = coraBreachConvert(cora_stl)
 
-blu_stl = evalc('disp(cora_stl)');
+blu_stl = str(cora_stl);
 
 if contains(blu_stl,'U')
     error("bluSTL does not currently (correctly) support until operator")
@@ -20,14 +20,12 @@ blu_stl = replace(blu_stl,'F','ev_');
 blu_stl = replace(blu_stl,'&','and');
 blu_stl = replace(blu_stl,'|','or');
 blu_stl = replace(blu_stl,'~','not ');
-blu_stl = regexprep(blu_stl,'x(\w*)','x$1(t)');
-blu_stl = regexprep(blu_stl,'u(\w*)','u$1(t)');
 
-% for k=1:size(cora_stl.variables)
-%    old = strcat('(\w*)',cora_stl.variables{k},'\s');
-%    new = strcat('x',string(k),'(t)');
-%    blu_stl = regexprep(blu_stl,old,new);
-% end
+for k=1:size(cora_stl.variables)
+   old = strcat('(\w*)',cora_stl.variables{k},'\s');
+   new = strcat(cora_stl.variables{k},'[t]');
+   blu_stl = regexprep(blu_stl,old,new);
+end
 
 blu_stl = strtrim(blu_stl);
 
