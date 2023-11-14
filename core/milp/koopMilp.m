@@ -113,6 +113,10 @@ for ifield= 1:numel(fnames)
     eval([ fnames{ifield} '= var.' fnames{ifield} ';']);
 end
 
+st=str(phi);
+%replace ge and le with gt and lt
+st = replace(st,'<=','<');
+st = replace(st,'>=','>');
 if hardcoded
     global vkmrCount %globl count to track wihch subpred to offset in milp
     vkmrCount=vkmrCount+1; %increase count as pred found
@@ -121,7 +125,6 @@ if hardcoded
     else
         robOffset=0;
     end
-    st=str(phi);
     if contains(st, '<')
         tokens = regexp(st, '(.+)\s*<\s*(.+)','tokens');
         st = ['-(' tokens{1}{1} '- (' tokens{1}{2} ')+' num2str(robOffset) ')'];
@@ -133,7 +136,6 @@ if hardcoded
     varOffset = {}; %offset is hardcoded and so no spdvar.
 else %use optimizer object
     varOffset=sdpvar(1,1); %setup rob offset
-    st=str(phi);
     if contains(st, '<')
         tokens = regexp(st, '(.+)\s*<\s*(.+)','tokens');
         st = ['-(' tokens{1}{1} '- (' tokens{1}{2} ')+varOffset)'];
