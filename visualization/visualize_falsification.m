@@ -33,12 +33,9 @@ spec=varargin{3};
 plot_vars=varargin{4};
 
 for i = 1:size(spec,1)
-    fig=figure; hold on; box on;
+    figure; hold on; box on;
 
-    % The standard values for colors saved in PLOT_STANDARDS() will be accessed from the variable PS
     PS = PLOT_STANDARDS();
-    %settings for figure
-    figure_settings(fig);
 
     if ~any(size(plot_vars)>[1,1]) %singular plot var, plot against time
         plot(times,crit_x(:,plot_vars),'b','DisplayName','falsifying traj');
@@ -56,9 +53,13 @@ for i = 1:size(spec,1)
             if to==-1; to = size(times,1); else to=find(times==to); end
             plotUnsafeCell(unsafeCell, plot_vars);
 
-%             plot(crit_x(1:from,plot_vars(1)),crit_x(1:from,plot_vars(2)), 'Color' , PS.MyGreen3,'LineStyle','--','LineWidth',1,'DisplayName','trajectory before');
-            plot(crit_x(from:to,plot_vars(1)),crit_x(from:to,plot_vars(2)),'Color' ,PS.MyGreen3,'LineWidth',1,'DisplayName','falsifying traj (t<=4)');
-            plot(crit_x(to:end,plot_vars(1)),crit_x(to:end,plot_vars(2)), 'Color' , PS.MyGreen3,'LineStyle','--','LineWidth',1,'DisplayName','falsifying traj (t>4)');
+            if from ~= 1 %there exists trajectory before critical time period
+                plot(crit_x(1:from,plot_vars(1)),crit_x(1:from,plot_vars(2)), 'Color' , PS.MyGreen3,'LineStyle','--','LineWidth',1,'DisplayName','trajectory before');
+            end
+            plot(crit_x(from:to,plot_vars(1)),crit_x(from:to,plot_vars(2)),'Color' ,PS.MyGreen3,'LineWidth',1,'DisplayName','falsifying trajectory');
+            if to ~= size(crit_x,1) %there exists trajectory after critical time period
+                plot(crit_x(to:end,plot_vars(1)),crit_x(to:end,plot_vars(2)), 'Color' , PS.MyGreen3,'LineStyle','--','LineWidth',1,'DisplayName','trajectory after');
+            end
         end
     end
     l = legend;

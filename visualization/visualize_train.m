@@ -13,12 +13,10 @@ T = trainset.t{1}(end);
 % visualize the predictions for the identfied Koopman model
 load("autokoopman_model.mat", "A","B")
 
-fig=figure; hold on; box on;
+figure; hold on; box on;
 
 % The standard values for colors saved in PLOT_STANDARDS() will be accessed from the variable PS
 PS = PLOT_STANDARDS();
-%settings for figure
-figure_settings(fig);
 
 for r = 1:length(trainset.X)
     %plot Autokoopman vs real trajectory for all simulations

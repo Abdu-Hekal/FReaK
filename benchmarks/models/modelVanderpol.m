@@ -18,6 +18,7 @@ function model = modelVanderpol()
     
     model.T=7; 
     model.dt = 0.01;
+    model.ak.dt=0.1;
 
     model.spec = specification(halfspace([-1;0],-2.095),'unsafeSet');
     x = stl('x',2);

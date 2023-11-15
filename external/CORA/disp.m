@@ -26,6 +26,5 @@ function disp(obj)
 % Last revision:---
 
 %------------- BEGIN CODE --------------
-
-    disp(obj.str);
+    disp(str(obj));
 end

@@ -1,14 +1,14 @@
 function str=str(obj)
-% str - return string representation of stl
+% disp - override disp function to show object on command window
 %
 % Syntax:  
-%    str(obj)
+%    disp(obj)
 %
 % Inputs:
 %    obj - logic formula (class stl)
 %
 % Outputs:
-%    str - string representation of stl 
+%    ---
 %
 % Example: 
 %    x = stl('x',2)
@@ -20,8 +20,8 @@ function str=str(obj)
 %
 % See also: stl
 
-% Author:       Abdelrahman Hekal
-% Written:      13-November-2023 
+% Author:       Niklas Kochdumper
+% Written:      9-November-2022 
 % Last update:  ---
 % Last revision:---
 
