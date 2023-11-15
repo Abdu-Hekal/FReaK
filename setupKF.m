@@ -1,10 +1,10 @@
-function installKF()
+function setupKF()
 
 %go to koopman falsification home folder
 cdr = pwd; %current folder
 filePath = which('installKF'); %filepath
 [kfFolder, ~, ~] = fileparts(filePath);
-cd(kfFolder);
+cd(kfFolder); 
 
 %check installed toolbox
 %code taken from CORA installation.
@@ -50,7 +50,7 @@ cd(cdr);
 savepath;
 
 disp('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -')
-disp('Koopman Falsification Successfully Installed!')
+disp('Koopman Falsification Successfully Setup!')
 
 end
 

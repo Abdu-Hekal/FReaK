@@ -26,7 +26,7 @@ function visualize_falsification(varargin)
 
 %------------- BEGIN CODE --------------
 numArgs = length(varargin);
-assert(numArgs>=4,'must have at least 2 args, trainset and plot_vars')
+assert(numArgs>=4,'must have at least 4 args, critical trajectory, time points, falsifying spec and plot vars')
 crit_x=varargin{1};
 times=varargin{2};
 spec=varargin{3};
