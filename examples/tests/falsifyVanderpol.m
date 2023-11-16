@@ -1,3 +1,5 @@
+function falsifyVanderpol()
+
 kfModel = modelVanderpol();
 plot_vars = [1,2];
 
@@ -8,4 +10,6 @@ if kfModel.soln.falsified
     disp(['simulations required: ',num2str(kfModel.soln.sims)])
 else
     disp("No falsifiying trace found")
+end
+
 end

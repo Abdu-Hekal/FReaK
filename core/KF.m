@@ -1,51 +1,107 @@
 classdef KF
     %Koopman falsification 
     properties
-        model %name of the simulink model. TODO: blackbox function handle
-        R0 %initial set (CORA class interval)
-        U %set of admissible control inputs (class:interval or Zonotope)
-        spec %specification defined as an object of the CORA specification class (safe/unsafe sets)
+        % model: name of the simulink model or blackbox function. 
+        % The blackbox model should be a function handle of the form 
+        % [tout, yout]=fcn(T,x0,u), where:
+        % tout: array of time points for the simulation
+        % yout: array of trajectory points corresponding to tout
+        % T: time horizon of simulation
+        % x0: initial set
+        % u: array of inputs, where first column is time points
+        % TODO: step function handle
+        model 
+        % R0: initial set (CORA class interval)
+        R0 
+        % U: set of admissible control inputs (class:interval or Zonotope)
+        U 
+        % spec: specification defined as an object of the CORA 
+        % specification class (safe/unsafe sets/stl)
+        spec 
+        %time horizon for simulation
+        T 
+        % cp: number of control points for each input signal. 
+        % Needs to be an array of length equal to number of inputs.
+        % Needs to be a factor of T/ak.dt. (see below)
+        % Default is cp every ak.dt. Note that values other than default
+        % are currently only supported for spec of type stl formula.
+        cp
 
-        T %time horizon for simulation
-        dt %time step. This time step is used to interpolate inputs to system and output trajecotries. Use a small dt for accurate results, (default:0.01)
-        cp %max control points for each input signal. needs to be an array of length equal to number of inputs. Needs to be a factor of T/dt & T/kdt
-        %default is cp every dt. Note that values other than default are
-        %currently only supported for spec of type stl formula.
-
-        %settings
-        maxSims %maximum number of simulations for training before terminating (default: 100)
-        timeout %timeout
-        nResets %reset training set after n trajectories (default: 20), note that we also reset if milp fails to solve (model is bad)
-        trainRand %int, set to 3 to train with random trajectory, 2 to train with random neighborhood trajectory, 0 to train with previously found crit trajectory or 1 to alternate between prev and random. (default: 0)
-        rmRand %remove first random trajectory when training
-        offsetStrat %int, set 1 to refine with offset, 0 for no offset, -1 to offset next iteration (after retraining koopman model). (default: 1). Note that offset strategy 1 is most stable and strategy -1 can lead to problems when warmstart (usex0) is used.
-        normalize %bool set to true to normalize optimization objective in milp solver using reachable set bounds
-        useOptimizer %bool set to true to use optimizer object. Not using optimizer means stl needs to be setup for milp everytime for offset. setting up optimizer object also takes time. Time trade off? Note that using optimzier is most stable and not using can lead to problems when warmstart (usex0) is used.
-        reach %use reachability for encoding of MILP (default:true)
-        % interpolation types for input & trajectory. See "interp1" for supported types
-        inputInterpolation % interpolate input between control points. default 'previous'. Note that control points may decrease with coarser koopman
-        trajInterpolation %interpolate output trajectory for learning autokoopman model, default 'linear'
-        pulseInput %boolean, set to true if the inputs are pulse inputs, otherwise input is piecewise-constant (default: false)
-
-        %autokoopman settings (struct)
+        % AutoKoopman settings (struct)
         ak
-        %          .dt: koopman time step. default ak.dt=dt. Change to use coarser koopman step for quicker solution
-        %         .obsType: type of observables (default="rff")
-        %         .nObs: number of observables (default=100)
-        %         .gridSlices: number of slices for grid parameter search (default=5)
-        %         .opt: tuner of type "grid", "bopt", or "monte-carlo" (default=grid)
-        %         .rank: set of ranks to try of DMD rank parameter (default=[1,200,20])
+        %  .dt: koopman time step. default ak.dt=dt. 
+        %  Change to use coarser koopman step for quicker solution. 
+        %  Must be a factor of time horizon T.
+        %  .obsType: type of observables (default="rff")
+        %  .nObs: number of observables (default=100)
+        %  .gridSlices: number of slices for grid parameter search (default=5)
+        %  .opt: tuner of type "grid", "bopt", or "monte-carlo" (default=grid)
+        %  .rank: set of ranks to try of DMD rank parameter (default=[1,200,20])
 
         %solver/optimizer (struct)
         solver
-        %         .dt: solver time step. default solver.dt=ak.dt Change to use coarser solver step when setting up stl constraints for quicker solution
-        %         .opts: solver options (sdpsettings)
+        %  .dt: solver time step for encoding stl robustness.
+        % default solver.dt=ak.dt Change to use coarser solver step 
+        % when setting up stl constraints for quicker solving time.
+        % Must be a multiple of ak.dt
+        %  .opts: solver options (see sdpsettings)
 
-        %internal properties
-        soln %internally defined property that stores the solution for last iteration (do not change)
-        bestSoln %internally defined property that stores the best solution (do not change)
-        specSolns %internally defined property that stores the solutions for each spec for last iteration (do not change)
-        cpBool %internal property that is used to set control inputs for pulse inputs (do not change)
+        %SETTINGS
+        % maxSims: maximum number of simulations for training before
+        % terminating, (default=100)
+        maxSims 
+        %timeout: maximum time before algorithm terminates, (default=inf)
+        timeout 
+        % nResets: reset training set after n trajectories (default=5),
+        % note that we also reset if milp fails to solve (model is bad)
+        nResets
+        % trainRand: int, set to 3 to train with random trajectory, 2 to 
+        % train with random neighborhood trajectory, 0 to train with 
+        % previously found crit trajectory or 1 to alternate between prev 
+        % and random. (default=0)
+        trainRand 
+        % rmRand: bool, set to true to remove first random trajectory when 
+        % training or false otherwise, (default=true)
+        rmRand 
+        % offsetStrat: int, set 1 to refine with offset, 0 for no offset,
+        % -1 to offset next iteration (after retraining koopman model), 
+        % (default=-1). 
+        offsetStrat 
+        % normalize: bool, set to true to normalize optimization objective
+        % in milp solver using reachable set bounds, (default=false)
+        normalize 
+        % useOptimizer: bool set to true to use optimizer object. Not 
+        % using optimizer means stl needs to be setup for milp everytime 
+        % for offset. setting up optimizer object also takes time. 
+        % Time trade off? (default=true)
+        useOptimizer 
+        % reach: bool, set to true to use reachability for encoding of MILP.
+        % if set to false then direct encoding of the evolution of the
+        % koopman linear system as x_{t+1} = A*x_t+B*u_t (default=true).
+        % Note that for system's with uncertain initial state, reachability
+        % must be used.
+        reach 
+        % dt: time step. This time step is used to interpolate inputs to 
+        % system . Use a small dt for accurate results, (default:0.01)
+        % Must be factor of time horizon T. 
+        dt 
+        % Interpolation types for input & trajectory. See "interp1" for supported types
+        % inputInterpolation: interpolate input between control points.
+        % (default='previous'). Note that control points may decrease 
+        % with coarser time step for koopman.
+        inputInterpolation 
+        % trajInterpolation: interpolate output trajectory for learning 
+        % autokoopman model, (default='linear')
+        trajInterpolation 
+        % pulseInput: boolean, set to true if the inputs are pulse inputs,
+        % otherwise false (default=false)
+        pulseInput 
+
+        %internal properties (DO NOT CHANGE)
+        soln %stores the solution for last iteration
+        bestSoln %stores the best solution
+        specSolns %stores the solutions for each spec for last iteration 
+        cpBool %used to set control inputs for pulse inputs 
 
     end
     methods
@@ -93,21 +149,6 @@ classdef KF
                 'gurobi.BarHomogeneous', 1,...
                 'usex0', 0 ...
                 );
-
-%                 'gurobi.MIPFocus',3,...
-%                 'gurobi.NumericFocus',2,...
-%                 'gurobi.BarHomogeneous', 1,...
-%                 'cachesolvers',1,...
-
-            %                'gurobi.NumericFocus',3,...
-            %                 'gurobi.MIPFocus',3,...
-            %                 'gurobi.ScaleFlag', 2,...
-            %                 'gurobi.BarHomogeneous', 1,...
-            %                 'gurobi.CrossoverBasis',-1,...
-            %                 'gurobi.DualReductions', 0,...
-            %                'cachesolvers',1,...
-            %                 'gurobi.InputFile', 'alpha.sol' ...
-
 
             %create empty struct to store prev soln
             obj.soln=struct;

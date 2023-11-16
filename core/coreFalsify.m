@@ -70,12 +70,13 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
         R=[];
     end
     % determine most critical reachable set and specification
-    kfModel = critAlpha(R,A,B,g,kfModel);
-    %     catch
-    %         disp("error encountered whilst setup/solving, resetting training data")
-    %         trainIter=0;
-    %         continue;
-    %     end
+    try
+        kfModel = critAlpha(R,A,B,g,kfModel);
+    catch
+        disp("error encountered whilst setup/solving, resetting training data")
+        trainIter=0;
+        continue;
+    end
 
     if kfModel.soln.rob<inf %found a viable solution
         offsetIter = 0;
@@ -212,9 +213,9 @@ yalmip('clear')
 
 if ~isempty(kfModel.U) %check if kfModel has inputs
     assert(isa(kfModel.U, 'interval'), 'Input (kfModel.U) must be defined as an CORA interval')
-    %if no control points defined, set as control point at every step dt
+    %if no control points defined, set as control point at every step ak.dt
     if isempty(kfModel.cp)
-        kfModel.cp=kfModel.T/kfModel.dt*ones(1,length(kfModel.U));
+        kfModel.cp=kfModel.T/kfModel.ak.dt*ones(1,length(kfModel.U));
     end
 
     assert(length(kfModel.U)==length(kfModel.cp),'Number of control points (kfModel.cp) must be equal to number of inputs (kfModel.U)')
