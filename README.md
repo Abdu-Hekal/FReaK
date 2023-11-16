@@ -49,10 +49,12 @@ setupKF
 The script also ensure that only necessary prerequisites for external toolboxes (like CORA) are installed.
 For full functionality of each external toolbox, refer to their corresponding instructions.
 
-Note that the only two prerequisites that need manual installation are:
-- **Symbolic Math Toolbox** - A MATLAB toolbox required by CORA. Install from MATLAB Add-On explorer, see (here)[https://uk.mathworks.com/help/matlab/matlab_env/get-add-ons.html]
+Note that the only prerequisites that need manual installation are:
+- **MATLAB**
+- **Python(>=3.8)**
+- **Symbolic Math Toolbox** - A MATLAB toolbox required by CORA. Install from MATLAB Add-On explorer, see [here](https://uk.mathworks.com/help/matlab/matlab_env/get-add-ons.html)
 - **Gurobi Optimization Toolbox** - Download from the Gurobi website [Gurobi website](https://support.gurobi.com/hc/en-us/articles/4533938303505-How-do-I-install-Gurobi-for-Matlab-)
-and requires a license file
+and requires a license
 
 ## Usage
 
