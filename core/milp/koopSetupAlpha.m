@@ -1,4 +1,4 @@
-function Sys = KoopmanSetupAlpha(Sys)
+function Sys = koopSetupAlpha(Sys)
 
 %% setup
 L=Sys.L; % horizon (# of steps)
@@ -22,6 +22,10 @@ end
 
 %constraints for alpha
 Falpha= -1<=alpha<=1;
+
+% TODO: fix this section, constrain to same value as prev only makes sense
+% for piecewise-constant inputs. otherwise, different interpolation must be
+% considered
 
 %constraint for control points
 cpBool = cpBool(1:L,:); %get cpbool corresponding to number of steps

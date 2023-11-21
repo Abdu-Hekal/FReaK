@@ -1,8 +1,9 @@
 function res = checkStl(obj,x,t)
-% modelCheckTrace - check if a trace satisfies an STL formula 
+% checkStl - check if a trace satisfies an STL formula 
+% TODO: function needs revision for some errors.
 %
 % Syntax:  
-%    res = modelCheckTrace(obj,x,t)
+%    res = checkStl(obj,x,t)
 %
 % Inputs:
 %    obj - logic formula (class stl)
@@ -20,7 +21,7 @@ function res = checkStl(obj,x,t)
 %    x = [cos(phi'),sin(phi')];
 %    t = linspace(0,1,length(phi))';
 %
-%    res = modelCheckTrace(eq,x,t)
+%    res = checkStl(eq,x,t)
 %
 % Other m-files required: none
 % Subfunctions: none
@@ -28,8 +29,8 @@ function res = checkStl(obj,x,t)
 %
 % See also: stl
 
-% Author:       Niklas Kochdumper
-% Written:      9-November-2022 
+% Author:      
+% Written:     
 % Last update:  ---
 % Last revision:---
 

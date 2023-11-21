@@ -56,6 +56,7 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
         xak = interp1(t,x,tak,kfModel.trajInterpolation); %define autokoopman trajectory points
     else
         xak=interp1(t,critX,tak,kfModel.trajInterpolation); %pass x0 as full x to avoid simulation again
+        xak = critX;
         u=critU;
     end
     trainset=appendToTrainset(trainset,tak,xak,u);

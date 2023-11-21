@@ -1,4 +1,4 @@
-function Sys = KoopmanSetupInit(Sys)
+function Sys = koopSetupInit(Sys)
 
 L=Sys.L;
 Sys.x = sdpvar(Sys.nx+Sys.nObs, L+1); %states

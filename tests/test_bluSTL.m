@@ -18,7 +18,7 @@ toc
 
 %%
 % Now we can call the main constructor of STLC_lti class.
-Sys= Koopman_lti(R.zono);
+Sys= KoopMILP(R.zono);
 %%
 % In the next section, we will define the different settings for the
 % control synthesis experiment. Before that, we define some initial state:

@@ -1,4 +1,4 @@
-function Sys = KoopmanSetupReach(Sys)
+function Sys = koopSetupReach(Sys)
 
 alpha=Sys.alpha; x=Sys.x; L=Sys.L;
 %% Reachset constraints

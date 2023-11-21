@@ -46,7 +46,7 @@ and removes any conflicting files from path. Add the Koopman falsification folde
 setupKF
 ```
 
-The script also ensure that only necessary prerequisites for external toolboxes (like CORA) are installed.
+The script also ensure that only necessary prerequisites for our framework for external toolboxes (like CORA) are installed.
 For full functionality of each external toolbox, refer to their corresponding instructions.
 
 Note that the only prerequisites that need manual installation are:

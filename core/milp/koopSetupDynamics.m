@@ -1,4 +1,4 @@
-function Sys = KoopmanSetupDynamics(Sys)
+function Sys = koopSetupDynamics(Sys)
 
 L=Sys.L;
 

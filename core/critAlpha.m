@@ -1,5 +1,5 @@
 function kfModel = critAlpha(R,A,B,g,kfModel)
-% detemrine most critical reachable set and specification based on the
+% determine most critical reachable set and specification based on the
 % robustnes
 
 % loop over all specifications
@@ -68,7 +68,7 @@ for i = 1:size(spec,1)
         try
             Sys=prevSpecSol.lti; %get previously setup milp problem with stl
         catch
-            Sys=Koopman_lti(kfModel.T,kfModel.ak.dt,kfModel.solver.dt,kfModel.R0,kfModel.U);
+            Sys=KoopMILP(kfModel.T,kfModel.ak.dt,kfModel.solver.dt,kfModel.R0,kfModel.U);
             Sys.normalize = kfModel.normalize; %set normalization setting
             if ~kfModel.pulseInput %if not pulse input, set cpBool
                 Sys.cpBool=kfModel.cpBool;
@@ -86,7 +86,7 @@ for i = 1:size(spec,1)
         %the same. TODO: check and clean this section
         if kfModel.reach
             if size(Sys.alpha,2) ~= size(generators(R.zono{end}),2)
-                Sys=Koopman_lti(kfModel.T,kfModel.ak.dt,kfModel.solver.dt,kfModel.R0,kfModel.U);
+                Sys=KoopMILP(kfModel.T,kfModel.ak.dt,kfModel.solver.dt,kfModel.R0,kfModel.U);
                 if ~kfModel.pulseInput %if not pulse input, set cpBool
                     Sys.cpBool=kfModel.cpBool;
                 end
@@ -157,18 +157,15 @@ kfModel.soln.rob=rob; kfModel.soln.alpha=alphaCrit; kfModel.soln.u=uCrit;
 kfModel.soln.set=setCrit; kfModel.soln.spec=specCrit;
 end
 
+% -------------------------- Auxiliary Functions --------------------------
+
 function [r,alpha] = robustness(P,Z)
 % compute robustness of the zonotope Z with respect to an unsafe polytope P
 
 % catch special case of a halfspace to accelearte computation
-%     if size(P.P.A,1) == 1
-%         disp("halfspace")
-%     end
 if size(P.P.A,1) == 1
-
     r = infimum(interval(P.P.A*Z)) - P.P.b;
     alpha = -sign(P.P.A*generators(Z))';
-
 else
     if isIntersecting(P,Z)
 

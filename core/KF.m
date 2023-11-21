@@ -1,8 +1,31 @@
 classdef KF
-    %Koopman falsification 
+    % KF - class representing a koopman falsification object
+    %
+    % Syntax:
+    %    obj = KF(model)
+    %
+    % Inputs:
+    %    model - name of the simulink model or blackbox function.
+    %
+    % Outputs:
+    %    obj - generated koopman falsification object
+    %
+    % Example:
+    %    obj = KF('Autotrans_shift')
+    %    .... %add model properties (see below)
+    %    obj.falsify() %falsify model for a given stl
+    %
+    % See also: KoopMILP
+
+    % Author:      Abdelrahman Hekal
+    % Written:      19-November-2023
+    % Last update:  ---
+    % Last revision:---
+
+    %------------- BEGIN CODE --------------
     properties
-        % model: name of the simulink model or blackbox function. 
-        % The blackbox model should be a function handle of the form 
+        % model: name of the simulink model or blackbox function.
+        % The blackbox model should be a function handle of the form
         % [tout, yout]=fcn(T,x0,u), where:
         % tout: array of time points for the simulation
         % yout: array of trajectory points corresponding to tout
@@ -10,17 +33,17 @@ classdef KF
         % x0: initial set
         % u: array of inputs, where first column is time points
         % TODO: step function handle
-        model 
+        model
         % R0: initial set (CORA class interval)
-        R0 
+        R0
         % U: set of admissible control inputs (class:interval or Zonotope)
-        U 
-        % spec: specification defined as an object of the CORA 
+        U
+        % spec: specification defined as an object of the CORA
         % specification class (safe/unsafe sets/stl)
-        spec 
+        spec
         %time horizon for simulation
-        T 
-        % cp: number of control points for each input signal. 
+        T
+        % cp: number of control points for each input signal.
         % Needs to be an array of length equal to number of inputs.
         % Needs to be a factor of T/ak.dt. (see below)
         % Default is cp every ak.dt. Note that values other than default
@@ -29,8 +52,8 @@ classdef KF
 
         % AutoKoopman settings (struct)
         ak
-        %  .dt: koopman time step. default ak.dt=dt. 
-        %  Change to use coarser koopman step for quicker solution. 
+        %  .dt: koopman time step. default ak.dt=dt.
+        %  Change to use coarser koopman step for quicker solution.
         %  Must be a factor of time horizon T.
         %  .obsType: type of observables (default="rff")
         %  .nObs: number of observables (default=100)
@@ -41,7 +64,7 @@ classdef KF
         %solver/optimizer (struct)
         solver
         %  .dt: solver time step for encoding stl robustness.
-        % default solver.dt=ak.dt Change to use coarser solver step 
+        % default solver.dt=ak.dt Change to use coarser solver step
         % when setting up stl constraints for quicker solving time.
         % Must be a multiple of ak.dt
         %  .opts: solver options (see sdpsettings)
@@ -49,66 +72,68 @@ classdef KF
         %SETTINGS
         % maxSims: maximum number of simulations for training before
         % terminating, (default=100)
-        maxSims 
+        maxSims
         %timeout: maximum time before algorithm terminates, (default=inf)
-        timeout 
+        timeout
         % nResets: reset training set after n trajectories (default=5),
         % note that we also reset if milp fails to solve (model is bad)
         nResets
-        % trainRand: int, set to 3 to train with random trajectory, 2 to 
-        % train with random neighborhood trajectory, 0 to train with 
-        % previously found crit trajectory or 1 to alternate between prev 
+        % trainRand: int, set to 3 to train with random trajectory, 2 to
+        % train with random neighborhood trajectory, 0 to train with
+        % previously found crit trajectory or 1 to alternate between prev
         % and random. (default=0)
-        trainRand 
-        % rmRand: bool, set to true to remove first random trajectory when 
+        trainRand
+        % rmRand: bool, set to true to remove first random trajectory when
         % training or false otherwise, (default=true)
-        rmRand 
+        rmRand
         % offsetStrat: int, set 1 to refine with offset, 0 for no offset,
-        % -1 to offset next iteration (after retraining koopman model), 
-        % (default=-1). 
-        offsetStrat 
+        % -1 to offset next iteration (after retraining koopman model),
+        % (default=-1).
+        offsetStrat
         % normalize: bool, set to true to normalize optimization objective
         % in milp solver using reachable set bounds, (default=false)
-        normalize 
-        % useOptimizer: bool set to true to use optimizer object. Not 
-        % using optimizer means stl needs to be setup for milp everytime 
-        % for offset. setting up optimizer object also takes time. 
+        normalize
+        % useOptimizer: bool set to true to use optimizer object. Not
+        % using optimizer means stl needs to be setup for milp everytime
+        % for offset. setting up optimizer object also takes time.
         % Time trade off? (default=true)
-        useOptimizer 
+        useOptimizer
         % reach: bool, set to true to use reachability for encoding of MILP.
         % if set to false then direct encoding of the evolution of the
         % koopman linear system as x_{t+1} = A*x_t+B*u_t (default=true).
         % Note that for system's with uncertain initial state, reachability
         % must be used.
-        reach 
-        % dt: time step. This time step is used to interpolate inputs to 
+        reach
+        % dt: time step. This time step is used to interpolate inputs to
         % system . Use a small dt for accurate results, (default:0.01)
-        % Must be factor of time horizon T. 
-        dt 
+        % Must be factor of time horizon T.
+        dt
         % Interpolation types for input & trajectory. See "interp1" for supported types
         % inputInterpolation: interpolate input between control points.
-        % (default='previous'). Note that control points may decrease 
+        % (default='previous'). Note that control points may decrease
         % with coarser time step for koopman.
-        inputInterpolation 
-        % trajInterpolation: interpolate output trajectory for learning 
+        inputInterpolation
+        % trajInterpolation: interpolate output trajectory for learning
         % autokoopman model, (default='linear')
-        trajInterpolation 
+        trajInterpolation
         % pulseInput: boolean, set to true if the inputs are pulse inputs,
         % otherwise false (default=false)
-        pulseInput 
+        pulseInput
 
         %internal properties (DO NOT CHANGE)
+        %TODO: move internal properties to seperate location
+
         soln %stores the solution for last iteration
         bestSoln %stores the best solution
-        specSolns %stores the solutions for each spec for last iteration 
-        cpBool %used to set control inputs for pulse inputs 
+        specSolns %stores the solutions for each spec for last iteration
+        cpBool %used to set control inputs for pulse inputs
 
     end
     methods
         % Constructor
         function obj = KF(model)
             obj.model=model;
-            obj.dt=0.01; 
+            obj.dt=0.01;
             obj.maxSims=5000;
             obj.timeout=inf;
             obj.nResets=5; %5
@@ -176,10 +201,46 @@ classdef KF
             obj.soln.simTime = obj.soln.simTime+toc;
         end
 
-        function [tout, yout, x0, u] = randSimulation(obj)
+        function [tout, yout, x0, u, obj] = randSimulation(obj)
             [x0,u] = getRandomSampleXU(obj);
-            [tout, yout,~] = simulate(obj, x0, u);
+            tsim = (0:obj.dt:obj.T)'; %define time points for interpolating input
+            if ~isempty(u)
+                usim = interp1(u(:,1),u(:,2:end),tsim,obj.inputInterpolation,"extrap"); %interpolate and extrapolate input points
+                usim =  max(obj.U.inf',min(obj.U.sup',usim)); %ensure that extrapolation is within input bounds
+                usim = [tsim,usim];
+            else
+                usim=u; %no input for the model
             end
+            [tout, yout, obj] = simulate(obj, x0, usim);
+        end
+
+        %try falsifying using random simulations
+        function [minRob,ii]=randFalsify(obj)
+            minRob=inf;
+            tsim = (0:obj.dt:obj.T)'; %define time points for interpolating simulation
+            for ii=1:obj.maxSims
+                [t, x, ~, u] = randSimulation(obj);
+                if ~isempty(u)
+                    interpU = interp1(u(:,1),u(:,2:end),t,obj.inputInterpolation); %interpolate input at same time points as trajectory
+                else
+                    interpU=u;
+                end
+
+                for jj=1:length(obj.spec)
+                    [~,~,robustness] = bReachRob(obj.spec(jj),tsim,x,interpU(:,2:end)');
+                    if robustness < minRob
+                        minRob=robustness;
+                    end
+                    if robustness<0
+                        fprintf('Falsified after %d iterations \n',ii);
+                        fprintf('Minimum robustness: %f \n',minRob);
+                        return;
+                    end
+                end
+            end
+            fprintf('Failed to falsify in %d iterations \n',ii);
+            fprintf('Minimum robustness: %f \n',minRob);
+        end
 
         function [obj,trainset]=falsify(obj)
             [obj,trainset] = coreFalsify(obj);

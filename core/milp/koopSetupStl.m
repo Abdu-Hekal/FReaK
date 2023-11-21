@@ -1,4 +1,4 @@
-function Sys = koopmanSetupStl(Sys,hardcoded)
+function Sys = koopSetupStl(Sys,hardcoded)
 
 
 %% STL formula
@@ -21,7 +21,7 @@ if hardcoded
     global vkmrCount %globl count to track wihch subpred to offset in milp
     vkmrCount=0;
 end
-[Fstl, Pstl, Ostl] = koopMilp(phi,1,L,Sys.solverdt,var,M,normz,hardcoded,Sys.offsetMap);
+[Fstl, Pstl, Ostl] = koopStl(phi,1,L,Sys.solverdt,var,M,normz,hardcoded,Sys.offsetMap);
 
 %assign stl optim variables and constraints
 Sys.Fstl=Fstl; Sys.Pstl=Pstl; Sys.Ostl=Ostl;
