@@ -1,6 +1,36 @@
 function [x0,u] = falsifyingTrajectory(kfModel)
-% extract the most critical initial state and input signal from the most
-% critical reachable set and specification
+
+% falsifyingTrajectory - Extract the most critical initial state and input
+%   signal from the set of most critical alpha values of a reachable set
+%
+% Syntax:
+%    [x0, u] = falsifyingTrajectory(kfModel)
+%
+% Description:
+%    This function is responsible for extracting the most critical initial state
+%    (x0) and the associated control input signal (u) from the most critical
+%    reachable set and specification obtained during the falsification process.
+%    It is a key step in the core falsification procedure.
+%
+% Inputs:
+%    kfModel - KF object containing the Koopman model and various 
+%       parameters needed for the falsification process.
+%
+% Outputs:
+%    x0 - Most critical initial state.
+%    u - Control input signal associated with the most critical trajectory.
+%
+% Example:
+%    [x0, u] = falsifyingTrajectory(kfModel);
+%
+% See also: coreFalsify
+%
+% Author:      Niklas Kochdumper, Abdelrahman Hekal
+% Written:     28-February-2023
+% Last update:  ---
+% Last revision:---
+
+%------------- BEGIN CODE --------------
 
 %setup
 R0=kfModel.R0;
@@ -9,8 +39,8 @@ cpBool=kfModel.cpBool;
 set=kfModel.soln.set;
 alpha=kfModel.soln.alpha;
 
-%AH modification, checks if R0 is not exact, to avoid error
 R0 = zonotope(R0);
+%checks if R0 is exact
 if isempty(generators(R0))
     x0 = center(R0);
 else
@@ -66,6 +96,7 @@ if ~isempty(U)
             u = center(U);
         end
     else
+        % control input already provided by solver
         u=kfModel.soln.u;
     end
 else

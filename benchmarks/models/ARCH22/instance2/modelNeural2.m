@@ -13,7 +13,7 @@ function model = modelNeural2()
 %
 %------------------------------------------------------------------
     
-    model = KF(@run_neural);
+    model = KF(@runNeural);
     model.R0 = interval([0.5000;-1.4129],[0.5000;-1.4129]); 
     model.U = interval(1,3); 
 

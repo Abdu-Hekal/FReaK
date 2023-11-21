@@ -1,4 +1,35 @@
 function [x0,u] = getSampleXU(kfModel)
+% getSampleXU - Generate a sample of initial state (x0) and input signal (u)
+%
+% Syntax:
+%    [x0, u] = getSampleXU(kfModel)
+%
+% Description:
+%    This function generates a sample of initial state (x0) and input signal (u)
+%    based on the current state of the Koopman Falsification (KF) model. If
+%    the KF model has a previous best solution, it uses a perturbed version
+%    of that solution. Otherwise, it generates a random sample.
+%
+% Inputs:
+%    kfModel - KF object containing the Koopman model and various parameters
+%              needed for the falsification process.
+%
+% Outputs:
+%    x0 - Sampled initial state.
+%    u - Sampled input signal.
+%
+% Example:
+%    [x0, u] = getSampleXU(kfModel);
+%
+% See also: getRandomSampleXU
+%
+% Author:      Abdelrahman Hekal
+% Written:     28-February-2023
+% Last update: [Date]
+% Last revision: [Date]
+%
+% ------------- BEGIN CODE --------------
+
 if kfModel.bestSoln.rob==inf %no previous solution, i.e. first iteration or kfModel.trainRand~=2
     [x0,u]=getRandomSampleXU(kfModel);
 else

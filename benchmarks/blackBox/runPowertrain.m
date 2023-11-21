@@ -1,4 +1,4 @@
-function [tout, yout] = run_powertrain(T,~,u)
+function [tout, yout] = runPowertrain(T,~,u)
 
     assignin('base','simTime',T);
     assignin('base','measureTime',1);

@@ -1,8 +1,8 @@
-function visualize_falsification(varargin)
-% visualize_falsification - visualize the falsifying trace (and possibly unsafe set)
+function visualizeFalsification(varargin)
+% visualizeFalsification - visualize the falsifying trace (and possibly unsafe set)
 %
 % Syntax:
-%    visualize_falsification(crit_x, times, spec, plot_vars)
+%    visualizeFalsification(crit_x, times, spec, plot_vars)
 %
 % Inputs:
 %    crit_x - the falsifying trajectory

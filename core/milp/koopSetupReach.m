@@ -1,4 +1,35 @@
 function Sys = koopSetupReach(Sys)
+% koopSetupReach - Set up the evolution of the koopman linearized system 
+%   using the reachable set constraints
+%
+% Syntax:
+%    Sys = koopSetupReach(Sys)
+%
+% Description:
+%    This function sets up the optimization constraints for the reachable
+%    set in the Koopman MILP formulation. The constraints enforce that the
+%    system states follow the reachable set dynamics computed during the
+%    falsification process. The function is part of the KoopMILP class and
+%    is called during the setup process. Note that evolution is either described
+%    directly using the koopSetupReach function or using reachable sets (this function)
+%
+% Inputs:
+%    Sys - KoopMILP object
+%
+% Outputs:
+%    Sys - KoopMILP object with updated properties related to reachable
+%          set optimization constraints.
+%
+% Example:
+%    Sys = koopSetupReach(Sys);
+%
+% See also: KoopMILP, koopSetupDynamics
+%
+% Author:      Abdelrahman Hekal
+% Written:     19-November-2023
+% Last update: ---
+% Last revision: ---
+
 
 alpha=Sys.alpha; x=Sys.x; L=Sys.L;
 %% Reachset constraints

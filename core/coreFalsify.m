@@ -1,5 +1,38 @@
 function [kfModel,trainset] = coreFalsify(kfModel)
 
+% coreFalsify - Given a model and a set of specs (safe/unsafe set/stl), 
+%   perform the core falsification procedure to find a falsifying trajectory
+%
+% Syntax:
+%    [kfModel, trainset] = coreFalsify(kfModel)
+%
+% Description:
+%    This function is the core of the falsification procedure, which iteratively
+%    searches for a falsifying trajectory by simulating the system, training
+%    the Koopman model, and optimizing for critical trajectories. The process
+%    continues until a falsifying trajectory is found or a specified timeout is reached.
+%
+% Inputs:
+%    kfModel - KF object containing the Koopman model and various parameters
+%              needed for the falsification process.
+%
+% Outputs:
+%    kfModel - KF object containing the results of the falsification process,
+%              including the falsifying trajectory, simulation time, and other information.
+%
+%    trainset - Structure containing the training data, including the trajectories and
+%               inputs used during the falsification process.
+%
+% See also: 
+%
+% Author:      Abdelrahman Hekal
+% Written:     28-February-2023
+% Last update: ---
+% Last revision: ---
+
+%------------- BEGIN CODE --------------
+
+
 runtime=tic;
 %initialization and init assertions
 [kfModel, trainset] = initialize(kfModel);
@@ -56,7 +89,6 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
         xak = interp1(t,x,tak,kfModel.trajInterpolation); %define autokoopman trajectory points
     else
         xak=interp1(t,critX,tak,kfModel.trajInterpolation); %pass x0 as full x to avoid simulation again
-        xak = critX;
         u=critU;
     end
     trainset=appendToTrainset(trainset,tak,xak,u);

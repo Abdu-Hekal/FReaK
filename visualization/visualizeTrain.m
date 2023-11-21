@@ -1,4 +1,4 @@
-function visualize_train(varargin)
+function visualizeTrain(varargin)
 %varargin: trainset,plot_vars,xlabel,ylabel
 
 numArgs = length(varargin);

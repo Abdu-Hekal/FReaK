@@ -13,7 +13,7 @@ function model = modelModulator()
 %
 %------------------------------------------------------------------
     
-    model = KF(@run_modulator);
+    model = KF(@runModulator);
     model.R0 = interval([-0.1;-0.1;-0.1],[0.1;0.1;0.1]); 
     model.U = interval(-0.45,0.45); 
 

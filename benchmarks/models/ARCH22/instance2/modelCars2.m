@@ -13,7 +13,7 @@ function model = modelCars2()
 %
 %------------------------------------------------------------------
     
-    model = KF(@run_cars); 
+    model = KF(@runCars); 
     model.R0 = interval([0;10;20;30;40],[0;10;20;30;40]); 
     model.U = interval([0;0],[1;1]); 
 

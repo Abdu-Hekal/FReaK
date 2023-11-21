@@ -15,8 +15,6 @@ classdef KoopMILP
 % Outputs:
 %    obj - generated koopman falsification object
 %
-% Example:
-% obj=KoopMILP(T,dt,solverdt,R0,U);
 %
 % See also: KF
 

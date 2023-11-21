@@ -1,5 +1,30 @@
-
 function [x0,u] = getRandomSampleXU(kfModel)
+
+% getRandomSampleXU - Generate random initial state and input for the KF model
+%
+% Syntax:
+%    [x0, u] = getRandomSampleXU(kfModel)
+%
+% Description:
+%    This function generates a random initial state (x0) and an associated
+%    input signal (u) for the Koopman model based on the provided KF object
+%    and its parameters.
+%
+% Inputs:
+%    kfModel - KF object containing the Koopman model and various
+%              parameters needed for the falsification process.
+%
+% Outputs:
+%    x0 - Randomly generated initial state.
+%    u - Randomly generated input signal associated with the initial state.
+%
+% Author:      Abdelrahman Hekal
+% Written:     28-February-2023
+% Last update: [Date]
+% Last revision: [Date]
+%
+% ------------- BEGIN CODE --------------
+
 %generate random initial set
 x0 = randPoint(kfModel.R0);
 %generate random input if kfModel has input.

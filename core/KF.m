@@ -120,9 +120,8 @@ classdef KF
         % otherwise false (default=false)
         pulseInput
 
+        %TODO: maybe move internal properties to seperate location
         %internal properties (DO NOT CHANGE)
-        %TODO: move internal properties to seperate location
-
         soln %stores the solution for last iteration
         bestSoln %stores the best solution
         specSolns %stores the solutions for each spec for last iteration
@@ -190,7 +189,7 @@ classdef KF
         function [tout, yout, obj] = simulate(obj, x0, u)
             tic
             if isa(obj.model, 'string') || isa(obj.model,"char")
-                [tout, yout] = run_simulink(obj.model, obj.T, x0, u);
+                [tout, yout] = runSimulink(obj.model, obj.T, x0, u);
             elseif isa(obj.model,'function_handle')
                 %function handle must have 3 inputs T,x0,u
                 [tout, yout] = obj.model(obj.T, x0, u);

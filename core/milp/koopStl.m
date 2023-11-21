@@ -1,6 +1,9 @@
 function [F,P,O] = koopStl(phi,kList,kMax,ts,var,M,normz,hardcoded,offsetMap)
-% koopStl  constructs constraints in YALMIP that compute
+% koopStl - constructs constraints in YALMIP that compute
 %             the robustness of satisfaction for stl specification phi
+%
+% Syntax:
+%   [F,P,O] = koopStl(phi,kList,kMax,ts,var,M,normz,hardcoded,offsetMap)
 %
 % Input:
 %       phi:    an STLformula

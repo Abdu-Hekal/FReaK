@@ -1,6 +1,4 @@
-function [tout, yout] = run_modulator(T,x0,u)
-
-
+function [tout, yout] = runModulator(T,x0,u)
 
 open_system('modulator_3rd_order','loadonly');
 sim_mode = get_param('modulator_3rd_order','SimulationMode');

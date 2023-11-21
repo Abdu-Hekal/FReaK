@@ -9,7 +9,7 @@ plot_vars = [12,13];
 [kfModel,trainset] = falsify(kfModel);
 
 if kfModel.soln.falsified
-    visualize_falsification(kfModel.soln.x, trainset.t{1}, kfModel.spec, plot_vars)
+    visualizeFalsification(kfModel.soln.x, trainset.t{1}, kfModel.spec, plot_vars)
     disp(['simulations required: ',num2str(kfModel.soln.sims)])
     visualize_train(trainset, plot_vars)
 else

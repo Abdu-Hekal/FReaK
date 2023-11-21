@@ -49,7 +49,7 @@ for i = 1:size(requirements, 1)
     else
         fprintf("No falsifying trace found! for requirement '%s'\n", name)
     end
-    visualize_falsification(kfModel.soln.x, trainset.t{1}, kfModel.spec, plot_vars)
+    visualizeFalsification(kfModel.soln.x, trainset.t{1}, kfModel.spec, plot_vars)
     disp(['training iterations required: ',num2str(kfModel.soln.trainIter)])
     visualize_train(trainset, plot_vars)
 end

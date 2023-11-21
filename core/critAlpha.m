@@ -1,6 +1,67 @@
 function kfModel = critAlpha(R,A,B,g,kfModel)
-% determine most critical reachable set and specification based on the
-% robustnes
+% critAlpha - Determine the most critical alpha values (or inputs u) based 
+% on robustness. This is usually achieved by solving an optimization unless
+% the unsafe/safe set is a halfspace. 
+%
+% Syntax:
+%    kfModel = critAlpha(R, A, B, g, kfModel)
+%
+% Description:
+%    This function iterates over all specifications and computes the most
+%    critical alpha values (or inputs) based on robustness measures.
+%    The result is stored in the kfModel object, updating the critical
+%    alpha values, control input, reachable set, and specification.
+%
+% Inputs:
+%    R - Reachable set information, including sets, time intervals, and
+%        zonotopes.
+%    A - State matrix of the Koopman model.
+%    B - Input matrix of the Koopman model.
+%    g - observables function of the Koopman model.
+%    kfModel - KF object containing the Koopman model, specifications, and
+%              various parameters needed for the falsification process.
+%
+% Outputs:
+%    kfModel - Updated KF object with critical information, including
+%              alpha values, control input, reachable set, and specification.
+%
+%
+% See also: coreFalsify
+%
+% Author:      Niklas Kochdumper, Abdelrahman Hekal
+% Written:     28-February-2023
+% Last update: [Date]
+% Last revision: [Date]
+%
+% -------------------------- Auxiliary Functions --------------------------
+%
+% robustness - Compute robustness of a zonotope with respect to an unsafe
+%              polytope.
+%
+% Syntax:
+%    [r, alpha] = robustness(P, Z)
+%
+% Description:
+%    This function computes the robustness of a zonotope Z with respect to
+%    an unsafe polytope P. It is used as an auxiliary function in critAlpha.
+%
+% Inputs:
+%    P - Unsafe polytope information.
+%    Z - Zonotope information.
+%
+% Outputs:
+%    r - Robustness measure.
+%    alpha - Critical alpha values.
+%
+% See also: critAlpha
+%
+% Author:      Abdelrahman Hekal
+% Written:     28-February-2023
+% Last update: [Date]
+% Last revision: [Date]
+%
+% -----------------------------------------------------------------------------
+% ------------- BEGIN CODE --------------
 
 % loop over all specifications
 spec=kfModel.spec;

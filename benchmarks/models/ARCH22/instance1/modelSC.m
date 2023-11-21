@@ -13,7 +13,7 @@ function model = modelSC()
 %
 %------------------------------------------------------------------
     
-    model = KF(@run_steamcondenser);
+    model = KF(@runSteamcondenser);
     model.R0 = interval([80;107.9;9062.6;90],[80;107.9;9062.6;90]); 
     model.U = interval(3.99,4.01); 
 

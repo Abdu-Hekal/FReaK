@@ -1,5 +1,38 @@
 function R = reachKoopman(A,B,g,kfModel)
-% compute reachable set for Koopman linearized model
+% reachKoopman - Compute the reachable set for the Koopman linearized model
+%
+% Syntax:
+%    R = reachKoopman(A, B, g, kfModel)
+%
+% Description:
+%    This function calculates the reachable set for the Koopman linearized
+%    model, given the system matrices A and B, the observables function g,
+%    and the Koopman Falsification (KF) model parameters. The reachable set 
+%    is computed using polynomial zonotopes and updated over discrete
+%    time steps.
+%
+% Inputs:
+%    A - State transition matrix of the Koopman linearized model.
+%    B - Input matrix of the Koopman linearized model.
+%    g - observables function of the Koopman linearized model.
+%    kfModel - KF object containing various parameters needed for the
+%              falsification process.
+%
+% Outputs:
+%    R - Struct containing the reachable set information, including
+%       polynomial zonotopes, time points, and zonotopes.
+%
+% Example:
+%    R = reachKoopman(A, B, g, kfModel);
+%
+% See also: coreFalsify, critAlpha
+%
+% Author: Niklas Kochdumper, Abdelrahman Hekal
+% Written: 28-February-2023
+% Last update: ---
+% Last revision: ---
+
+%------------- BEGIN CODE --------------
 
 %setup
 dt=kfModel.ak.dt;
@@ -24,7 +57,7 @@ set = cell(length(t),1); time = set; zono = set;
 set{1} = R0; time{1} = interval(-dt/2,dt/2);
 
 for i = 1:length(t)-1
-    % AH edit to check if system has external input
+    % check if system has external input
     if ~isempty(B)
         if kfModel.pulseInput
             cp_U = U.*cpBool(i,:)';
