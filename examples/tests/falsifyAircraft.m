@@ -1,54 +1,49 @@
+bench.kfModel = @modelAircraftODE;
+x = stl('x',3);
+bench.requirements = {; ...
+    "phi1", implies(globally(x(1) >=250 & x(1) <=260,interval(1,1.5)),globally(~(x(1)>=230 & x(1)<=240),interval(3,4))); ...
+    "phi2",globally(x(3)>0,interval(0,4)); ...
+    };
 
-% initialize seeds
-rng(0)
-pyrunfile("seed.py")
-simsreq=[];
+% Start recording the command line output to a file
+diary('aircraft.txt');
 
-solns={};
-for j = 1:10
-    kfModel = modelAircraftODE();
+solns=dictionary(string.empty,cell.empty);
+req = bench.requirements;
+for i = 1:size(req, 1)
+    % initialize seeds
+    rng(0)
+    pyrunfile("seed.py")
+    disp("--------------------------------------------------------")
+    for j = 1:10
+        kfModel = bench.kfModel();
+        name = req{i, 1};
+        eq = req{i, 2};
 
-    [kfModel,trainset] = falsify(kfModel);
+        kfModel.spec = specification(eq,'logic');
+        [kfModel,~] = falsify(kfModel);
 
-    if kfModel.soln.falsified
-        disp(['simulations required: ',num2str(kfModel.soln.sims)])
-        simsreq = [simsreq kfModel.soln.sims];
-        solns{end+1}=kfModel.soln;
+        if j==1
+            solns(name)={{}};
+        end
+        if kfModel.soln.falsified
+            soln=solns(name);
+            soln{1}{end+1}=kfModel.soln;
+            solns(name)=soln;
+        end
+
+        fprintf("number of simulations to falsify %d \n",kfModel.soln.sims)
+        fprintf('falsified iteration %d \n',j);
+    end
+    %print info
+    fprintf('Benchmark: %s\n', name);
+    fprintf('Number of runs: %d\n', j);
+    if ~isempty(solns(name))
+        printInfo(solns(name),j)
     else
-        disp("No falsifiying trace found")
+        fprintf('Number of successful falsified traces: 0/%d\n',j)
     end
 end
-avgKoopTime=mean(getMetrics(solns,'koopTime'));
-avgReachTime=mean(getMetrics(solns,'reachTime'));
-avgMilpSetupTime=mean(getMetrics(solns,'milpSetupTime'));
-avgMilpSolveTime=mean(getMetrics(solns,'milpSolvTime'));
-avgSimTime=mean(getMetrics(solns,'simTime'));
-avgRuntime=mean(getMetrics(solns,'runtime'));
-sims=getMetrics(solns,'sims');
-avgSims=mean(sims);
-medianSims=median(sims);
-avgFalsified=sum(getMetrics(solns,'falsified'));
-%print info
-fprintf('Benchmark: Aircraft');
-fprintf('Number of runs: %d\n', j);
-fprintf('Avg koopman time: %.2f seconds\n', avgKoopTime);
-fprintf('Avg Reachability time: %.2f seconds\n', avgReachTime);
-fprintf('Avg milp setup time: %.2f seconds\n', avgMilpSetupTime);
-fprintf('Avg milp solve time: %.2f seconds\n', avgMilpSolveTime);
-fprintf('Avg simulation time: %.2f seconds\n', avgSimTime);
-fprintf('Avg total runtime: %.2f seconds\n', avgRuntime);
-fprintf('Number of successful falsified traces: %d/%d\n', avgFalsified,j);
-fprintf('Avg Number of simulations: %.2f\n', avgSims);
-fprintf('Median Number of simulations: %.2f\n', medianSims);
-fprintf('R: %.2f\n',100*avgSimTime/avgRuntime)
-
-
-function list = getMetrics(solns,metric)
-list=[];
-for i=1:length(solns)
-    list=[list,solns{i}.(metric)];
-end
-end
-
+diary off;
 
 
