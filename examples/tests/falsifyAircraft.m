@@ -19,6 +19,7 @@ for j = 1:10
     end
 end
 avgKoopTime=mean(getMetrics(solns,'koopTime'));
+avgReachTime=mean(getMetrics(solns,'reachTime'));
 avgMilpSetupTime=mean(getMetrics(solns,'milpSetupTime'));
 avgMilpSolveTime=mean(getMetrics(solns,'milpSolvTime'));
 avgSimTime=mean(getMetrics(solns,'simTime'));
@@ -31,6 +32,7 @@ avgFalsified=sum(getMetrics(solns,'falsified'));
 fprintf('Benchmark: Aircraft');
 fprintf('Number of runs: %d\n', j);
 fprintf('Avg koopman time: %.2f seconds\n', avgKoopTime);
+fprintf('Avg Reachability time: %.2f seconds\n', avgReachTime);
 fprintf('Avg milp setup time: %.2f seconds\n', avgMilpSetupTime);
 fprintf('Avg milp solve time: %.2f seconds\n', avgMilpSolveTime);
 fprintf('Avg simulation time: %.2f seconds\n', avgSimTime);

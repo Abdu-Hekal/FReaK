@@ -45,7 +45,12 @@ cpBool=kfModel.cpBool;
 n = dim(R0); dig = length(num2str(n));
 names = {}; for i = 1:n; names{i,1} = ['x',num2str(i,['%0',num2str(dig), '.f'])]; end
 tay = taylm(R0,6,names);
+%TODO: this function takes the most time, tradeoff between time taken and
+%taylor orders used?
+tic
 tay = g(tay);
+toc
+
 R0 = polyZonotope(tay);
 R0 = polyZonotope(R0.c,R0.G,[],R0.expMat(1:n,:));
 

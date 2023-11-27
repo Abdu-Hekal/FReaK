@@ -57,9 +57,5 @@ function [kfModel, A, B,g] = symbolicRFF(kfModel, trainset)
     g = g(xSym);
     
     % save observables in function
-    path = fileparts(which(mfilename()));
-    matlabFunction(g,'Vars',{xSym},'File',fullfile(path,'autokoopman'));
-
-    g = @(x) autokoopman(x);
-
+    g = matlabFunction(g,'Vars',{xSym});
 end

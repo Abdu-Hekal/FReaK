@@ -98,7 +98,9 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
     [kfModel, A, B, g] = symbolicRFF(kfModel, trainset);
     % compute reachable set for Koopman linearized model (if reachability is used)
     if kfModel.reach
+        reachTime=tic; 
         R = reachKoopman(A,B,g,kfModel);
+        kfModel.soln.reachTime=kfModel.soln.reachTime+toc(reachTime); %time for reachability computation
     else
         R=[];
     end
@@ -256,7 +258,9 @@ end
 
 %reset struct to store prev soln
 kfModel.soln=struct;
-kfModel.soln.koopTime=0; kfModel.soln.milpSetupTime=0; kfModel.soln.milpSolvTime=0; kfModel.soln.simTime=0;
+kfModel.soln.koopTime=0; kfModel.soln.reachTime=0; 
+kfModel.soln.milpSetupTime=0; kfModel.soln.milpSolvTime=0;
+kfModel.soln.simTime=0;
 kfModel.soln.sims=0;
 %reset struct to store best soln
 kfModel.bestSoln=struct; kfModel.bestSoln.rob=inf; kfModel.bestSoln.timeRob=inf;
