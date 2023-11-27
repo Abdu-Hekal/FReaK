@@ -44,13 +44,16 @@ cpBool=kfModel.cpBool;
 % compute initial set using Taylor model arithmetic
 n = dim(R0); dig = length(num2str(n));
 names = {}; for i = 1:n; names{i,1} = ['x',num2str(i,['%0',num2str(dig), '.f'])]; end
-tay = taylm(R0,6,names);
-%TODO: this function takes the most time, tradeoff between time taken and
-%taylor orders used?
-tay = g(tay);
 
-R0 = polyZonotope(tay);
-R0 = polyZonotope(R0.c,R0.G,[],R0.expMat(1:n,:));
+if all(rad(R0) == 0)
+    c = g(center(R0));
+    R0 = polyZonotope(c,zeros(length(c),1),[],zeros(n,1));
+else
+    tay = taylm(R0,6,names);
+    tay = g(tay);
+    R0 = polyZonotope(tay);
+    R0 = polyZonotope(R0.c,R0.G,[],R0.expMat(1:n,:));
+end
 
 % compute reachable set
 t = 0:dt:ceil(tFinal/dt)*dt;
