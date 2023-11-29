@@ -27,7 +27,7 @@ function [kfModel, A, B,g] = symbolicRFF(kfModel, trainset)
 % Example:
 %    [kfModel, A, B, g] = symbolicRFF(kfModel, trainset);
 %
-% See also: coreFalsify
+% See also: falsify
 %
 % Author: Abdelrahman Hekal
 % Written: 28-February-2023

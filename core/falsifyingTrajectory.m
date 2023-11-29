@@ -1,5 +1,4 @@
 function [x0,u] = falsifyingTrajectory(kfModel)
-
 % falsifyingTrajectory - Extract the most critical initial state and input
 %   signal from the set of most critical alpha values of a reachable set
 %
@@ -23,7 +22,7 @@ function [x0,u] = falsifyingTrajectory(kfModel)
 % Example:
 %    [x0, u] = falsifyingTrajectory(kfModel);
 %
-% See also: coreFalsify
+% See also: falsify
 %
 % Author:      Niklas Kochdumper, Abdelrahman Hekal
 % Written:     28-February-2023

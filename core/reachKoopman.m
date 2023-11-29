@@ -25,7 +25,7 @@ function R = reachKoopman(A,B,g,kfModel)
 % Example:
 %    R = reachKoopman(A, B, g, kfModel);
 %
-% See also: coreFalsify, critAlpha
+% See also: falsify, critAlpha
 %
 % Author: Niklas Kochdumper, Abdelrahman Hekal
 % Written: 28-February-2023

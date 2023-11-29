@@ -1,5 +1,4 @@
 function [x0,u] = getRandomSampleXU(kfModel)
-
 % getRandomSampleXU - Generate random initial state and input for the KF model
 %
 % Syntax:

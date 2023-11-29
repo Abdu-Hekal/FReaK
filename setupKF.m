@@ -54,7 +54,7 @@ disp('Koopman Falsification Successfully Setup!')
 
 end
 
-% Auxiliary functions -----------------------------------------------------
+% -------------------------- Auxiliary Functions --------------------------
 function res = auxInstallToolbox(text)
 res = auxTestToolboxInstallation(text);
 while ~res

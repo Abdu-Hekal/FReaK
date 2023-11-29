@@ -1,9 +1,10 @@
-function Sys = koopSetupInit(Sys)
-% koopSetupInit - Set up the optimization constraints for the initial set
-% and input constraints in the Koopman MILP formulation.
+function Sys = setupInit(Sys)
+% setupInit - Set up the optimization constraints for the initial set
+% and input constraints in the Koopman MILP formulation. used only if
+% direct encoding (without reachability) is used
 %
 % Syntax:
-%    Sys = koopSetupInit(Sys)
+%    Sys = setupInit(Sys)
 %
 % Description:
 %    This function sets up the optimization constraints for the initial
@@ -18,7 +19,7 @@ function Sys = koopSetupInit(Sys)
 %          set and input constraints.
 %
 % Example:
-%    Sys = koopSetupInit(Sys);
+%    Sys = setupInit(Sys);
 %
 % See also: KoopMILP
 %

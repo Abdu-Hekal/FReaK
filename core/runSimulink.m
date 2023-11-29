@@ -24,7 +24,7 @@ function [tout, yout] = runSimulink(model_name, T, x0, u)
 % Example:
 %    [tout, yout] = runSimulink('Autotrans_shift', 10, [0;1000;1], [0:10]'.*ones(3,11)');
 %
-% See also: coreFalsify
+% See also: falsify
 %
 % Author: Abdelrahman Hekal
 % Written: 28-February-2023

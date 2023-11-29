@@ -26,7 +26,7 @@ function kfModel = critAlpha(R,A,B,g,kfModel)
 %              alpha values, control input, reachable set, and specification.
 %
 %
-% See also: coreFalsify
+% See also: falsify
 %
 % Author:      Niklas Kochdumper, Abdelrahman Hekal
 % Written:     28-February-2023
@@ -141,6 +141,7 @@ for i = 1:size(spec,1)
                 Sys.nObs = kfModel.ak.nObs;
                 Sys = setupInit(Sys);
             end
+            Sys = setupCP(Sys); %setup control points constraints
         end
 
         %setup problem from scratch if number of generators is no longer

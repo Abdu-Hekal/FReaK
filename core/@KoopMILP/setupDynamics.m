@@ -1,9 +1,9 @@
-function Sys = koopSetupDynamics(Sys)
-% koopSetupDynamics - Set up the optimization constraints for the system
+function Sys = setupDynamics(Sys)
+% setupDynamics - Set up the optimization constraints for the system
 % dynamics in the Koopman MILP formulation.
 %
 % Syntax:
-%    Sys = koopSetupDynamics(Sys)
+%    Sys = setupDynamics(Sys)
 %
 % Description:
 %    This function sets up the optimization constraints for the system
@@ -21,7 +21,7 @@ function Sys = koopSetupDynamics(Sys)
 %          optimization constraints.
 %
 % Example:
-%    Sys = koopSetupDynamics(Sys);
+%    Sys = setupDynamics(Sys);
 %
 % See also: KoopMILP, koopSetupReach
 %

@@ -52,7 +52,7 @@ if numArgs>3
 end
 end
 
-% Auxiliary Functions -----------------------------------------------------
+% -------------------------- Auxiliary Functions --------------------------
 
 function x = sim_autokoopman(x0,u,g,A,B,steps)
 x = zeros(size(x0,1),steps);

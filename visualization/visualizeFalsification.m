@@ -76,7 +76,7 @@ end
 end
 
 
-% Auxiliary Functions -----------------------------------------------------
+% -------------------------- Auxiliary Functions --------------------------
 
 %FIXME: fix function to handle visualization of different stl formula
 function [unsafeCell, from, to] = phiToUnsafeSet(phi, from, to)

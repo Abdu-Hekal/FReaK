@@ -1,9 +1,9 @@
-function Sys = koopSetupStl(Sys,hardcoded)
-% koopSetupStl - Set up the optimization constraints for the robustness of
+function Sys = setupStl(Sys,hardcoded)
+% setupStl - Set up the optimization constraints for the robustness of
 %   the STL formula in the Koopman MILP formulation.
 %
 % Syntax:
-%    Sys = koopSetupStl(Sys, hardcoded)
+%    Sys = setupStl(Sys, hardcoded)
 %
 % Description:
 %    This function sets up the optimization constraints for the Signal
@@ -29,7 +29,7 @@ function Sys = koopSetupStl(Sys,hardcoded)
 %       offset for each inequality.
 %
 % Example:
-%    Sys = koopSetupStl(Sys, true);
+%    Sys = setupStl(Sys, true);
 %
 % See also: KoopMILP
 %
@@ -64,4 +64,7 @@ end
 
 %assign stl optim variables and constraints
 Sys.Fstl=Fstl; Sys.Pstl=Pstl; Sys.Ostl=Ostl;
+
+end
+
 

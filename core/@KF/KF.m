@@ -175,7 +175,7 @@ classdef KF
                 'gurobi.BarHomogeneous', 1,...
                 'usex0', 0 ...
                 );
-            obj.solver.normalize=false; 
+            obj.solver.normalize=false;
             obj.solver.useOptimizer=true;
 
             %create empty struct to store prev soln
@@ -186,67 +186,6 @@ classdef KF
             obj.bestSoln=struct; obj.bestSoln.rob=inf; obj.bestSoln.timeRob=inf;
             %create empty dict to store prev soln for each spec
             obj.specSolns = dictionary(obj.spec,struct);
-        end
-
-        %simulate function for model, a custom simulate function can be
-        %used for a subclass of this class. Ensure that the outputs are consistent
-        function [tout, yout, obj] = simulate(obj, x0, u)
-            tic
-            if isa(obj.model, 'string') || isa(obj.model,"char")
-                [tout, yout] = runSimulink(obj.model, obj.T, x0, u);
-            elseif isa(obj.model,'function_handle')
-                %function handle must have 3 inputs T,x0,u
-                [tout, yout] = obj.model(obj.T, x0, u);
-            else
-                error('model not supported')
-            end
-            obj.soln.sims = obj.soln.sims+1;
-            obj.soln.simTime = obj.soln.simTime+toc;
-        end
-
-        function [tout, yout, x0, u, obj] = randSimulation(obj)
-            [x0,u] = getRandomSampleXU(obj);
-            tsim = (0:obj.dt:obj.T)'; %define time points for interpolating input
-            if ~isempty(u)
-                usim = interp1(u(:,1),u(:,2:end),tsim,obj.inputInterpolation,"extrap"); %interpolate and extrapolate input points
-                usim =  max(obj.U.inf',min(obj.U.sup',usim)); %ensure that extrapolation is within input bounds
-                usim = [tsim,usim];
-            else
-                usim=u; %no input for the model
-            end
-            [tout, yout, obj] = simulate(obj, x0, usim);
-        end
-
-        %try falsifying using random simulations
-        function [minRob,ii]=randFalsify(obj)
-            minRob=inf;
-            tsim = (0:obj.dt:obj.T)'; %define time points for interpolating simulation
-            for ii=1:obj.maxSims
-                [t, x, ~, u] = randSimulation(obj);
-                if ~isempty(u)
-                    interpU = interp1(u(:,1),u(:,2:end),t,obj.inputInterpolation); %interpolate input at same time points as trajectory
-                else
-                    interpU=u;
-                end
-
-                for jj=1:length(obj.spec)
-                    [~,~,robustness] = bReachRob(obj.spec(jj),tsim,x,interpU(:,2:end)');
-                    if robustness < minRob
-                        minRob=robustness;
-                    end
-                    if robustness<0
-                        fprintf('Falsified after %d iterations \n',ii);
-                        fprintf('Minimum robustness: %f \n',minRob);
-                        return;
-                    end
-                end
-            end
-            fprintf('Failed to falsify in %d iterations \n',ii);
-            fprintf('Minimum robustness: %f \n',minRob);
-        end
-
-        function [obj,trainset]=falsify(obj)
-            [obj,trainset] = coreFalsify(obj);
         end
     end
 end
