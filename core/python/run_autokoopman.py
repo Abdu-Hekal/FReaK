@@ -1,5 +1,6 @@
 from scipy.io import savemat
 from autokoopman import auto_koopman
+from autokoopman.core.format import hide_prints
 
 import autokoopman.core.trajectory as traj
 import numpy as np
@@ -21,20 +22,20 @@ def run(times, trajectories, param_dict, inputs_list):
     else:
         n_splits=None
 
-    experiment_results = auto_koopman(
-        training_data,  # list of trajectories
-        sampling_period=param_dict["dt"],  # sampling period of trajectory snapshots
-        obs_type=param_dict["obsType"],  # use Random Fourier Features Observables
-        opt=param_dict["opt"],  # grid search to find best hyperparameters
-        n_obs=int(param_dict["nObs"]),  # maximum number of observables to try
-        max_opt_iter=200,  # maximum number of optimization iterations
-        grid_param_slices=int(param_dict["gridSlices"]),
-        # for grid search, number of slices for each parameter
-        rank=tuple(param_dict["rank"]), # rank range (start, stop, step) DMD hyperparameter
-        n_splits=n_splits,
-        verbose= False,
-    )
-    
+    with hide_prints():
+        experiment_results = auto_koopman(
+            training_data,  # list of trajectories
+            sampling_period=param_dict["dt"],  # sampling period of trajectory snapshots
+            obs_type=param_dict["obsType"],  # use Random Fourier Features Observables
+            opt=param_dict["opt"],  # grid search to find best hyperparameters
+            n_obs=int(param_dict["nObs"]),  # maximum number of observables to try
+            max_opt_iter=200,  # maximum number of optimization iterations
+            grid_param_slices=int(param_dict["gridSlices"]),
+            # for grid search, number of slices for each parameter
+            rank=tuple(param_dict["rank"]), # rank range (start, stop, step) DMD hyperparameter
+            n_splits=n_splits,
+            verbose= False,
+        )
     
     model = experiment_results['tuned_model']
     # get evolution matrices

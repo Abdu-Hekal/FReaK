@@ -61,13 +61,28 @@ classdef KF
         %  .opt: tuner of type "grid", "bopt", or "monte-carlo" (default=grid)
         %  .rank: set of ranks to try of DMD rank parameter (default=[1,200,20])
 
+        % Reachability settings (struct)
+        reach
+        %   .on: : bool, set to true to use reachability for encoding of MILP.
+        % if set to false then direct encoding of the evolution of the
+        % koopman linear system as x_{t+1} = A*x_t+B*u_t (default=true).
+        % Note that for system's with uncertain initial state, reachability
+        % must be used.
+        %   .tayOrder: Order of taylor models for reachability (default=6)
+
         %solver/optimizer (struct)
         solver
-        %  .dt: solver time step for encoding stl robustness.
+        %   .dt: solver time step for encoding stl robustness.
         % default solver.dt=ak.dt Change to use coarser solver step
         % when setting up stl constraints for quicker solving time.
         % Must be a multiple of ak.dt
-        %  .opts: solver options (see sdpsettings)
+        %   .opts: solver options (see sdpsettings)
+        %   .normalize: bool, set to true to normalize optimization objective
+        % in milp solver using reachable set bounds, (default=false)
+        %   .useOptimizer: bool set to true to use optimizer object. Not
+        % using optimizer means stl needs to be setup for milp everytime
+        % for offset. setting up optimizer object also takes time.
+        % Time trade off? (default=true)
 
         %SETTINGS
         % maxSims: maximum number of simulations for training before
@@ -90,20 +105,6 @@ classdef KF
         % -1 to offset next iteration (after retraining koopman model),
         % (default=-1).
         offsetStrat
-        % normalize: bool, set to true to normalize optimization objective
-        % in milp solver using reachable set bounds, (default=false)
-        normalize
-        % useOptimizer: bool set to true to use optimizer object. Not
-        % using optimizer means stl needs to be setup for milp everytime
-        % for offset. setting up optimizer object also takes time.
-        % Time trade off? (default=true)
-        useOptimizer
-        % reach: bool, set to true to use reachability for encoding of MILP.
-        % if set to false then direct encoding of the evolution of the
-        % koopman linear system as x_{t+1} = A*x_t+B*u_t (default=true).
-        % Note that for system's with uncertain initial state, reachability
-        % must be used.
-        reach
         % dt: time step. This time step is used to interpolate inputs to
         % system . Use a small dt for accurate results, (default:0.01)
         % Must be factor of time horizon T.
@@ -139,9 +140,6 @@ classdef KF
             obj.trainRand=0;
             obj.rmRand=1; %1
             obj.offsetStrat=-1; %-1
-            obj.normalize=false; %false
-            obj.useOptimizer=true;
-            obj.reach=true; %true
             obj.inputInterpolation='previous';
             obj.trajInterpolation='linear';
             obj.pulseInput = false;
@@ -153,6 +151,10 @@ classdef KF
             obj.ak.gridSlices=5;
             obj.ak.opt="grid"; %grid
             obj.ak.rank=[1,20,4];
+
+            %reachability settings
+            obj.reach.on=true; %true
+            obj.reach.tayOrder=6;
 
             %default optimizer options
             solver = 'gurobi';  % gurobi, cplex, glpk
@@ -173,6 +175,8 @@ classdef KF
                 'gurobi.BarHomogeneous', 1,...
                 'usex0', 0 ...
                 );
+            obj.solver.normalize=false; 
+            obj.solver.useOptimizer=true;
 
             %create empty struct to store prev soln
             obj.soln=struct;

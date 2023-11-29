@@ -1,6 +1,6 @@
 function [kfModel,trainset] = coreFalsify(kfModel)
 
-% coreFalsify - Given a model and a set of specs (safe/unsafe set/stl), 
+% coreFalsify - Given a model and a set of specs (safe/unsafe set/stl),
 %   perform the core falsification procedure to find a falsifying trajectory
 %
 % Syntax:
@@ -23,7 +23,7 @@ function [kfModel,trainset] = coreFalsify(kfModel)
 %    trainset - Structure containing the training data, including the trajectories and
 %               inputs used during the falsification process.
 %
-% See also: 
+% See also:
 %
 % Author:      Abdelrahman Hekal
 % Written:     28-February-2023
@@ -93,12 +93,11 @@ while kfModel.soln.sims <= kfModel.maxSims && falsified==false
     end
     trainset=appendToTrainset(trainset,tak,xak,u);
 
-    %     try
     %run autokoopman and learn linearized model
     [kfModel, A, B, g] = symbolicRFF(kfModel, trainset);
     % compute reachable set for Koopman linearized model (if reachability is used)
-    if kfModel.reach
-        reachTime=tic; 
+    if kfModel.reach.on
+        reachTime=tic;
         R = reachKoopman(A,B,g,kfModel);
         kfModel.soln.reachTime=kfModel.soln.reachTime+toc(reachTime); %time for reachability computation
     else
@@ -258,7 +257,7 @@ end
 
 %reset struct to store prev soln
 kfModel.soln=struct;
-kfModel.soln.koopTime=0; kfModel.soln.reachTime=0; 
+kfModel.soln.koopTime=0; kfModel.soln.reachTime=0;
 kfModel.soln.milpSetupTime=0; kfModel.soln.milpSolvTime=0;
 kfModel.soln.simTime=0;
 kfModel.soln.sims=0;

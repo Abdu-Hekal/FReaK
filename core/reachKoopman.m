@@ -40,6 +40,7 @@ R0=kfModel.R0;
 U=kfModel.U;
 tFinal=kfModel.T;
 cpBool=kfModel.cpBool;
+tayOrder = kfModel.reach.tayOrder;
 
 % compute initial set using Taylor model arithmetic
 n = dim(R0); dig = length(num2str(n));
@@ -49,7 +50,7 @@ if all(rad(R0) == 0)
     c = g(center(R0));
     R0 = polyZonotope(c,zeros(length(c),1),[],zeros(n,1));
 else
-    tay = taylm(R0,6,names);
+    tay = taylm(R0,tayOrder,names);
     tay = g(tay);
     R0 = polyZonotope(tay);
     R0 = polyZonotope(R0.c,R0.G,[],R0.expMat(1:n,:));

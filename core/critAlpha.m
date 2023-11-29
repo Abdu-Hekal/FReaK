@@ -130,11 +130,11 @@ for i = 1:size(spec,1)
             Sys=prevSpecSol.lti; %get previously setup milp problem with stl
         catch
             Sys=KoopMILP(kfModel.T,kfModel.ak.dt,kfModel.solver.dt,kfModel.R0,kfModel.U);
-            Sys.normalize = kfModel.normalize; %set normalization setting
+            Sys.normalize = kfModel.solver.normalize; %set normalization setting
             if ~kfModel.pulseInput %if not pulse input, set cpBool
                 Sys.cpBool=kfModel.cpBool;
             end
-            if kfModel.reach
+            if kfModel.reach.on
                 Sys.reachZonos=R.zono; %update reach zonos with new
                 Sys = setupAlpha(Sys);
             else
@@ -145,7 +145,7 @@ for i = 1:size(spec,1)
 
         %setup problem from scratch if number of generators is no longer
         %the same. TODO: check and clean this section
-        if kfModel.reach
+        if kfModel.reach.on
             if size(Sys.alpha,2) ~= size(generators(R.zono{end}),2)
                 Sys=KoopMILP(kfModel.T,kfModel.ak.dt,kfModel.solver.dt,kfModel.R0,kfModel.U);
                 if ~kfModel.pulseInput %if not pulse input, set cpBool
@@ -162,12 +162,12 @@ for i = 1:size(spec,1)
         end
 
         set=spec(i,1).set;
-        if ~isequal(set,Sys.stl) || (~kfModel.useOptimizer && Sys.offsetMap.Count>0)
+        if ~isequal(set,Sys.stl) || (~kfModel.solver.useOptimizer && Sys.offsetMap.Count>0)
             Sys.stl = set;
-            Sys=setupStl(Sys,~kfModel.useOptimizer); %encode stl using milp
+            Sys=setupStl(Sys,~kfModel.solver.useOptimizer); %encode stl using milp
         end
 
-        if kfModel.reach
+        if kfModel.reach.on
             Sys.reachZonos=R.zono; %update reach zonos with new
             Sys = setupReach(Sys);
         else
@@ -180,7 +180,7 @@ for i = 1:size(spec,1)
         kfModel.soln.milpSetupTime = kfModel.soln.milpSetupTime+toc;
 
         tic
-        if kfModel.useOptimizer
+        if kfModel.solver.useOptimizer
             Sys = setupOptimizer(Sys,kfModel.solver.opts);
         end
         specSoln.lti=Sys; %store lti object with setcup optimizer
