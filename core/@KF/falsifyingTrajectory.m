@@ -1,9 +1,9 @@
-function [x0,u] = falsifyingTrajectory(kfModel)
+function [x0,u] = falsifyingTrajectory(obj)
 % falsifyingTrajectory - Extract the most critical initial state and input
 %   signal from the set of most critical alpha values of a reachable set
 %
 % Syntax:
-%    [x0, u] = falsifyingTrajectory(kfModel)
+%    [x0, u] = falsifyingTrajectory(obj)
 %
 % Description:
 %    This function is responsible for extracting the most critical initial state
@@ -12,7 +12,7 @@ function [x0,u] = falsifyingTrajectory(kfModel)
 %    It is a key step in the core falsification procedure.
 %
 % Inputs:
-%    kfModel - KF object containing the Koopman model and various 
+%    obj - KF object containing the Koopman model and various 
 %       parameters needed for the falsification process.
 %
 % Outputs:
@@ -20,7 +20,7 @@ function [x0,u] = falsifyingTrajectory(kfModel)
 %    u - Control input signal associated with the most critical trajectory.
 %
 % Example:
-%    [x0, u] = falsifyingTrajectory(kfModel);
+%    [x0, u] = falsifyingTrajectory(obj);
 %
 % See also: falsify
 %
@@ -32,11 +32,11 @@ function [x0,u] = falsifyingTrajectory(kfModel)
 %------------- BEGIN CODE --------------
 
 %setup
-R0=kfModel.R0;
-U=kfModel.U;
-cpBool=kfModel.cpBool;
-set=kfModel.soln.set;
-alpha=kfModel.soln.alpha;
+R0=obj.R0;
+U=obj.U;
+cpBool=obj.cpBool;
+set=obj.soln.set;
+alpha=obj.soln.alpha;
 
 R0 = zonotope(R0);
 %checks if R0 is exact
@@ -67,13 +67,13 @@ else
     end
     x0 = center(R0) + G_R0*alphaInit;
 end
-%check if kfModel has control input
+%check if obj has control input
 if ~isempty(U)
-    if isempty(kfModel.soln.u)
+    if isempty(obj.soln.u)
         % determine most ctritical control input
         if ~isempty(set.Grest)
 
-            if kfModel.pulseInput %if pulse input
+            if obj.pulseInput %if pulse input
                 %initialise alpha to cpBool
                 alphaU = reshape(cpBool,[],1);
                 %input alpha returned by milp optimizernon
@@ -96,13 +96,13 @@ if ~isempty(U)
         end
     else
         % control input already provided by solver
-        u=kfModel.soln.u;
+        u=obj.soln.u;
     end
 else
     u = [];
 end
 if ~isempty(u)
-    all_steps = kfModel.T/kfModel.ak.dt;
+    all_steps = obj.T/obj.ak.dt;
     %check that correct number of inputs is returned, sometimes we have a
     %final dummy input so that number of inputs is equal to state variables
     %for MILP stl encoding, we remove it.
@@ -112,10 +112,10 @@ if ~isempty(u)
     else
         error('incorrect number of inputs returned from solver, investigate error')
     end
-    tp_=linspace(0,kfModel.T-kfModel.ak.dt,all_steps); %time points without last time step
-    tp = linspace(0,kfModel.T,all_steps+1);
-    u = interp1(tp_',u',tp',kfModel.inputInterpolation,"extrap"); %interpolate and extrapolate input points
-    u =  max(kfModel.U.inf',min(kfModel.U.sup',u)); %ensure that extrapolation is within input bounds
+    tp_=linspace(0,obj.T-obj.ak.dt,all_steps); %time points without last time step
+    tp = linspace(0,obj.T,all_steps+1);
+    u = interp1(tp_',u',tp',obj.inputInterpolation,"extrap"); %interpolate and extrapolate input points
+    u =  max(obj.U.inf',min(obj.U.sup',u)); %ensure that extrapolation is within input bounds
     u = [tp',u];
 end
 end

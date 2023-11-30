@@ -1,8 +1,8 @@
-function R = reachKoopman(A,B,g,kfModel)
+function R = reachKoopman(obj,koopModel)
 % reachKoopman - Compute the reachable set for the Koopman linearized model
 %
 % Syntax:
-%    R = reachKoopman(A, B, g, kfModel)
+%    R = reachKoopman(obj,koopModel)
 %
 % Description:
 %    This function calculates the reachable set for the Koopman linearized
@@ -12,18 +12,19 @@ function R = reachKoopman(A,B,g,kfModel)
 %    time steps.
 %
 % Inputs:
-%    A - State transition matrix of the Koopman linearized model.
-%    B - Input matrix of the Koopman linearized model.
-%    g - observables function of the Koopman linearized model.
-%    kfModel - KF object containing various parameters needed for the
+%    obj - KF object containing various parameters needed for the
 %              falsification process.
+%    koopModel - struct representing koopman model with following:
+%       A - State transition matrix of the Koopman linearized model.
+%       B - Input matrix of the Koopman linearized model.
+%       g - observables function of the Koopman linearized model.
 %
 % Outputs:
 %    R - Struct containing the reachable set information, including
 %       polynomial zonotopes, time points, and zonotopes.
 %
 % Example:
-%    R = reachKoopman(A, B, g, kfModel);
+%    R = reachKoopman(obj, koopModel);
 %
 % See also: falsify, critAlpha
 %
@@ -35,12 +36,15 @@ function R = reachKoopman(A,B,g,kfModel)
 %------------- BEGIN CODE --------------
 
 %setup
-dt=kfModel.ak.dt;
-R0=kfModel.R0;
-U=kfModel.U;
-tFinal=kfModel.T;
-cpBool=kfModel.cpBool;
-tayOrder = kfModel.reach.tayOrder;
+A = koopModel.A;
+B = koopModel.B;
+g = koopModel.g;
+dt=obj.ak.dt;
+R0=obj.R0;
+U=obj.U;
+tFinal=obj.T;
+cpBool=obj.cpBool;
+tayOrder = obj.reach.tayOrder;
 
 % compute initial set using Taylor model arithmetic
 n = dim(R0); dig = length(num2str(n));
@@ -66,7 +70,7 @@ set{1} = R0; time{1} = interval(-dt/2,dt/2);
 for i = 1:length(t)-1
     % check if system has external input
     if ~isempty(B)
-        if kfModel.pulseInput
+        if obj.pulseInput
             cp_U = U.*cpBool(i,:)';
         else
             cp_U=U;

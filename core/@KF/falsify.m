@@ -93,18 +93,18 @@ while obj.soln.sims <= obj.maxSims && falsified==false
     trainset=appendToTrainset(trainset,tak,xak,u);
 
     %run autokoopman and learn linearized model
-    [obj, A, B, g] = symbolicRFF(obj, trainset);
+    [obj, koopModel] = learnKoopModel(obj, trainset);
     % compute reachable set for Koopman linearized model (if reachability is used)
     if obj.reach.on
         reachTime=tic;
-        R = reachKoopman(A,B,g,obj);
+        R = reachKoopman(obj,koopModel);
         obj.soln.reachTime=obj.soln.reachTime+toc(reachTime); %time for reachability computation
     else
         R=[];
     end
     % determine most critical reachable set and specification
     try
-        obj = critAlpha(R,A,B,g,obj);
+        obj = critAlpha(obj,R,koopModel);
     catch
         disp("error encountered whilst setup/solving, resetting training data")
         trainIter=0;
@@ -187,7 +187,7 @@ while obj.soln.sims <= obj.maxSims && falsified==false
     trainIter=trainIter+1;
 end
 %close simulink obj
-close_system(' ErrorIfShadowed',0);
+close_system('ErrorIfShadowed',0);
 %assign solution result
 obj.soln.t=t;
 obj.soln.x=critX;

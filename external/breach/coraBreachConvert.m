@@ -22,7 +22,7 @@ stl = replace(stl,'|','or');
 stl = replace(stl,'~','not ');
 
 for k=1:size(cora_stl.variables)
-   old = strcat('(\w*)',cora_stl.variables{k},'(\w*)');
+   old = strcat('(\w*)',cora_stl.variables{k},'([^0-9]\w*)');
    new = strcat(cora_stl.variables{k},'[t]');
    stl = regexprep(stl,old,new);
 end

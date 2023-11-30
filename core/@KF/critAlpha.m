@@ -1,28 +1,29 @@
-function kfModel = critAlpha(R,A,B,g,kfModel)
+function obj = critAlpha(obj,R,koopModel)
 % critAlpha - Determine the most critical alpha values (or inputs u) based 
 % on robustness. This is usually achieved by solving an optimization unless
 % the unsafe/safe set is a halfspace. 
 %
 % Syntax:
-%    kfModel = critAlpha(R, A, B, g, kfModel)
+%    obj = critAlpha(obj,R, koopModel)
 %
 % Description:
 %    This function iterates over all specifications and computes the most
 %    critical alpha values (or inputs) based on robustness measures.
-%    The result is stored in the kfModel object, updating the critical
+%    The result is stored in the obj object, updating the critical
 %    alpha values, control input, reachable set, and specification.
 %
 % Inputs:
 %    R - Reachable set information, including sets, time intervals, and
 %        zonotopes.
-%    A - State matrix of the Koopman model.
-%    B - Input matrix of the Koopman model.
-%    g - observables function of the Koopman model.
-%    kfModel - KF object containing the Koopman model, specifications, and
+%    koopModel - struct representing koopman model with following:
+%       A - State transition matrix of the Koopman linearized model.
+%       B - Input matrix of the Koopman linearized model.
+%       g - observables function of the Koopman linearized model.
+%    obj - KF object containing the Koopman model, specifications, and
 %              various parameters needed for the falsification process.
 %
 % Outputs:
-%    kfModel - Updated KF object with critical information, including
+%    obj - Updated KF object with critical information, including
 %              alpha values, control input, reachable set, and specification.
 %
 %
@@ -64,7 +65,7 @@ function kfModel = critAlpha(R,A,B,g,kfModel)
 % ------------- BEGIN CODE --------------
 
 % loop over all specifications
-spec=kfModel.spec;
+spec=obj.spec;
 rob = inf;
 uCrit = []; %initialise critical input.
 
@@ -122,23 +123,23 @@ for i = 1:size(spec,1)
 
     elseif strcmp(spec(i,1).type,'logic')
         %get prev solns
-        prevSpecSol = kfModel.specSolns(kfModel.spec(i,1));
+        prevSpecSol = obj.specSolns(obj.spec(i,1));
         %setup and run milp
         tic
         %if no prev soln for this spec, setup alpha & stl milp vars/constrs
         try
             Sys=prevSpecSol.lti; %get previously setup milp problem with stl
         catch
-            Sys=KoopMILP(kfModel.T,kfModel.ak.dt,kfModel.solver.dt,kfModel.R0,kfModel.U);
-            Sys.normalize = kfModel.solver.normalize; %set normalization setting
-            if ~kfModel.pulseInput %if not pulse input, set cpBool
-                Sys.cpBool=kfModel.cpBool;
+            Sys=KoopMILP(obj.T,obj.ak.dt,obj.solver.dt,obj.R0,obj.U);
+            Sys.normalize = obj.solver.normalize; %set normalization setting
+            if ~obj.pulseInput %if not pulse input, set cpBool
+                Sys.cpBool=obj.cpBool;
             end
-            if kfModel.reach.on
+            if obj.reach.on
                 Sys.reachZonos=R.zono; %update reach zonos with new
                 Sys = setupAlpha(Sys);
             else
-                Sys.nObs = kfModel.ak.nObs;
+                Sys.nObs = obj.ak.nObs;
                 Sys = setupInit(Sys);
             end
             Sys = setupCP(Sys); %setup control points constraints
@@ -146,47 +147,47 @@ for i = 1:size(spec,1)
 
         %setup problem from scratch if number of generators is no longer
         %the same. TODO: check and clean this section
-        if kfModel.reach.on
+        if obj.reach.on
             if size(Sys.alpha,2) ~= size(generators(R.zono{end}),2)
-                Sys=KoopMILP(kfModel.T,kfModel.ak.dt,kfModel.solver.dt,kfModel.R0,kfModel.U);
-                if ~kfModel.pulseInput %if not pulse input, set cpBool
-                    Sys.cpBool=kfModel.cpBool;
+                Sys=KoopMILP(obj.T,obj.ak.dt,obj.solver.dt,obj.R0,obj.U);
+                if ~obj.pulseInput %if not pulse input, set cpBool
+                    Sys.cpBool=obj.cpBool;
                 end
-                if kfModel.reach
+                if obj.reach.on
                     Sys.reachZonos=R.zono; %update reach zonos with new
                     Sys = setupAlpha(Sys);
                 else
-                    Sys.nObs = kfModel.ak.nObs;
+                    Sys.nObs = obj.ak.nObs;
                     Sys = setupInit(Sys);
                 end
             end
         end
 
         set=spec(i,1).set;
-        if ~isequal(set,Sys.stl) || (~kfModel.solver.useOptimizer && Sys.offsetMap.Count>0)
+        if ~isequal(set,Sys.stl) || (~obj.solver.useOptimizer && Sys.offsetMap.Count>0)
             Sys.stl = set;
-            Sys=setupStl(Sys,~kfModel.solver.useOptimizer); %encode stl using milp
+            Sys=setupStl(Sys,~obj.solver.useOptimizer); %encode stl using milp
         end
 
-        if kfModel.reach.on
+        if obj.reach.on
             Sys.reachZonos=R.zono; %update reach zonos with new
             Sys = setupReach(Sys);
         else
-            Sys.A=A;
-            Sys.B=B;
-            Sys.g=g;
+            Sys.A=koopModel.A;
+            Sys.B=koopModel.B;
+            Sys.g=koopModel.g;
             Sys=setupDynamics(Sys);
         end
 
-        kfModel.soln.milpSetupTime = kfModel.soln.milpSetupTime+toc;
+        obj.soln.milpSetupTime = obj.soln.milpSetupTime+toc;
 
         tic
-        if kfModel.solver.useOptimizer
-            Sys = setupOptimizer(Sys,kfModel.solver.opts);
+        if obj.solver.useOptimizer
+            Sys = setupOptimizer(Sys,obj.solver.opts);
         end
         specSoln.lti=Sys; %store lti object with setcup optimizer
-        Sys=optimize(Sys,kfModel.solver.opts);
-        kfModel.soln.milpSolvTime =kfModel.soln.milpSolvTime+toc;
+        Sys=optimize(Sys,obj.solver.opts);
+        obj.soln.milpSolvTime =obj.soln.milpSolvTime+toc;
 
         %get results
         rob_ = value(Sys.Pstl);
@@ -212,11 +213,11 @@ for i = 1:size(spec,1)
 
     %store solution for this iteration for each spec.
     specSoln.rob=rob_; specSoln.alpha=alpha;
-    kfModel.specSolns(kfModel.spec(i,1)) = specSoln;
+    obj.specSolns(obj.spec(i,1)) = specSoln;
 end
 %store solution for this iteration
-kfModel.soln.rob=rob; kfModel.soln.alpha=alphaCrit; kfModel.soln.u=uCrit;
-kfModel.soln.set=setCrit; kfModel.soln.spec=specCrit;
+obj.soln.rob=rob; obj.soln.alpha=alphaCrit; obj.soln.u=uCrit;
+obj.soln.set=setCrit; obj.soln.spec=specCrit;
 end
 
 % -------------------------- Auxiliary Functions --------------------------
