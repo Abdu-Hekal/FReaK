@@ -120,6 +120,9 @@ classdef KF
         % pulseInput: boolean, set to true if the inputs are pulse inputs,
         % otherwise false (default=false)
         pulseInput
+        % verb: int, set to 2 for printing info whilst falsifying, 1 for
+        % print at end of falsifying, 0 for no print (default=0)
+        verb
 
         %TODO: maybe move internal properties to seperate location
         %internal properties (DO NOT CHANGE)
@@ -143,6 +146,7 @@ classdef KF
             obj.inputInterpolation='previous';
             obj.trajInterpolation='linear';
             obj.pulseInput = false;
+            obj.verb=0;
             obj.soln=struct;
 
             % autokoopman settings

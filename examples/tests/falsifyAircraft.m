@@ -32,7 +32,7 @@ for i = 1:size(req, 1)
             solns(name)=soln;
         end
 
-        fprintf("number of simulations to falsify %d \n",kfModel.soln.sims)
+        fprintf("number of simulations %d \n",kfModel.soln.sims)
         fprintf('falsified iteration %d \n',j);
     end
     %print info

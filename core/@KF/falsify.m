@@ -142,6 +142,9 @@ while obj.soln.sims <= obj.maxSims && falsified==false
                 falsified = ~all(spec.set.contains(critX')); %check this
             elseif strcmp(spec.type,'logic')
                 [Bdata,phi,robustness] = bReachRob(spec,t,critX,interpU');
+                vfprintf(2,obj.verb,'Simulations run so far: %d\n',obj.soln.sims);
+                vfprintf(2,obj.verb,'Current robustness value: %.2f\n', robustness);
+
 
                 obj.specSolns(spec).realRob=robustness; %store real robustness value
                 falsified = ~isreal(sqrt(robustness)); %sqrt of -ve values are imaginary
@@ -194,6 +197,12 @@ obj.soln.x=critX;
 obj.soln.u = critU;
 obj.soln.falsified=falsified;
 obj.soln.runtime=toc(runtime); %record runtime
+
+LogicalStr = {'Yes', 'No'};
+vfprintf(1,obj.verb,'<------------------------------------------------------->')
+vfprintf(1,obj.verb,"Falsified: %d \n",LogicalStr{falsified+1})
+vfprintf(1,obj.verb,"number of simulations %d \n",obj.soln.sims)
+vfprintf(1,obj.verb,"Time taken %d \n",obj.soln.runtime)
 end
 
 function repeatedTraj = checkRepeatedTraj(critX,critU, trainset)
