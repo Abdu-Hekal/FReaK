@@ -13,8 +13,6 @@ trainset.X{end+1} = xak';
 trainset.XU{end+1} = u(:,2:end)';
 
 [kf, koopModel]=learnKoopModel(kf,trainset);
-% R = reachKoopman(kf,koopModel);
-
 %setup
 A = koopModel.A;
 B = koopModel.B;
@@ -26,4 +24,30 @@ names = {}; for i = 1:n; names{i,1} = ['x',num2str(i,['%0',num2str(dig), '.f'])]
 tay = taylm(R0,6,names);
 tay = g(tay);
 R0 = polyZonotope(tay);
+hold on;
+plot(R0,[21,22])
+
+R0_=split(kf.R0,6);
+R0 = R0_{1};
+n = dim(R0); dig = length(num2str(n));
+names = {}; for i = 1:n; names{i,1} = ['x',num2str(i,['%0',num2str(dig), '.f'])]; end
+tay = taylm(R0);
+tay = g(tay);
+R0 = polyZonotope(tay);
+plot(R0,[21,22],'g')
+
+R0_=split(kf.R0,6);
+R0 = R0_{2};
+n = dim(R0); dig = length(num2str(n));
+names = {}; for i = 1:n; names{i,1} = ['x',num2str(i,['%0',num2str(dig), '.f'])]; end
+tay = taylm(R0);
+tay = g(tay);
+R0 = polyZonotope(tay);
+plot(R0,[21,22],'r')
+
+
+% w1 = width(interval(zonotope(zeros(size(R0.c)),R0.Grest)))
+% w2 = width(interval(polyZonotope(R0.c,R0.G,[],R0.expMat(1:n,:))))
+
+
 

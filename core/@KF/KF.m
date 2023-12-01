@@ -120,7 +120,8 @@ classdef KF
         % pulseInput: boolean, set to true if the inputs are pulse inputs,
         % otherwise false (default=false)
         pulseInput
-        % verb: int, set to 2 for printing info whilst falsifying, 1 for
+        % verb: int, set 3 for printing all info whilst falsifying, 
+        % 2 for only best soln info whilst falsifying, 1 for
         % print at end of falsifying, 0 for no print (default=0)
         verb
 

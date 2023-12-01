@@ -30,7 +30,7 @@ function [x0,u] = getSampleXU(obj)
 %
 % ------------- BEGIN CODE --------------
 
-if obj.bestSoln.rob==inf %no previous solution, i.e. first iteration or obj.trainRand~=2
+if obj.trainRand~=2 || obj.bestSoln.rob==inf %no previous solution, i.e. obj.trainRand~=2 or first iteration
     [x0,u]=getRandomSampleXU(obj);
 else
     [x0,u]=getDispSampleXU(obj);

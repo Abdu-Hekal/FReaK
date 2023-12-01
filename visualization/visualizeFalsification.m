@@ -3,6 +3,8 @@ function visualizeFalsification(varargin)
 %
 % Syntax:
 %    visualizeFalsification(crit_x, times, spec, plot_vars)
+%    visualizeFalsification(crit_x, times, spec, plot_vars,xlabel)
+%    visualizeFalsification(crit_x, times, spec, plot_vars,xlabel,ylabel)
 %
 % Inputs:
 %    crit_x - the falsifying trajectory
@@ -35,8 +37,6 @@ plot_vars=varargin{4};
 for i = 1:size(spec,1)
     figure; hold on; box on;
 
-    PS = PLOT_STANDARDS();
-
     if ~any(size(plot_vars)>[1,1]) %singular plot var, plot against time
         plot(times,crit_x(:,plot_vars),'b','DisplayName','falsifying traj');
     else
@@ -48,17 +48,18 @@ for i = 1:size(spec,1)
             plot(crit_x(:,plot_vars(1)),crit_x(:,plot_vars(2)),'b','DisplayName','falsifying traj');
         elseif strcmp(spec(i,1).type,'logic')
             phi = negationNormalForm(spec(i,1).set);
-            [unsafeCell, from, to] = phiToUnsafeSet(phi,0,-1);
+            [unsafeCell, from, to] = phiToUnsafeSet(disjunctiveNormalForm(~phi),0,-1);
             from = find(times==from);
             if to==-1; to = size(times,1); else to=find(times==to); end
             plotUnsafeCell(unsafeCell, plot_vars);
 
+
             if from ~= 1 %there exists trajectory before critical time period
-                plot(crit_x(1:from,plot_vars(1)),crit_x(1:from,plot_vars(2)), 'Color' , PS.MyGreen3,'LineStyle','--','LineWidth',1,'DisplayName','trajectory before');
+                plot(crit_x(1:from,plot_vars(1)),crit_x(1:from,plot_vars(2)), 'Color' , 'g','LineStyle','--','LineWidth',1,'DisplayName','trajectory before');
             end
-            plot(crit_x(from:to,plot_vars(1)),crit_x(from:to,plot_vars(2)),'Color' ,PS.MyGreen3,'LineWidth',1,'DisplayName','falsifying trajectory');
+            plot(crit_x(from:to,plot_vars(1)),crit_x(from:to,plot_vars(2)),'Color' ,'g','LineWidth',1,'DisplayName','falsifying trajectory');
             if to ~= size(crit_x,1) %there exists trajectory after critical time period
-                plot(crit_x(to:end,plot_vars(1)),crit_x(to:end,plot_vars(2)), 'Color' , PS.MyGreen3,'LineStyle','--','LineWidth',1,'DisplayName','trajectory after');
+                plot(crit_x(to:end,plot_vars(1)),crit_x(to:end,plot_vars(2)), 'Color' , 'g','LineStyle','--','LineWidth',1,'DisplayName','trajectory after');
             end
         end
     end
@@ -90,15 +91,13 @@ end
 unsafeCell = {};
 % convert logic equation to union of safe sets
 if ~phi.temporal
-    eq = disjunctiveNormalForm(phi);
-    safeSet = getClauses(eq,'dnf');
-
-    for k = 1:length(safeSet)
-        safeSet{k} = convert2set(safeSet{k});
+    unsafeSet = getClauses(phi,'dnf');
+    for k = 1:length(unsafeSet)
+        unsafeSet{k} = convert2set(unsafeSet{k});
     end
 
     % convert to a union of unsafe sets
-    unsafeCell= [unsafeCell,safe2unsafe(safeSet)];
+    unsafeCell= [unsafeCell,unsafeSet];
 elseif strcmp(phi.type,'&')
     % OR implies that unsafe set is BOTH rhs & lhs
     [lhsUnsafeCell, from, to] = phiToUnsafeSet(phi.lhs, phi.from, phi.to);
@@ -180,7 +179,7 @@ for k=1:length(unsafeCell)
     try
         plot(unsafeCell{k},plot_vars, 'FaceColor','red','FaceAlpha',.05,'DisplayName','spec')
     catch
-        disp("failed to plot spec")
+%         disp("failed to plot spec")
     end
 end
 end

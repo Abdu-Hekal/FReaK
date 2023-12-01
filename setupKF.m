@@ -2,7 +2,7 @@ function setupKF()
 
 %go to koopman falsification home folder
 cdr = pwd; %current folder
-filePath = which('installKF'); %filepath
+filePath = which('setupKF'); %filepath
 [kfFolder, ~, ~] = fileparts(filePath);
 cd(kfFolder); 
 

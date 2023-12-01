@@ -104,6 +104,7 @@ obj=setCpBool(obj);
 
 %reset struct to store prev soln
 obj.soln=struct;
+obj.soln.falsified=false;
 obj.soln.koopTime=0; obj.soln.reachTime=0;
 obj.soln.milpSetupTime=0; obj.soln.milpSolvTime=0;
 obj.soln.simTime=0;
