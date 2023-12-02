@@ -134,7 +134,7 @@ for k=1:length(obj.cp)
     step = max(1,step); %if step<1, then we have more control points than ak steps, set control points equal to number of steps
     assert(floor(step)==step,'number of control points (cp) must be a factor of T/ak.dt')
     obj.cpBool(1:step:end,k) = 1;
-    if ~isempty(obj.cpBool) && ~all(obj.cpBool,'all') %if cpbool is not just ones, then interpolation scheme must be pconst
+    if ~isempty(obj.cpBool) && ~all(obj.cpBool(:,k)) %if cpbool is not just ones, then interpolation scheme must be pconst
         assert(strcmp(obj.inputInterpolation,'previous'),'Currently only an input interpolation of "previous" is supported for a number of control points less than T/ak.dt')
     end
 end
