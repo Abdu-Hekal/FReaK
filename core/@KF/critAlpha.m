@@ -1,10 +1,10 @@
-function obj = critAlpha(obj,R,koopModel)
+function specSolns = critAlpha(obj,R,koopModel,specSolns)
 % critAlpha - Determine the most critical alpha values (or inputs u) based 
 % on robustness. This is usually achieved by solving an optimization unless
 % the unsafe/safe set is a halfspace. 
 %
 % Syntax:
-%    obj = critAlpha(obj,R, koopModel)
+%    specSolns = critAlpha(obj,R, koopModel)
 %
 % Description:
 %    This function iterates over all specifications and computes the most
@@ -13,25 +13,26 @@ function obj = critAlpha(obj,R,koopModel)
 %    alpha values, control input, reachable set, and specification.
 %
 % Inputs:
+%    obj - KF object containing the Koopman model, specifications, and
+%              various parameters needed for the falsification process.
 %    R - Reachable set information, including sets, time intervals, and
 %        zonotopes.
 %    koopModel - struct representing koopman model with following:
 %       A - State transition matrix of the Koopman linearized model.
 %       B - Input matrix of the Koopman linearized model.
 %       g - observables function of the Koopman linearized model.
-%    obj - KF object containing the Koopman model, specifications, and
-%              various parameters needed for the falsification process.
+%   specSolns - soln dictionary for each spec from previous iteration
 %
 % Outputs:
-%    obj - Updated KF object with critical information, including
-%              alpha values, control input, reachable set, and specification.
+%    specSolns - soln dictionary for each spec with critical information, including
+%              alpha values, control input, reachable set.
 %
 %
 % See also: falsify
 %
 % Author:      Niklas Kochdumper, Abdelrahman Hekal
 % Written:     28-February-2023
-% Last update: [Date]
+% Last update: 4-December-2023
 % Last revision: [Date]
 %
 % -------------------------- Auxiliary Functions --------------------------
@@ -56,7 +57,7 @@ function obj = critAlpha(obj,R,koopModel)
 %
 % See also: critAlpha
 %
-% Author:      Abdelrahman Hekal
+% Author:      Niklas Kochdumper, Abdelrahman Hekal
 % Written:     28-February-2023
 % Last update: [Date]
 % Last revision: [Date]
@@ -67,7 +68,7 @@ function obj = critAlpha(obj,R,koopModel)
 % loop over all specifications
 spec=obj.spec;
 rob = inf;
-uCrit = []; %initialise critical input.
+uCrit = []; setCrit=[]; %initialise critical input and set.
 
 for i = 1:size(spec,1)
 
@@ -85,14 +86,13 @@ for i = 1:size(spec,1)
                     isIntersecting(R.time{i},spec(i,1).time)
 
                 % compute robustness
-                [rob_,alpha] = robustness(set,R.zono{j});
+                [rob_,alpha_] = robustness(set,R.zono{j});
 
                 % check if smaller than current robustness
                 if rob_ < rob
-                    alphaCrit = alpha;
+                    alpha=alpha_;
                     setCrit = R.set{j};
                     rob = rob_;
-                    specCrit=spec(i,1);
                 end
             end
         end
@@ -109,26 +109,25 @@ for i = 1:size(spec,1)
                 % compute robustness
                 dist = infimum(interval(-set.P.A*R.zono{j})) + set.P.b;
                 [rob_,ind] = max(dist);
-                alpha = -sign(-set.P.A(ind,:)*generators(R.zono{j}));
+                alpha_ = -sign(-set.P.A(ind,:)*generators(R.zono{j}));
 
                 % check if smaller than current robustness
                 if rob_ < rob
-                    alphaCrit = alpha;
+                    alpha=alpha_;
                     setCrit = R.set{j};
                     rob = rob_;
-                    specCrit=spec(i,1);
                 end
             end
         end
 
     elseif strcmp(spec(i,1).type,'logic')
         %get prev solns
-        prevSpecSol = obj.specSolns(obj.spec(i,1));
+        prevSpecSol = specSolns(obj.spec(i,1));
         %setup and run milp
         tic
         %if no prev soln for this spec, setup alpha & stl milp vars/constrs
         try
-            Sys=prevSpecSol.lti; %get previously setup milp problem with stl
+            Sys=prevSpecSol.koopMilp; %get previously setup milp problem with stl
         catch
             Sys=KoopMILP(obj.T,obj.ak.dt,obj.solver.dt,obj.R0,obj.U);
             Sys.normalize = obj.solver.normalize; %set normalization setting
@@ -179,45 +178,32 @@ for i = 1:size(spec,1)
             Sys=setupDynamics(Sys);
         end
 
-        obj.soln.milpSetupTime = obj.soln.milpSetupTime+toc;
-
-        tic
         if obj.solver.useOptimizer
             Sys = setupOptimizer(Sys,obj.solver.opts);
         end
-        specSoln.lti=Sys; %store lti object with setcup optimizer
+        specSoln.koopMilp=Sys; %store koopMilp object with setup optimizer
         Sys=optimize(Sys,obj.solver.opts);
-        obj.soln.milpSolvTime =obj.soln.milpSolvTime+toc;
 
         %get results
-        rob_ = value(Sys.Pstl);
+        rob = value(Sys.Pstl);
         alpha = value(Sys.alpha);
         u = value(Sys.u);
 
 
         %TODO: how can we compare stl robustness and reachset robustness.
-        if rob_ < rob
-            alphaCrit = alpha';
-            uCrit = u;
-            if ~isempty(R)
-                setCrit = R.set{end};
-            else
-                setCrit=[];
-            end
-            rob = rob_;
-            specCrit=spec(i,1);
+        uCrit = u;
+        if ~isempty(R)
+            setCrit = R.set{end};
         end
     else
         error('This type of specification is not supported!');
     end
 
     %store solution for this iteration for each spec.
-    specSoln.rob=rob_; specSoln.alpha=alpha;
-    obj.specSolns(obj.spec(i,1)) = specSoln;
+    specSoln.rob=rob; specSoln.alpha=alpha; specSoln.u=uCrit;
+    specSoln.set=setCrit; 
+    specSolns(spec(i,1)) = specSoln;
 end
-%store solution for this iteration
-obj.soln.rob=rob; obj.soln.alpha=alphaCrit; obj.soln.u=uCrit;
-obj.soln.set=setCrit; obj.soln.spec=specCrit;
 end
 
 % -------------------------- Auxiliary Functions --------------------------
@@ -225,7 +211,7 @@ end
 function [r,alpha] = robustness(P,Z)
 % compute robustness of the zonotope Z with respect to an unsafe polytope P
 
-% catch special case of a halfspace to accelearte computation
+% catch special case of a halfspace to accelerate computation
 if size(P.P.A,1) == 1
     r = infimum(interval(P.P.A*Z)) - P.P.b;
     alpha = -sign(P.P.A*generators(Z))';

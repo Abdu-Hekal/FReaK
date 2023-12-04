@@ -125,11 +125,7 @@ classdef KF
         % print at end of falsifying, 0 for no print (default=0)
         verb
 
-        %TODO: maybe move internal properties to seperate location
         %internal properties (DO NOT CHANGE)
-        soln %stores the solution for last iteration
-        bestSoln %stores the best solution
-        specSolns %stores the solutions for each spec for last iteration
         cpBool %used to set control inputs for pulse inputs
 
     end
@@ -148,7 +144,6 @@ classdef KF
             obj.trajInterpolation='linear';
             obj.pulseInput = false;
             obj.verb=0;
-            obj.soln=struct;
 
             % autokoopman settings
             obj.ak.obsType="rff";
@@ -182,15 +177,6 @@ classdef KF
                 );
             obj.solver.normalize=false;
             obj.solver.useOptimizer=true;
-
-            %create empty struct to store prev soln
-            obj.soln=struct;
-            obj.soln.koopTime=0; obj.soln.milpSetupTime=0; obj.soln.milpSolvTime=0; obj.soln.simTime=0;
-            obj.soln.sims=0;
-            %create empty struct to store best soln
-            obj.bestSoln=struct; obj.bestSoln.rob=inf; obj.bestSoln.timeRob=inf;
-            %create empty dict to store prev soln for each spec
-            obj.specSolns = dictionary(obj.spec,struct);
         end
     end
 end

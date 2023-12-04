@@ -1,4 +1,4 @@
-function [obj, trainset] = initialize(obj)
+function [obj,trainset,soln,specSolns] = initialize(obj)
 % INITIALIZE Initialize the Koopman Falsification (KF) object and check for required parameters.
 %
 % Syntax:
@@ -14,8 +14,10 @@ function [obj, trainset] = initialize(obj)
 %    obj - Koopman Falsification (KF) object
 %
 % Outputs:
-%    obj      - Initialized Koopman Falsification (KF) object
-%    trainset - Empty training set structure
+%    obj       - Initialized Koopman Falsification (KF) object
+%    trainset  - Empty training set structure
+%    soln      - struct to store solution
+%    specSolns - dictionary to store previous solution for each spec
 %
 % Example:
 %    [obj, trainset] = initialize(obj);
@@ -102,17 +104,15 @@ end
 %set cpBool
 obj=setCpBool(obj);
 
-%reset struct to store prev soln
-obj.soln=struct;
-obj.soln.falsified=false;
-obj.soln.koopTime=0; obj.soln.reachTime=0;
-obj.soln.milpSetupTime=0; obj.soln.milpSolvTime=0;
-obj.soln.simTime=0;
-obj.soln.sims=0;
-%reset struct to store best soln
-obj.bestSoln=struct; obj.bestSoln.rob=inf; obj.bestSoln.timeRob=inf;
+%reset struct to store soln
+soln=struct;
+soln.falsified=false;
+soln.koopTime=0; soln.reachTime=0;
+soln.optimTime=0; soln.simTime=0;
+soln.sims=0;
+soln.minRob=inf;
 %reset dict to store prev soln for each spec
-obj.specSolns = dictionary(obj.spec,struct);
+specSolns = dictionary(obj.spec,struct);
 %empty struct to store training data
 trainset.X = {}; trainset.XU={}; trainset.t = {};
 

@@ -1,4 +1,4 @@
-function [obj,trainset] = falsify(obj)
+function [soln,trainset] = falsify(obj)
 
 % falsify - Given a model and a set of specs (safe/unsafe set/stl),
 %   perform the core falsification procedure to find a falsifying trajectory
@@ -35,10 +35,11 @@ function [obj,trainset] = falsify(obj)
 
 runtime=tic;
 %initialization and init assertions
-[obj, trainset] = initialize(obj);
+[obj,trainset,soln,specSolns] = initialize(obj);
 trainIter = 0;
+robustness=inf;
 
-while obj.soln.sims <= obj.maxSims && obj.soln.falsified==false
+while soln.sims <= obj.maxSims && robustness>=0
     %timeout
     if toc(runtime) > obj.timeout
         break
@@ -49,7 +50,7 @@ while obj.soln.sims <= obj.maxSims && obj.soln.falsified==false
         %reset offsets
         for ii=1:numel(obj.spec)
             spec=obj.spec(ii);
-            obj.specSolns(spec).lti.offsetMap=containers.Map('KeyType', 'double', 'ValueType', 'double');
+            specSolns(spec).koopMilp.offsetMap=containers.Map('KeyType', 'double', 'ValueType', 'double');
         end
     end
     % empty trainset at reset and if nonrandom training technique is used, empty trainset after first iter because it is random trajectory.
@@ -65,19 +66,13 @@ while obj.soln.sims <= obj.maxSims && obj.soln.falsified==false
             disp('Turned off warmstarting due to repeated solutions')
         end
         [x0,u] = getSampleXU(obj);
-        tsim = (0:obj.dt:obj.T)'; %define time points for interpolating input
-        if ~isempty(u)
-            usim = interp1(u(:,1),u(:,2:end),tsim,obj.inputInterpolation,"extrap"); %interpolate and extrapolate input points
-            usim =  max(obj.U.inf',min(obj.U.sup',usim)); %ensure that extrapolation is within input bounds
-            usim = [tsim,usim];
-        else
-            usim=u; %no input for the model
-        end
-        [t, x, obj] = simulate(obj, x0, usim);
+        [t, x, simTime] = simulate(obj, x0, u);
+        soln.sims = soln.sims+1;
+        soln.simTime = soln.simTime+simTime;
         %check if random input falsifies system, and break if it does
-        obj = checkFirst(obj,x,usim,t);
+        [falsified,robustness]=checkFalsification(x,u,t,obj.spec,obj.inputInterpolation);
 
-        if obj.soln.falsified
+        if falsified
             critX=x;
             critU=u;
             break
@@ -88,74 +83,62 @@ while obj.soln.sims <= obj.maxSims && obj.soln.falsified==false
         xak=interp1(t,critX,tak,obj.trajInterpolation); %pass x0 as full x to avoid simulation again
         u=critU;
     end
-    trainset=appendToTrainset(trainset,tak,xak,u);
+    %add trajectory to koopman trainset
+    trainset.t{end+1} = tak;
+    trainset.X{end+1} = xak';
+    trainset.XU{end+1} = u(:,2:end)';
 
     %run autokoopman and learn linearized model
-    [obj, koopModel] = learnKoopModel(obj, trainset);
+    [koopModel,koopTime] = learnKoopModel(obj, trainset);
+    soln.koopTime = soln.koopTime+koopTime;
     % compute reachable set for Koopman linearized model (if reachability is used)
     if obj.reach.on
         reachTime=tic;
         R = reachKoopman(obj,koopModel);
-        obj.soln.reachTime=obj.soln.reachTime+toc(reachTime); %time for reachability computation
+        soln.reachTime=soln.reachTime+toc(reachTime); %time for reachability computation
     else
         R=[];
     end
     % determine most critical reachable set and specification
     try
-        obj = critAlpha(obj,R,koopModel);
+        optimTime=tic;
+        specSolns = critAlpha(obj,R,koopModel,specSolns);
+        soln.optimTime=soln.optimTime+toc(optimTime);
     catch
         disp("error encountered whilst setup/solving, resetting training data")
         trainIter=0;
         continue;
     end
 
-    if obj.soln.rob<inf %found a viable solution
+    %get critical spec with minimum robustness and corresponding soln struct
+    [~,minIndex]=min(specSolns.values.rob);
+    keys = specSolns.keys('cell');
+    spec=keys{minIndex};
+    curSoln=specSolns(spec);
+
+    if curSoln.rob<inf %found a viable solution
         offsetIter = 0;
-        while offsetIter <= max(obj.offsetStrat,0) && obj.soln.falsified==false %offset once if not falsified
-            [critX0, critU] = falsifyingTrajectory(obj);
-            %extrap and interp input for all timesteps T/dt
-            if size(critU,2) > 1 %not just time
-                usim = interp1(critU(:,1),critU(:,2:end),tsim,obj.inputInterpolation,"extrap"); %interpolate and extrapolate input points
-                usim =  max(obj.U.inf',min(obj.U.sup',usim)); %ensure that extrapolation is within input bounds
-                usim = [tsim,usim];
-            else
-                usim=critU; %no input for the model
-            end
+        while offsetIter <= max(obj.offsetStrat,0) && robustness>=0 %offset once if not falsified
+            [critX0, critU] = falsifyingTrajectory(obj,curSoln);
             % run most critical inputs on the real system
-            [t, critX, obj] = simulate(obj, critX0, usim);
+            [t, critX, simTime] = simulate(obj, critX0, critU);
+            soln.sims = soln.sims+1;
+            soln.simTime = soln.simTime+simTime;
 
-            %             corePlotFalsify(critU,critX,t,tak,x0,A,B,g,R); %test plot: delete me
-            %             corePlotReach(critU,critX,t,tak,x0,A,B,g,R); %test plot: delete me
+            [falsified,robustness,Bdata]=checkFalsification(critX,critU,t,obj.spec,obj.inputInterpolation);
 
-            if ~isempty(usim)
-                interpU = interp1(usim(:,1),usim(:,2:end),t,obj.inputInterpolation); %interpolate input at same time points as trajectory
-            else
-                interpU=usim;
-            end
-            spec=obj.soln.spec; %critical spec found with best value of robustness
-            % different types of specifications
-            if strcmp(spec.type,'unsafeSet')
-                obj.soln.falsified = any(spec.set.contains(critX'));
-            elseif strcmp(spec.type,'safeSet')
-                obj.soln.falsified = ~all(spec.set.contains(critX')); %check this
-            elseif strcmp(spec.type,'logic')
-                [Bdata,phi,robustness] = bReachRob(spec,t,critX,interpU');
-                vprintf(obj.verb,3,'Simulations: %d\n',obj.soln.sims);
-                vprintf(obj.verb,3,'Current robustness: %.2f\n', robustness);
-
-
-                obj.specSolns(spec).realRob=robustness; %store real robustness value
-                obj.soln.falsified = ~isreal(sqrt(robustness)); %sqrt of -ve values are imaginary
-                if obj.trainRand==2 %neighborhood training mode
-                    [obj,trainset] = neighborhoodTrain(obj,trainset,robustness,critX,critU);
+            if abs(robustness)~=inf %there exist a value for robustness for which we can offset
+                if obj.trainRand==2 && robustness >= obj.bestSoln.rob %neighborhood training mode
+                    %remove last entry because it is not improving the obj
+                    trainset.X(end) = []; trainset.XU(end)=[]; trainset.t(end) = [];
                 end
-                obj=storeBestSoln(obj,robustness,critX,critU,'kf optimization'); %store the best soln so far
+                %                 obj=storeBestSoln(obj,robustness,critX,critU,'kf optimization'); %store the best soln so far
                 gap = getMilpGap(obj.solver.opts);
                 if robustness > gap && abs(obj.offsetStrat) %not falsifed yet, robustness is greater than gap termination criteria for milp solver and an offset mode selected by user. Note that if robustness is less than gap, offset most likely is not benefecial.
                     offsetMap=bReachCulprit(Bdata,spec.set); %get predicates responsible for robustness value
                     if offsetMap.Count > 0 %if there there exists predicates that are culprit for (+ve) robustness
                         obj.solver.opts.usex0=0; %avoid warmstarting if offsetting
-                        Sys=obj.specSolns(spec).lti;
+                        Sys=specSolns(spec).koopMilp;
                         if offsetIter==0 %if first offset iteration, re-solve with offset if offsetStrat==1 or save offset for next iter if offsetStrat==-1
                             Sys.offsetMap = offsetMap;
                             if obj.offsetStrat == 1 %if offset strategy in this iteration selected
@@ -165,9 +148,9 @@ while obj.soln.sims <= obj.maxSims && obj.soln.falsified==false
                                     Sys=setupStl(Sys,~obj.useOptimizer); %encode stl using milp
                                 end
                                 Sys=optimize(Sys,obj.solver.opts);
-                                obj.soln.alpha = value(Sys.alpha); %new alpha value after offset
+                                soln.alpha = value(Sys.alpha); %new alpha value after offset
                             else %obj.offsetStrat == -1: offset next iteration
-                                obj.specSolns(spec).lti=Sys;
+                                specSolns(spec).koopMilp=Sys;
                             end
                             % TODO: if offset gives better val of robustness, should we pass
                             %                     % it as training data instead? should we pass both?
@@ -191,16 +174,45 @@ end
 %close simulink obj
 close_system('ErrorIfShadowed',0);
 %assign solution result
-obj.soln.t=t;
-obj.soln.x=critX;
-obj.soln.u = critU;
-obj.soln.runtime=toc(runtime); %record runtime
+soln.falsified=falsified;
+soln.t=t;
+soln.x=critX;
+soln.u = critU;
+soln.runtime=toc(runtime); %record runtime
 
 LogicalStr = {'No', 'Yes'};
 vprintf(obj.verb,1,'<-------------------------------------------------------> \n')
-vprintf(obj.verb,1,"Falsified: %s \n",LogicalStr{obj.soln.falsified+1})
-vprintf(obj.verb,1,"number of simulations %d \n",obj.soln.sims)
-vprintf(obj.verb,1,"Time taken %.2f \n",obj.soln.runtime)
+vprintf(obj.verb,1,"Falsified: %s \n",LogicalStr{soln.falsified+1})
+vprintf(obj.verb,1,"number of simulations %d \n",soln.sims)
+vprintf(obj.verb,1,"Time taken %.2f seconds\n",soln.runtime)
+end
+
+function [falsified,robustness,Bdata]=checkFalsification(x,u,t,specs,inputInterpolation)
+falsified=false;
+robustness=inf;
+Bdata=NaN;
+for ii=1:numel(specs)
+    spec=specs(ii);
+    % different types of specifications
+    if strcmp(spec.type,'unsafeSet')
+        falsified = any(spec.set.contains(x'));
+    elseif strcmp(spec.type,'safeSet')
+        falsified = ~all(spec.set.contains(x')); %check this
+    elseif strcmp(spec.type,'logic')
+        if ~isempty(u)
+            interpU = interp1(u(:,1),u(:,2:end),t,inputInterpolation); %interpolate input at same time points as trajectory
+        else
+            interpU=u;
+        end
+        [Bdata,~,robustness] = bReachRob(spec,t,x,interpU');
+        if robustness < 0
+            falsified=true;
+        end
+    end
+    if falsified
+        break;
+    end
+end
 end
 
 function repeatedTraj = checkRepeatedTraj(obj,critX,critU, trainset)
@@ -215,49 +227,13 @@ for r = 1:length(trainset.X)
 end
 end
 
-function obj = checkFirst(obj,x,usim,t)
-if ~isempty(usim)
-    interpU = interp1(usim(:,1),usim(:,2:end),t,obj.inputInterpolation); %interpolate input at same time points as trajectory
-else
-    interpU=usim;
-end
-for ii=1:numel(obj.spec)
-    spec=obj.spec(ii);
-    % different types of specifications
-    if strcmp(spec.type,'unsafeSet')
-        obj.soln.falsified = any(spec.set.contains(x'));
-    elseif strcmp(spec.type,'safeSet')
-        obj.soln.falsified = ~all(spec.set.contains(x')); %check this
-    elseif strcmp(spec.type,'logic')
-        [~,~,robustness] = bReachRob(spec,t,x,interpU');
-        obj.soln.falsified = ~isreal(sqrt(robustness)); %sqrt of -ve values are imaginary
-        obj=storeBestSoln(obj,robustness,x,usim,'reset simulation'); %store the best soln so far
-    end
-end
-end
-
-function trainset=appendToTrainset(trainset,t,x,u)
-%add trajectory to koopman trainset
-trainset.t{end+1} = t;
-trainset.X{end+1} = x';
-trainset.XU{end+1} = u(:,2:end)';
-end
-
 function obj=storeBestSoln(obj,robustness,critX,critU,method)
 if robustness < obj.bestSoln.rob
-    vprintf(obj.verb,2,"new best robustness!: %.3f after %d simulations due to: %s \n",robustness,obj.soln.sims,method)
+    vprintf(obj.verb,2,"new best robustness!: %.3f after %d simulations due to: %s \n",robustness,soln.sims,method)
     obj.bestSoln.rob = robustness;
     obj.bestSoln.method=method;
     obj.bestSoln.x=critX;
     obj.bestSoln.u=critU;
-end
-end
-
-function [obj,trainset] = neighborhoodTrain(obj,trainset,robustness)
-%training with best neighborhood trajectories
-if robustness >= obj.bestSoln.rob
-    %remove last entry because it is not improving the obj
-    trainset.X(end) = []; trainset.XU(end)=[]; trainset.t(end) = [];
 end
 end
 

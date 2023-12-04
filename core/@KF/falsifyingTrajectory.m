@@ -1,9 +1,9 @@
-function [x0,u] = falsifyingTrajectory(obj)
+function [x0,u] = falsifyingTrajectory(obj,soln)
 % falsifyingTrajectory - Extract the most critical initial state and input
 %   signal from the set of most critical alpha values of a reachable set
 %
 % Syntax:
-%    [x0, u] = falsifyingTrajectory(obj)
+%    [x0, u] = falsifyingTrajectory(obj,soln)
 %
 % Description:
 %    This function is responsible for extracting the most critical initial state
@@ -14,19 +14,20 @@ function [x0,u] = falsifyingTrajectory(obj)
 % Inputs:
 %    obj - KF object containing the Koopman model and various 
 %       parameters needed for the falsification process.
+%    soln - soln struct with critical set, alpha and/or input
 %
 % Outputs:
 %    x0 - Most critical initial state.
 %    u - Control input signal associated with the most critical trajectory.
 %
 % Example:
-%    [x0, u] = falsifyingTrajectory(obj);
+%    [x0, u] = falsifyingTrajectory(obj,soln);
 %
 % See also: falsify
 %
 % Author:      Niklas Kochdumper, Abdelrahman Hekal
 % Written:     28-February-2023
-% Last update:  ---
+% Last update:  4-Decemeber-2023
 % Last revision:---
 
 %------------- BEGIN CODE --------------
@@ -35,8 +36,8 @@ function [x0,u] = falsifyingTrajectory(obj)
 R0=obj.R0;
 U=obj.U;
 cpBool=obj.cpBool;
-set=obj.soln.set;
-alpha=obj.soln.alpha;
+set=soln.set;
+alpha=soln.alpha;
 
 R0 = zonotope(R0);
 %checks if R0 is exact
@@ -69,7 +70,7 @@ else
 end
 %check if obj has control input
 if ~isempty(U)
-    if isempty(obj.soln.u)
+    if isempty(soln.u)
         % determine most ctritical control input
         if ~isempty(set.Grest)
 
@@ -96,7 +97,7 @@ if ~isempty(U)
         end
     else
         % control input already provided by solver
-        u=obj.soln.u;
+        u=soln.u;
     end
 else
     u = [];

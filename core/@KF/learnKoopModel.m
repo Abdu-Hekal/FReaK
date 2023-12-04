@@ -1,17 +1,17 @@
-function [obj, koopModel] = learnKoopModel(obj, trainset)
+function [koopModel,koopTime] = learnKoopModel(obj, trainset)
 % learnKoopModel - Symbolically compute the Koopman linearized model and
 %   observables function using Autokoopman (python library)
 %
 % Syntax:
-%    [obj, koopModel] = learnKoopModel(obj, trainset)
+%    [koopModel,koopTime] = learnKoopModel(obj, trainset)
 %
 % Description:
 %    This function symbolically computes the Koopman linearized model and
 %    observables using the Random Fourier Features (RFF) method. It sets up
 %    the AutoKoopman settings, runs the AutoKoopman Python script, and loads
 %    the computed A, B, u, and w matrices. It then creates and saves the
-%    observables function, returning the updated obj, and a struct koopModel
-%    with A, B, and the observables function g.
+%    observables function, a struct koopModel with A, B, and the observables
+%    function g. It also returns the time taken for autokoopman to run.
 %
 % Inputs:
 %    obj - KF object containing Koopman model and various parameters
@@ -19,20 +19,20 @@ function [obj, koopModel] = learnKoopModel(obj, trainset)
 %    trainset - Training set used to compute the Koopman model.
 %
 % Outputs:
-%    obj - Updated KF object.
 %    koopModel - struct representing koopman model with following:
 %       A - State transition matrix of the Koopman linearized model.
 %       B - Input matrix of the Koopman linearized model.
 %       g - observables function of the Koopman linearized model.
+%    koopTime - time taken for autokoopman to tune and learn model
 %
 % Example:
-%    [obj, A, B, g] = learnKoopModel(obj, trainset);
+%    [koopModel,koopTime] = learnKoopModel(obj, trainset)
 %
 % See also: falsify
 %
 % Author: Abdelrahman Hekal
 % Written: 28-February-2023
-% Last update: ---
+% Last update: 4-December-2023
 % Last revision: ---
 
 %------------- BEGIN CODE --------------
@@ -45,7 +45,7 @@ function [obj, koopModel] = learnKoopModel(obj, trainset)
     end 
     tic
     pyrunfile("run_autokoopman.py",'koopman_model',times=trainset.t,trajectories=trainset.X, param_dict=obj.ak,inputs_list=inputs_list);
-    obj.soln.koopTime= obj.soln.koopTime+toc;
+    koopTime=toc;
     %TODO: remove need for creating file by returning A,B,u,w functions
     %from python file.
     load("autokoopman_model.mat", "A","B","u","w")

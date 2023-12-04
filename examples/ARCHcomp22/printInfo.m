@@ -3,8 +3,7 @@ function printInfo(solns,j)
 
 avgFalsified=sum(getMetrics(solns,'falsified'));
 avgKoopTime=mean(getMetrics(solns,'koopTime'));
-avgMilpSetupTime=mean(getMetrics(solns,'milpSetupTime'));
-avgMilpSolveTime=mean(getMetrics(solns,'milpSolvTime'));
+avgOptimizerTime=mean(getMetrics(solns,'optimTime'));
 avgSimTime=mean(getMetrics(solns,'simTime'));
 avgRuntime=mean(getMetrics(solns,'runtime'));
 sims=getMetrics(solns,'sims');
@@ -19,8 +18,7 @@ outliers = comp_outliers(sims, upper_whisk, lower_whisk);
 fprintf('Number of successful falsified traces: %d/%d\n', avgFalsified,j);
 disp('Computation Time -->');
 fprintf('Avg koopman time: %.2f seconds\n', avgKoopTime);
-fprintf('Avg milp setup time: %.2f seconds\n', avgMilpSetupTime);
-fprintf('Avg milp solve time: %.2f seconds\n', avgMilpSolveTime);
+fprintf('Avg optimization time: %.2f seconds\n', avgOptimizerTime);
 fprintf('Avg simulation time: %.2f seconds\n', avgSimTime);
 fprintf('Avg total runtime: %.2f seconds\n', avgRuntime);
 fprintf('R: %.2f\n',100*avgSimTime/avgRuntime)
