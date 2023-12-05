@@ -70,7 +70,7 @@ while soln.sims <= obj.maxSims && robustness>=0
         soln.sims = soln.sims+1;
         soln.simTime = soln.simTime+simTime;
         %check if random input falsifies system, and break if it does
-        [falsified,robustness]=checkFalsification(x,u,t,obj.spec,obj.inputInterpolation);
+        [soln,falsified,robustness]=checkFalsification(soln,x,u,t,obj.spec,obj.inputInterpolation);
 
         if falsified
             critX=x;
@@ -125,10 +125,10 @@ while soln.sims <= obj.maxSims && robustness>=0
             soln.sims = soln.sims+1;
             soln.simTime = soln.simTime+simTime;
 
-            [falsified,robustness,Bdata]=checkFalsification(critX,critU,t,obj.spec,obj.inputInterpolation);
+            [soln,falsified,robustness,Bdata]=checkFalsification(soln,critX,critU,t,obj.spec,obj.inputInterpolation);
 
-            if abs(robustness)~=inf %there exist a value for robustness for which we can offset
-                if obj.trainRand==2 && robustness >= obj.bestSoln.rob %neighborhood training mode
+            if abs(robustness)~=inf %there exist a value for robustness for which we can neighborhood train or offset
+                if obj.trainRand==2 && robustness >= soln.best.rob %neighborhood training mode
                     %remove last entry because it is not improving the obj
                     trainset.X(end) = []; trainset.XU(end)=[]; trainset.t(end) = [];
                 end
@@ -187,7 +187,7 @@ vprintf(obj.verb,1,"number of simulations %d \n",soln.sims)
 vprintf(obj.verb,1,"Time taken %.2f seconds\n",soln.runtime)
 end
 
-function [falsified,robustness,Bdata]=checkFalsification(x,u,t,specs,inputInterpolation)
+function [soln,falsified,robustness,Bdata]=checkFalsification(soln,x,u,t,specs,inputInterpolation)
 falsified=false;
 robustness=inf;
 Bdata=NaN;
@@ -209,6 +209,10 @@ for ii=1:numel(specs)
             falsified=true;
         end
     end
+    if robustness < soln.best.rob
+        soln.best.rob=robustness;
+        soln.best.x=x; soln.best.u=u; soln.best.t=t;
+    end
     if falsified
         break;
     end
@@ -224,16 +228,6 @@ for r = 1:length(trainset.X)
         vprintf(obj.verb,3,"repeated critical trajectory, generating a new random trajectory \n")
         break
     end
-end
-end
-
-function obj=storeBestSoln(obj,robustness,critX,critU,method)
-if robustness < obj.bestSoln.rob
-    vprintf(obj.verb,2,"new best robustness!: %.3f after %d simulations due to: %s \n",robustness,soln.sims,method)
-    obj.bestSoln.rob = robustness;
-    obj.bestSoln.method=method;
-    obj.bestSoln.x=critX;
-    obj.bestSoln.u=critU;
 end
 end
 

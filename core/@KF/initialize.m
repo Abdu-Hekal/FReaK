@@ -110,7 +110,7 @@ soln.falsified=false;
 soln.koopTime=0; soln.reachTime=0;
 soln.optimTime=0; soln.simTime=0;
 soln.sims=0;
-soln.minRob=inf;
+soln.best.rob=inf;
 %reset dict to store prev soln for each spec
 specSolns = dictionary(obj.spec,struct);
 %empty struct to store training data
