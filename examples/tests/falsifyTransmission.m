@@ -12,15 +12,15 @@ kfModel.spec = specification(eq,'logic');
 
 kfModel.maxSims=1;
 
-[kfModel,trainset] = falsify(kfModel);
+[kfSoln,trainset] = falsify(kfModel);
 
-if kfModel.soln.falsified
-    disp(['simulations required: ',num2str(kfModel.soln.sims)])
+if kfSoln.falsified
+    disp(['simulations required: ',num2str(kfSoln.sims)])
 else
     disp("No falsifiying trace found")
 end
 
-visualize_train(trainset, plot_vars,'Speed','Angular velocity')
+visualizeTrain(trainset, kfSoln.koopModel, plot_vars,'Speed','Angular velocity')
 %settings for figure
-figure_settings(gcf);
+% figure_settings(gcf);
 % export_fig training.pdf

@@ -2,9 +2,10 @@ function visualizeTrain(varargin)
 %varargin: trainset,plot_vars,xlabel,ylabel
 
 numArgs = length(varargin);
-assert(numArgs>=2,'must have at least 2 args, trainset and plot_vars')
+assert(numArgs>=3,'must have at least 2 args, trainset and plot_vars')
 trainset=varargin{1};
-plot_vars=varargin{2};
+koopModel=varargin{2};
+plot_vars=varargin{3};
 
 n = size(trainset.X{end},1); %number of variables
 dt = trainset.t{1}(2) - trainset.t{1}(1);
@@ -19,7 +20,7 @@ figure; hold on; box on;
 
 for r = 1:length(trainset.X)
     %plot Autokoopman vs real trajectory for all simulations
-    x = sim_autokoopman(trainset.X{r}(:,1), trainset.XU{r}, @(x) autokoopman(x), A, B, (T/dt)+1);
+    x = sim_autokoopman(trainset.X{r}(:,1), trainset.XU{r}, koopModel.g, koopModel.A, koopModel.B, (T/dt)+1);
 
     if ~any(size(plot_vars)>[1,1]) %singular plot var, plot against time
         p1=plot(trainset.t{r},x(plot_vars,:));
@@ -31,7 +32,7 @@ for r = 1:length(trainset.X)
         p2=plot(trainset.X{r}(plot_vars(1),:),trainset.X{r}(plot_vars(2),:));
     end
     %style plots
-    set(p1, 'LineWidth', 1, 'Color', 'grey');
+    set(p1, 'LineWidth', 1, 'Color', 'black');
     set(p2, 'LineWidth', 1, 'Color','green');
 
 

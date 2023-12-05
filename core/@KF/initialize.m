@@ -104,12 +104,13 @@ end
 %set cpBool
 obj=setCpBool(obj);
 
-%reset struct to store soln
+%struct to store soln
 soln=struct;
 soln.falsified=false;
 soln.koopTime=0; soln.reachTime=0;
 soln.optimTime=0; soln.simTime=0;
 soln.sims=0;
+soln.koopModel=NaN;
 %struct for best soln found
 soln.best.rob=inf;
 soln.best.x=NaN; soln.best.u=NaN; soln.best.t=NaN;

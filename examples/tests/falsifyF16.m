@@ -18,6 +18,4 @@ else
     disp("No falsifiying trace found")
 end
 
-trainset
-
-visualizeTrain(trainset, plot_vars)
+visualizeTrain(trainset,kfSoln.koopModel, plot_vars)

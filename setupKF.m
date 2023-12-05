@@ -5,7 +5,7 @@ cdr = pwd; %current folder
 filePath = which('setupKF'); %filepath
 [kfFolder, ~, ~] = fileparts(filePath);
 cd(kfFolder); 
-% add to path and remove other files
+% add to path and remove hacky cora files
 addpath(genpath(kfFolder))
 rmpath(fullfile('external','CORA'))
 

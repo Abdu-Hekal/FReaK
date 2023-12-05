@@ -86,6 +86,7 @@ while soln.sims <= obj.maxSims && ~falsified
 
     %run autokoopman and learn linearized model
     [koopModel,koopTime] = learnKoopModel(obj, trainset);
+    soln.koopModel=koopModel; %store koopman model
     soln.koopTime = soln.koopTime+koopTime;
     % compute reachable set for Koopman linearized model (if reachability is used)
     if obj.reach.on
