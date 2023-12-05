@@ -5,6 +5,9 @@ cdr = pwd; %current folder
 filePath = which('setupKF'); %filepath
 [kfFolder, ~, ~] = fileparts(filePath);
 cd(kfFolder); 
+% add to path and remove other files
+addpath(genpath(kfFolder))
+rmpath(fullfile('external','CORA'))
 
 %check installed toolbox
 %code taken from CORA installation.
@@ -87,9 +90,6 @@ pipExecutablePath = fullfile(baseFolderPath, newLastPart);
 %install autokoopman
 [status,result]=system([pipExecutablePath ' install autokoopman']);
 assert(status == 0, ['Installation of autokoopman failed. Error message: ', result]);
-%install torch
-[status,result]=system([pipExecutablePath ' install torch==1.12.1']);
-assert(status == 0, ['Installation of torch failed. Error message: ', result]);
 end
 
 function installExtToolbox(name,zipURL,zipName)

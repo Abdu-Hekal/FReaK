@@ -4,7 +4,6 @@ from autokoopman.core.format import hide_prints
 
 import autokoopman.core.trajectory as traj
 import numpy as np
-import torch
 import random
 
 def run(times, trajectories, param_dict, inputs_list):
