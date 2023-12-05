@@ -54,7 +54,7 @@ for o = 1:numel(observables)
                     kfModel.ak.dt = req{i, 2};
                     eq = req{i, 3};
                     %settings
-                    kfModel.reach=reach;
+                    kfModel.reach.on=reach;
                     kfModel.ak.nObs=observables(o);
                     kfModel.ak.rank=[1,observables(o),observables(o)/5];
 
@@ -66,14 +66,14 @@ for o = 1:numel(observables)
                     end
 
                     kfModel.spec = specification(eq,'logic');
-                    [kfModel,~] = falsify(kfModel);
+                    kfSoln = falsify(kfModel);
 
                     if j==1
                         solns(name)={{}};
                     end
-                    if kfModel.soln.falsified
+                    if kfSoln.falsified
                         soln=solns(name);
-                        soln{1}{end+1}=kfModel.soln;
+                        soln{1}{end+1}=kfSoln;
                         solns(name)=soln;
                     end
                 end

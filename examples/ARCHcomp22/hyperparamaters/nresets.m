@@ -70,14 +70,14 @@ for r = 1:numel(resets)
                 end
 
                 kfModel.spec = specification(eq,'logic');
-                [kfModel,~] = falsify(kfModel);
+                kfSoln = falsify(kfModel);
 
                 if j==1
                     solns(name)={{}};
                 end
-                if kfModel.soln.falsified
+                if kfSoln.falsified
                     soln=solns(name);
-                    soln{1}{end+1}=kfModel.soln;
+                    soln{1}{end+1}=kfSoln;
                     solns(name)=soln;
                 end
             end

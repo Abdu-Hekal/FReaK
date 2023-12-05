@@ -21,18 +21,18 @@ for i = 1:size(req, 1)
         eq = req{i, 2};
 
         kfModel.spec = specification(eq,'logic');
-        [kfModel,~] = falsify(kfModel);
+        kfSoln = falsify(kfModel);
 
         if j==1
             solns(name)={{}};
         end
-        if kfModel.soln.falsified
+        if kfSoln.falsified
             soln=solns(name);
-            soln{1}{end+1}=kfModel.soln;
+            soln{1}{end+1}=kfSoln;
             solns(name)=soln;
         end
 
-        fprintf("number of simulations %d \n",kfModel.soln.sims)
+        fprintf("number of simulations %d \n",kfSoln.sims)
         fprintf('falsified iteration %d \n',j);
     end
     %print info

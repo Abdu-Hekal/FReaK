@@ -88,15 +88,15 @@ for e = 1:numel(enhancements)
                 %settings
                 kfModel.timeout=1000;
                 if enhancements(e)==0
-                    kfModel.nResets=inf; kfModel.rmRand=0; kfModel.offsetStrat=0; kfModel.reach=0;
+                    kfModel.nResets=inf; kfModel.rmRand=0; kfModel.offsetStrat=0; kfModel.reach.on=0;
                 elseif enhancements(e)==1
-                    kfModel.nResets=5; kfModel.rmRand=0; kfModel.offsetStrat=0; kfModel.reach=0;
+                    kfModel.nResets=5; kfModel.rmRand=0; kfModel.offsetStrat=0; kfModel.reach.on=0;
                 elseif enhancements(e)==2
-                    kfModel.nResets=5; kfModel.rmRand=0; kfModel.offsetStrat=-1; kfModel.reach=0;
+                    kfModel.nResets=5; kfModel.rmRand=0; kfModel.offsetStrat=-1; kfModel.reach.on=0;
                 elseif enhancements(e)==3
-                    kfModel.nResets=5; kfModel.rmRand=0; kfModel.offsetStrat=-1; kfModel.reach=1;
+                    kfModel.nResets=5; kfModel.rmRand=0; kfModel.offsetStrat=-1; kfModel.reach.on=1;
                 elseif enhancements(e)==4
-                    kfModel.nResets=5; kfModel.rmRand=1; kfModel.offsetStrat=-1; kfModel.reach=1;
+                    kfModel.nResets=5; kfModel.rmRand=1; kfModel.offsetStrat=-1; kfModel.reach.on=1;
                 end
 
                 %skip at6 benchmarks if no offset (unable to falsify any of them without offset)
@@ -109,14 +109,14 @@ for e = 1:numel(enhancements)
                 end
 
                 kfModel.spec = specification(eq,'logic');
-                [kfModel,~] = falsify(kfModel);
+                kfSoln = falsify(kfModel);
 
                 if j==1
                     solns(name)={{}};
                 end
-                if kfModel.soln.falsified
+                if kfSoln.falsified
                     soln=solns(name);
-                    soln{1}{end+1}=kfModel.soln;
+                    soln{1}{end+1}=kfSoln;
                     solns(name)=soln;
                 end
             end

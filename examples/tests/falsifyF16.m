@@ -7,15 +7,17 @@ kf = modelF16();
 plot_vars = [12,13];
 kf.verb=2;
 kf.nResets=10;
+kf.maxSims=1;
 
-[kf,trainset] = falsify(kf);
+[kfSoln,trainset] = falsify(kf);
 
-if kf.soln.falsified
-    visualizeFalsification(kf.soln.x, trainset.t{1}, kf.spec, plot_vars)
+if kfSoln.falsified
+    visualizeFalsification(kfSoln.best.x, trainset.t{1}, kf.spec, plot_vars)
     disp(['simulations required: ',num2str(kf.soln.sims)])
-    visualize_train(trainset, plot_vars)
 else
     disp("No falsifiying trace found")
 end
 
-visualize_train(trainset, plot_vars)
+trainset
+
+visualizeTrain(trainset, plot_vars)

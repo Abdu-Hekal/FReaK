@@ -37,9 +37,9 @@ runtime=tic;
 %initialization and init assertions
 [obj,trainset,soln,specSolns] = initialize(obj);
 trainIter = 0;
-robustness=inf;
+falsified=false;
 
-while soln.sims <= obj.maxSims && robustness>=0
+while soln.sims <= obj.maxSims && ~falsified
     %timeout
     if toc(runtime) > obj.timeout
         break
@@ -60,8 +60,8 @@ while soln.sims <= obj.maxSims && robustness>=0
 
     %if first iter, random trajectory setting selected, or critical trajectory is
     %repeated, retrain with random xu else retrain with prev traj
-    if trainIter==0 || obj.trainRand>=2 || ( obj.trainRand==1 && rem(trainIter, 2) == 0) || checkRepeatedTraj(obj,critX,critU, trainset)
-        if trainIter>0 && obj.solver.opts.usex0==1 && checkRepeatedTraj(obj,critX,critU, trainset)
+    if trainIter==0 || obj.trainRand>=2 || ( obj.trainRand==1 && rem(trainIter, 2) == 0) || checkRepeatedTraj(critX,critU,trainset,obj.verb)
+        if trainIter>0 && obj.solver.opts.usex0==1 && checkRepeatedTraj(critX,critU,trainset,obj.verb)
             obj.solver.opts.usex0=0; %turn off warmstarting if repeated trajectory returned by solver
             disp('Turned off warmstarting due to repeated solutions')
         end
@@ -70,13 +70,9 @@ while soln.sims <= obj.maxSims && robustness>=0
         soln.sims = soln.sims+1;
         soln.simTime = soln.simTime+simTime;
         %check if random input falsifies system, and break if it does
-        [soln,falsified,robustness]=checkFalsification(soln,x,u,t,obj.spec,obj.inputInterpolation);
+        [soln,falsified]=checkFalsification(soln,x,u,t,obj.spec,obj.inputInterpolation,'reset simulation',obj.verb);
+        if falsified; break; end
 
-        if falsified
-            critX=x;
-            critU=u;
-            break
-        end
         tak = (0:obj.ak.dt:obj.T)'; %define autokoopman time points
         xak = interp1(t,x,tak,obj.trajInterpolation); %define autokoopman trajectory points
     else
@@ -118,42 +114,43 @@ while soln.sims <= obj.maxSims && robustness>=0
 
     if curSoln.rob<inf %found a viable solution
         offsetIter = 0;
-        while offsetIter <= max(obj.offsetStrat,0) && robustness>=0 %offset once if not falsified
+        while offsetIter <= max(obj.offsetStrat,0) %offset once if offset in same iteration is selected (offsetStrat=1)
             [critX0, critU] = falsifyingTrajectory(obj,curSoln);
             % run most critical inputs on the real system
             [t, critX, simTime] = simulate(obj, critX0, critU);
             soln.sims = soln.sims+1;
             soln.simTime = soln.simTime+simTime;
 
-            [soln,falsified,robustness,Bdata]=checkFalsification(soln,critX,critU,t,obj.spec,obj.inputInterpolation);
+            [soln,falsified,robustness,Bdata]=checkFalsification(soln,critX,critU,t,obj.spec,obj.inputInterpolation,'kf optimization',obj.verb);
+            if falsified; break; end
 
-            if abs(robustness)~=inf %there exist a value for robustness for which we can neighborhood train or offset
+            if robustness~=inf %there exist a value for robustness for which we can neighborhood train or offset
                 if obj.trainRand==2 && robustness >= soln.best.rob %neighborhood training mode
                     %remove last entry because it is not improving the obj
                     trainset.X(end) = []; trainset.XU(end)=[]; trainset.t(end) = [];
                 end
-                %                 obj=storeBestSoln(obj,robustness,critX,critU,'kf optimization'); %store the best soln so far
-                gap = getMilpGap(obj.solver.opts);
-                if robustness > gap && abs(obj.offsetStrat) %not falsifed yet, robustness is greater than gap termination criteria for milp solver and an offset mode selected by user. Note that if robustness is less than gap, offset most likely is not benefecial.
+                %if first offset iteration (re-solve with offset if offsetStrat==1 or save offset for next iter if offsetStrat==-1),
+                % robustness is greater than gap termination criteria for milp solver and an offset mode selected by user.
+                if offsetIter==0 && robustness > getMilpGap(obj.solver.opts) && abs(obj.offsetStrat)
+                    assert(strcmp(spec.type,'logic'),'offset is currently only implemented for stl spec, please turn off offset by setting offsetStrat=0')
                     offsetMap=bReachCulprit(Bdata,spec.set); %get predicates responsible for robustness value
                     if offsetMap.Count > 0 %if there there exists predicates that are culprit for (+ve) robustness
                         obj.solver.opts.usex0=0; %avoid warmstarting if offsetting
                         Sys=specSolns(spec).koopMilp;
-                        if offsetIter==0 %if first offset iteration, re-solve with offset if offsetStrat==1 or save offset for next iter if offsetStrat==-1
-                            Sys.offsetMap = offsetMap;
-                            if obj.offsetStrat == 1 %if offset strategy in this iteration selected
-                                set = spec.set;
-                                if ~isequal(set,Sys.stl) || ~obj.useOptimizer
-                                    Sys.stl = set;
-                                    Sys=setupStl(Sys,~obj.useOptimizer); %encode stl using milp
-                                end
-                                Sys=optimize(Sys,obj.solver.opts);
-                                soln.alpha = value(Sys.alpha); %new alpha value after offset
-                            else %obj.offsetStrat == -1: offset next iteration
-                                specSolns(spec).koopMilp=Sys;
+                        Sys.offsetMap = offsetMap;
+                        if obj.offsetStrat == 1 %if offset strategy in this iteration selected
+                            set = spec.set;
+                            if ~isequal(set,Sys.stl) || ~obj.solver.useOptimizer
+                                Sys.stl = set;
+                                Sys=setupStl(Sys,~obj.solver.useOptimizer); %encode stl using milp
                             end
+                            Sys=optimize(Sys,obj.solver.opts);
+                            curSoln.alpha = value(Sys.alpha); %new alpha value after offset
+                            curSoln.u = value(Sys.u);
                             % TODO: if offset gives better val of robustness, should we pass
                             %                     % it as training data instead? should we pass both?
+                        else %obj.offsetStrat == -1: offset next iteration
+                            specSolns(spec).koopMilp=Sys;
                         end
                     else
                         break
@@ -175,9 +172,6 @@ end
 close_system('ErrorIfShadowed',0);
 %assign solution result
 soln.falsified=falsified;
-soln.t=t;
-soln.x=critX;
-soln.u = critU;
 soln.runtime=toc(runtime); %record runtime
 
 LogicalStr = {'No', 'Yes'};
@@ -187,9 +181,8 @@ vprintf(obj.verb,1,"number of simulations %d \n",soln.sims)
 vprintf(obj.verb,1,"Time taken %.2f seconds\n",soln.runtime)
 end
 
-function [soln,falsified,robustness,Bdata]=checkFalsification(soln,x,u,t,specs,inputInterpolation)
-falsified=false;
-robustness=inf;
+function [soln,falsified,robustness,Bdata]=checkFalsification(soln,x,u,t,specs,inputInterpolation,method,verb)
+falsified=false; robustness=inf;
 Bdata=NaN;
 for ii=1:numel(specs)
     spec=specs(ii);
@@ -209,7 +202,8 @@ for ii=1:numel(specs)
             falsified=true;
         end
     end
-    if robustness < soln.best.rob
+    if robustness < soln.best.rob || falsified
+        vprintf(verb,2,"new best robustness!: %.3f after %d simulations due to: %s \n",robustness,soln.sims,method)
         soln.best.rob=robustness;
         soln.best.x=x; soln.best.u=u; soln.best.t=t;
     end
@@ -219,19 +213,20 @@ for ii=1:numel(specs)
 end
 end
 
-function repeatedTraj = checkRepeatedTraj(obj,critX,critU, trainset)
+function repeatedTraj = checkRepeatedTraj(critX,critU,trainset,verb)
 %check if critical initial set & input are the same as found before
 repeatedTraj = false;
 for r = 1:length(trainset.X)
     if isequal(critX(1,:)',trainset.X{r}(:,1)) && isequal(critU(:,2:end),trainset.XU{r}(:,1:end-1)')
         repeatedTraj = true;
-        vprintf(obj.verb,3,"repeated critical trajectory, generating a new random trajectory \n")
+        vprintf(verb,3,"repeated critical trajectory, generating a new random trajectory \n")
         break
     end
 end
 end
 
 function gap=getMilpGap(opts)
+% Note that if robustness is less than gap, offset most likely is not benefecial.
 if opts.solver == "gurobi"
     gap=opts.gurobi.MIPGapAbs;
 elseif opts.solver == "cplex"

@@ -16,7 +16,6 @@ load("autokoopman_model.mat", "A","B")
 figure; hold on; box on;
 
 % The standard values for colors saved in PLOT_STANDARDS() will be accessed from the variable PS
-PS = PLOT_STANDARDS();
 
 for r = 1:length(trainset.X)
     %plot Autokoopman vs real trajectory for all simulations
@@ -32,8 +31,8 @@ for r = 1:length(trainset.X)
         p2=plot(trainset.X{r}(plot_vars(1),:),trainset.X{r}(plot_vars(2),:));
     end
     %style plots
-    set(p1, 'LineWidth', 1, 'Color', PS.DGrey5);
-    set(p2, 'LineWidth', 1, 'Color',PS.MyGreen3);
+    set(p1, 'LineWidth', 1, 'Color', 'grey');
+    set(p2, 'LineWidth', 1, 'Color','green');
 
 
     %add legend
