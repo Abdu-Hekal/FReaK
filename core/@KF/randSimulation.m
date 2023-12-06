@@ -1,8 +1,8 @@
-function [tout, yout, x0, u, simTime] = randSimulation(obj)
+function [tout, yout, u, simTime] = randSimulation(obj)
 % randSimulation - Perform a random simulation for a Koopman Falsification object.
 %
 % Syntax:
-%    [tout, yout, x0, u, simTime] = randSimulation(obj)
+%    [tout, yout, u, simTime] = randSimulation(obj)
 %
 % Description:
 %    This function generates a random initial state and input, then performs
@@ -16,12 +16,11 @@ function [tout, yout, x0, u, simTime] = randSimulation(obj)
 % Outputs:
 %    tout - Time vector of simulation
 %    yout - Output vector of simulation
-%    x0   - Updated initial state vector after simulation
 %    u    - Input vector used for simulation
 %    simTime  - time taken for simulation
 %
 % Example:
-%    [tout, yout, x0, u, simTime] = randSimulation(obj);
+%    [tout, yout, u, simTime] = randSimulation(obj);
 %
 % See also: simulate, falsify
 %
