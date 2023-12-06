@@ -1,59 +1,66 @@
 function setupKF()
 
-%go to koopman falsification home folder
-cdr = pwd; %current folder
-filePath = which('setupKF'); %filepath
-[kfFolder, ~, ~] = fileparts(filePath);
-cd(kfFolder); 
-% add to path and remove hacky cora files
-addpath(genpath(kfFolder))
-rmpath(fullfile('external','CORA'))
+try
+    %go to koopman falsification home folder
+    cdr = pwd; %current folder
+    filePath = which('setupKF'); %filepath
+    [kfFolder, ~, ~] = fileparts(filePath);
+    cd(kfFolder);
+    % add to path and remove hacky cora files
+    addpath(genpath(kfFolder))
+    rmpath(fullfile('external','CORA'))
 
-%check installed toolbox
-%code taken from CORA installation.
-auxInstallToolbox('Symbolic Math Toolbox');
+    %check installed toolbox
+    %code taken from CORA installation.
+    auxInstallToolbox('Symbolic Math Toolbox');
 
-%install mpt and yalmip
-installMPT()
+    %install mpt and yalmip
+    installMPT()
 
-%install python libraries
-pythonLibInstall()
+    %install python libraries
+    pythonLibInstall();
 
-%make folder to store auxilary tools
-folderName = 'auxilary';
-if ~(exist(folderName, 'dir') == 7)
-    mkdir(folderName);
+    %make folder to store auxilary tools
+    folderName = 'auxilary';
+    if ~(exist(folderName, 'dir') == 7)
+        mkdir(folderName);
+    end
+
+    %install breach and CORA
+    if (exist('InitBreach','file')==2)
+        disp('Breach already installed.');
+    else
+        zipURL = 'https://github.com/decyphir/breach/archive/refs/heads/master.zip';
+        installExtToolbox('breach',zipURL,'breach.zip')
+    end
+    if (exist('test_requiredToolboxes','file')==2)
+        disp('CORA already installed.');
+    else
+        zipURL = 'https://tumcps.github.io/CORA/data/archive/version/CORA_2022.zip';
+        installExtToolbox('CORA_2022',zipURL,'CORA_2022.zip')
+    end
+
+    %setup Breach and CORA
+    InitBreach()
+    setupBreach()
+    setupCora()
+
+    %setup gurobi
+    setupGurobi()
+
+    %go back to base folder
+    cd(cdr);
+    %save modified path
+    savepath;
+
+    disp('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -')
+    disp('Koopman Falsification Successfully Setup!')
+
+catch ME
+    disp('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -')
+    fprintf(2,'Setup Failed due to following reason, please fix and rurun setup: \n')
+    disp(ME.message)
 end
-
-%install breach and CORA
-if (exist('InitBreach','file')==2)
-    disp('Breach already installed.');
-else
-    zipURL = 'https://github.com/decyphir/breach/archive/refs/heads/master.zip';
-    installExtToolbox('breach',zipURL,'breach.zip')
-end
-if (exist('test_requiredToolboxes','file')==2)
-    disp('CORA already installed.');
-else
-    zipURL = 'https://tumcps.github.io/CORA/data/archive/version/CORA_2022.zip';
-    installExtToolbox('CORA_2022',zipURL,'CORA_2022.zip')
-end
-
-%setup Breach and CORA
-InitBreach()
-setupBreach()
-setupCora()
-
-%setup gurobi
-setupGurobi()
-
-%go back to base folder
-cd(cdr);
-%save modified path
-savepath;
-
-disp('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -')
-disp('Koopman Falsification Successfully Setup!')
 
 end
 
@@ -70,13 +77,26 @@ res = any(any(contains(struct2cell(ver),text)));
 end
 function auxDisplayInstallPrompt(text)
 error(['''<strong>%s</strong>'' is missing and requires manual installation. \n' ...
-    '  Please install it via the MATLAB Add-On Explorer. \n' ...
-    '  Rerun the installation script afterwards.\n'], text)
+    '  Please install it via the MATLAB Add-On Explorer. \n'], text)
 end
 
-function pythonLibInstall()
+function res= pythonLibInstall()
+res=0;
 %ensure python is installed
 assert(~isempty(pyenv), 'Python is not installed or configured in MATLAB.')
+%check if correct python environment is setup
+disp(pyenv)
+userResponse='';
+while ~strcmpi(userResponse, 'y') && ~strcmpi(userResponse, 'n')
+    userResponse = input('Is this the correct python environment? (y/n): ', 's');
+end
+if strcmpi(userResponse, 'n')
+    if pyenv().Status == "Loaded"
+        error('To change the Python version, restart MATLAB and run setupKF again')
+    end
+    userResponse = input('please enter executable of python environment to be used: ', 's');
+    pyenv(Version=userResponse)
+end
 
 %get pip for python executable
 pythonExecutablePath = char(pyenv().Executable);
@@ -90,6 +110,8 @@ pipExecutablePath = fullfile(baseFolderPath, newLastPart);
 %install autokoopman
 [status,result]=system([pipExecutablePath ' install autokoopman']);
 assert(status == 0, ['Installation of autokoopman failed. Error message: ', result]);
+
+res=1;
 end
 
 function installExtToolbox(name,zipURL,zipName)
@@ -124,12 +146,12 @@ function setupBreach()
 %remove conflicting breach files from path
 filePath = which('InitBreach');
 [breachFolder, ~, ~] = fileparts(filePath);
-if contains(path, genpath(fullfile(breachFolder, 'Ext')))
-    rmpath(genpath(fullfile(breachFolder, 'Ext')))
-end
-if contains(path, genpath(fullfile(breachFolder, 'Examples')))
-    rmpath(genpath(fullfile(breachFolder, 'Examples')))
-end
+disp(genpath(fullfile(breachFolder, 'Ext')))
+disp(contains(path, genpath(fullfile(breachFolder, 'Ext'))))
+warning('off', 'MATLAB:rmpath:DirNotFound');
+rmpath(genpath(fullfile(breachFolder, 'Ext')))
+rmpath(genpath(fullfile(breachFolder, 'Examples')))
+warning('on', 'MATLAB:rmpath:DirNotFound');
 end
 
 function setupCora()
@@ -152,7 +174,10 @@ end
 end
 
 function setupGurobi()
-userResponse = input('Koopman falsification depends on optimization solver. Examples use Gurobi, do you want to check for gurobi setup? (y/n): ', 's');
+userResponse='';
+while ~strcmpi(userResponse, 'y') && ~strcmpi(userResponse, 'n')
+    userResponse = input('Koopman falsification depends on optimization solver. Examples use Gurobi, do you want to check for gurobi setup? (y/n): ', 's');
+end
 if strcmpi(userResponse, 'y')
     status = system('gurobi_cl');
     if status==0

@@ -1,7 +1,3 @@
-% load your python environment that autokoopman is installed & imported in
-% pyenv("Version",'/Users/b6062805/Documents/Koopman/autokoopman_vitualenv/bin/python','ExecutionMode','InProcess');
-% py.importlib.import_module('autokoopman');
-
 kf = modelF16();
 % kf.spec = specification(halfspace([0;0;0;0;0;0;0;0;0;0;0;1;0;0;0;0],0),'unsafeSet');
 plot_vars = [12,13];
