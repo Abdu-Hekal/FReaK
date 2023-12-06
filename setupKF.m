@@ -38,7 +38,7 @@ try
         disp('CORA already installed.');
     else
         zipURL = 'https://tumcps.github.io/CORA/data/archive/version/CORA_2022.zip';
-        installExtToolbox('CORA_2022',zipURL,'CORA_2022.zip')
+        installExtToolbox('CORA_2022',zipURL,'CORA_2022.zip');
     end
 
     %setup Breach and CORA
@@ -81,8 +81,7 @@ error(['''<strong>%s</strong>'' is missing and requires manual installation. \n'
     '  Please install it via the MATLAB Add-On Explorer. \n'], text)
 end
 
-function res= pythonLibInstall()
-res=0;
+function pythonLibInstall()
 %ensure python is installed
 assert(~isempty(pyenv), 'Python is not installed or configured in MATLAB.')
 %check if correct python environment is setup
@@ -109,10 +108,15 @@ newLastPart = 'pip';
 pipExecutablePath = fullfile(baseFolderPath, newLastPart);
 
 %install autokoopman
-[status,result]=system([pipExecutablePath ' install autokoopman']);
-assert(status == 0, ['Installation of autokoopman failed. Error message: ', result]);
-
-res=1;
+% Check if autokoopman is installed
+try
+    py.importlib.import_module('autokoopman');
+    disp('Autokoopman already installed.')
+catch
+    [status,result]=system([pipExecutablePath ' install autokoopman']);
+    assert(status == 0, ['Installation of autokoopman failed. Error message: ', result]);
+    disp('Successfully installed Autokoopman!')
+end
 end
 
 function installExtToolbox(name,zipURL,zipName)
@@ -147,8 +151,6 @@ function setupBreach()
 %remove conflicting breach files from path
 filePath = which('InitBreach');
 [breachFolder, ~, ~] = fileparts(filePath);
-disp(genpath(fullfile(breachFolder, 'Ext')))
-disp(contains(path, genpath(fullfile(breachFolder, 'Ext'))))
 warning('off', 'MATLAB:rmpath:DirNotFound');
 rmpath(genpath(fullfile(breachFolder, 'Ext')))
 rmpath(genpath(fullfile(breachFolder, 'Examples')))
@@ -177,7 +179,7 @@ end
 function setupGurobi()
 userResponse='';
 while ~strcmpi(userResponse, 'y') && ~strcmpi(userResponse, 'n')
-    userResponse = input('Koopman falsification depends on optimization solver. Examples use Gurobi, do you want to check for gurobi setup? (y/n): ', 's');
+    userResponse = input('Koopman falsification depends on optimization solver. Examples use Gurobi,  \n do you want to check for gurobi setup? (y/n): ', 's');
 end
 if strcmpi(userResponse, 'y')
     status = system('gurobi_cl');
@@ -187,8 +189,8 @@ if strcmpi(userResponse, 'y')
         error('No valid Gurobi license found')
     end
     if exist('gurobi_setup','file')
-        gurobi_setup
-        disp(' ')
+        gurobi_setup;
+        disp('')
         disp('Gurobi Succesfully setup!')
     else
         error('Gurobi for matlab is not downloaded, follow instructions here: <a href="https://support.gurobi.com/hc/en-us/articles/4533938303505-How-do-I-install-Gurobi-for-Matlab">Gurobi Installation Guide for MATLAB</a>')
