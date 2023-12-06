@@ -6,9 +6,10 @@ try
     filePath = which('setupKF'); %filepath
     [kfFolder, ~, ~] = fileparts(filePath);
     cd(kfFolder);
-    % add to path and remove hacky cora files
+    % add to path and remove archive and hacky cora files
     addpath(genpath(kfFolder))
     rmpath(fullfile('external','CORA'))
+    rmpath(genpath('archive'))
 
     %check installed toolbox
     %code taken from CORA installation.
