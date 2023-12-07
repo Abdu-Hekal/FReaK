@@ -15,6 +15,7 @@ for ii=1:numel(specs)
             interpU=u;
         end
         [Bdata,~,robustness] = bReachRob(spec,t,x,interpU');
+        vprintf(verb,3,"robustness value: %.3f after %d simulations with method: %s \n",robustness,soln.sims,method)
         if robustness < 0
             falsified=true;
         end
