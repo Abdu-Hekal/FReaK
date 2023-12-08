@@ -61,11 +61,34 @@ py.importlib.import_module('autokoopman');
 
 assert(isa(obj.model, 'string') | isa(obj.model,"char")| isa(obj.model,'function_handle'), 'obj.model must be a (1)string: name of simulink obj or a (2)function handle')
 assert(isa(obj.R0, 'interval'), 'Initial set (obj.R0) must be defined as an CORA interval')
-assert(~isempty(obj.T) & isnumeric(obj.T), 'Time horizon (obj.T) must be defined as a numeric')
-assert(~isempty(obj.dt) & isnumeric(obj.dt), 'Time step (obj.dt) must be defined as a numeric')
+assert(isnumeric(obj.T) && isscalar(obj.T), 'Time horizon (obj.T) must be defined as a numeric')
+assert(isnumeric(obj.dt) && isscalar(obj.dt), 'Time step (obj.dt) must be defined as a numeric')
 assert(isa(obj.spec, 'specification'), 'Falsifying spec (obj.spec) must be defined as a CORA specification')
 all_steps = obj.T/obj.dt;
 assert(floor(all_steps)==all_steps,'Time step (dt) must be a factor of Time horizon (T)')
+
+assert(islogical(obj.reach.on) || isnumeric(obj.reach.on) && isscalar(obj.reach.on) && ismember(obj.reach.on, [0, 1]), 'Reachability setting (obj.reach.on) must be a boolean');
+assert(isnumeric(obj.reach.tayOrder) && isscalar(obj.reach.tayOrder) && obj.reach.tayOrder > 0 && round(obj.reach.tayOrder) == obj.reach.tayOrder, 'Taylor order (obj.reach.tayOrder) must be a positive, integer, scalar number');
+
+assert(isstruct(obj.solver.opts), 'solver options (obj.solver.opts) must be a struct, see sdpsettings')
+assert(islogical(obj.solver.normalize) || isnumeric(obj.solver.normalize) && isscalar(obj.solver.normalize) && ismember(obj.solver.normalize, [0, 1]), 'solver normalization option (obj.solver.normalize) must be a boolean');
+assert(islogical(obj.solver.useOptimizer) || isnumeric(obj.solver.useOptimizer) && isscalar(obj.solver.useOptimizer) && ismember(obj.solver.useOptimizer, [0, 1]), 'solver use optimizer option (obj.solver.useOptimizer) must be a boolean');
+assert(isnumeric(obj.maxSims) && isscalar(obj.maxSims) && obj.maxSims > 0 && round(obj.maxSims) == obj.maxSims, 'Maximum simulations (obj.maxSims) must be a positive, integer, scalar number');
+assert(isnumeric(obj.timeout) && isscalar(obj.timeout) && obj.timeout > 0, 'Timeout (obj.timeout) must be a positive, scalar number');
+
+assert((isnumeric(obj.nResets) && isscalar(obj.nResets) && obj.nResets > 0 && round(obj.nResets) == obj.nResets) || strcmp('auto',obj.nResets), 'Reset number (obj.maxSims) must be a positive, integer, scalar number OR a string (auto)');
+assert(isnumeric(obj.trainRand) && isscalar(obj.trainRand) && obj.trainRand >= 0 && obj.trainRand <= 3 && round(obj.trainRand) == obj.trainRand,'Training option (obj.trainRand) must be an integer between 0 and 3')
+assert(islogical(obj.rmRand) || isnumeric(obj.rmRand) && isscalar(obj.rmRand) && ismember(obj.rmRand, [0, 1]), 'Remove random training trajectory (obj.rmRand) must be a boolean');
+if obj.trainRand==1 || obj.trainRand==2
+    if obj.rmRand
+        obj.rmRand=false;
+        vprintf(obj.verb,1,"Random training mode selected (obj.trainRand=%d), consequently obj.rmRand is set to false\n",obj.trainRand)
+    end
+end
+assert(isnumeric(obj.offsetStrat) && isscalar(obj.offsetStrat) && obj.offsetStrat >= -1 && obj.offsetStrat <= 1 && round(obj.offsetStrat) == obj.offsetStrat,'Offset strategy (obj.offsetStrat) must be an integer between -1 and 1')
+assert(isnumeric(obj.verb) && isscalar(obj.verb) && obj.verb >= 0 && obj.verb <= 3 && round(obj.verb) == obj.verb,'Verbosity level (obj.verb) must be an integer between 0 and 3')
+
+
 
 %set autokoopman timestep if it is not set, else check it is compliant.
 if ~isfield(obj.ak,'dt')

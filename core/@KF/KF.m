@@ -138,7 +138,7 @@ classdef KF
             obj.timeout=inf;
             obj.nResets=5; %5
             obj.trainRand=0;
-            obj.rmRand=1; %1
+            obj.rmRand=true; %true
             obj.offsetStrat=-1; %-1
             obj.inputInterpolation='previous';
             obj.trajInterpolation='linear';

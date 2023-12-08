@@ -37,7 +37,7 @@ runtime=tic;
 %initialization and init assertions
 [obj,trainset,soln,specSolns] = initialize(obj);
 trainIter = 0;
-falsified=false;
+falsified=false; robustness=inf; prevRob=inf;
 
 while soln.sims <= obj.maxSims && ~falsified
     %timeout
@@ -45,17 +45,20 @@ while soln.sims <= obj.maxSims && ~falsified
         break
     end
     %reset after size of trainset==nResets;
-    if numel(trainset.X) == obj.nResets
+    if (isnumeric(obj.nResets) && numel(trainset.X) == obj.nResets) || (strcmp(obj.nResets,'auto') && prevRob<inf && robustness>=prevRob)
         trainIter = 0;
         %reset offsets
         for ii=1:numel(obj.spec)
             spec=obj.spec(ii);
             specSolns(spec).koopMilp.offsetMap=containers.Map('KeyType', 'double', 'ValueType', 'double');
         end
+        vprintf(obj.verb,2,2,'Reset applied to training set of size %d\n',size(trainset.t,2))
     end
-    % empty trainset at reset and if nonrandom training technique is used, empty trainset after first iter because it is random trajectory.
-    if  trainIter ==0 || (trainIter == 1 && obj.trainRand == 0 && obj.rmRand)
+    prevRob=robustness;
+    % empty trainset at reset, or empty trainset after first iter because it is random trajectory, if rmRand is selected by user.
+    if  trainIter ==0 || (trainIter == 1 && obj.rmRand)
         trainset.X = {}; trainset.XU={}; trainset.t = {};
+        prevRob=inf;
     end
 
     %if first iter, random trajectory setting selected, or critical trajectory is
