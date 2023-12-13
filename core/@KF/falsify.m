@@ -45,7 +45,7 @@ while soln.sims <= obj.maxSims && ~falsified
         break
     end
     %reset after size of trainset==nResets;
-    if (isnumeric(obj.nResets) && numel(trainset.X) == obj.nResets) || (strcmp(obj.nResets,'auto') && prevRob<inf && robustness>=prevRob)
+    if (isnumeric(obj.nResets) && numel(trainset.X) == obj.nResets) || (strcmp(obj.nResets,'auto') && prevRob<inf && robustness==prevRob)
         trainIter = 0;
         %reset offsets
         for ii=1:numel(obj.spec)

@@ -58,12 +58,12 @@ for ii=1:obj.maxSims
     if robustness < soln.best.rob
         soln.best.rob=robustness; soln.best.t=t; soln.best.x=x; soln.best.u=u;
     end
+    if nargout > 1
+        sims.t{end+1}=t; sims.X{end+1}=x; sims.XU{end+1}=u; sims.ROB{end+1}=robustness;
+    end
     if falsified
         soln.falsified=true;
         break;
-    end
-    if nargout > 1
-        sims.t{end+1}=t; sims.X{end+1}=x; sims.XU{end+1}=u; sims.ROB{end+1}=robustness;
     end
 
 end

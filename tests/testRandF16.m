@@ -62,3 +62,9 @@ colorbar('Location', 'eastoutside');
 % Adjust layout
 sgtitle('All Combinations of (x, y), (x, z), and (y, z) in 2D Scatter Plots');
 
+% Find the indices of the minimum value
+[~, minIndex] = min(cell2mat(sims.ROB));
+minX = x(minIndex)
+minY = y(minIndex)
+minZ = z(minIndex)
+
