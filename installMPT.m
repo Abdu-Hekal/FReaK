@@ -6,18 +6,9 @@ function installMPT
 % remove MPT2 or YALMIP
 if exist('mpt_init','file')==2 || exist('yalmipdemo','file')==2
     % Ask the user if they want to delete the file
-    userResponse = input('found existing installations for mpt/yalmip, do you want to reinstall? (y/n): ', 's');
-
-    if strcmpi(userResponse, 'y')
-        % Delete the file
-        disp(' ');
-        disp('Removing toolboxes that may conflict with MPT from the Matlab path.');
-        rmpath(genpath(fileparts(which('mpt_init'))));
-        rmpath(genpath(fileparts(which('yalmipdemo'))));
-    else
-        disp('Exited without reinstalling')
-        return
-    end
+    disp('found existing installations for mpt/yalmip, skipping ...')
+    disp(' ')
+    return
 end
 
 clc;
@@ -25,6 +16,7 @@ disp('----------------------------------------------');
 disp('Installation of MPT using the Toolbox manager.');
 disp('----------------------------------------------');
 
+default_dir = pwd;
 if ~(exist('tbxmanager','file')==2)
     disp(' ');
     fprintf(['Choose the installation directory where to install the Toolbox manager.\n',...
@@ -32,7 +24,6 @@ if ~(exist('tbxmanager','file')==2)
         'If you do not specify the folder, the Toolbox manager will be installed in the current directory.\n']);
 
     % get the installation folder
-    default_dir = pwd;
     c = uigetdir(pwd);
     if isequal(c,0)
         fprintf(['No directory has been provided.\n',...

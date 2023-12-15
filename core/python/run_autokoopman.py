@@ -3,7 +3,6 @@ from autokoopman import auto_koopman
 
 import autokoopman.core.trajectory as traj
 import numpy as np
-import torch
 import random
 from autokoopman.core.format import hide_prints
 
