@@ -36,6 +36,9 @@ savepath;
 
 disp('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -')
 disp('Koopman Falsification Successfully Setup!')
+disp('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -')
+disp('proceeding to run experiments...')
+disp('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -')
 
 end
 
