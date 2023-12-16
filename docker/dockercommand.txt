@@ -1,0 +1,23 @@
+docker command:
+
+#build image
+docker build -t kf .
+
+#run image like this if you have license file:
+docker run --init -v "C:\Program Files\MATLAB\R2022b\licenses\license.lic:/licenses/license.lic" -v "C:\Users\b6062805\Documents\Koopman\gurobi.lic:/opt/gurobi/gurobi.lic" -e MLM_LICENSE_FILE=/licenses/license.lic kf
+
+#else interactive shell:
+docker run --init -it -v "C:\Program Files\MATLAB\R2022b\licenses\license.lic:/licenses/license.lic" -v "C:\Users\b6062805\Documents\Koopman\gurobi.lic:/opt/gurobi/gurobi.lic" kf
+
+#else browser (not recommonded):
+docker run --init --rm -it -p 8888:8888 matlab matlab -browser
+
+
+
+# list all containers
+docker ps -a
+# remove all stopped containers
+docker container prune
+
+# copy from container to host
+docker cp <containerId>:/file/path/within/container /host/path/target
