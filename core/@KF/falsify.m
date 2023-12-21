@@ -37,7 +37,7 @@ runtime=tic;
 %initialization and init assertions
 [obj,trainset,soln,specSolns] = initialize(obj);
 trainIter = 0;
-falsified=false; robustness=inf; prevRob=inf;
+falsified=false;
 
 while soln.sims <= obj.maxSims && ~falsified
     %timeout
@@ -45,7 +45,7 @@ while soln.sims <= obj.maxSims && ~falsified
         break
     end
     %reset after size of trainset==nResets;
-    if (isnumeric(obj.nResets) && numel(trainset.X) == obj.nResets) || (strcmp(obj.nResets,'auto') && prevRob<inf && robustness==prevRob)
+    if (isnumeric(obj.nResets) && numel(trainset.X) == obj.nResets) || (strcmp(obj.nResets,'auto') && trainIter>0 && getMinNormDistance(critX,critU,trainset,obj.R0,obj.U,obj.verb)<0.01) 
         trainIter = 0;
         %reset offsets
         for ii=1:numel(obj.spec)
@@ -54,11 +54,9 @@ while soln.sims <= obj.maxSims && ~falsified
         end
         vprintf(obj.verb,2,2,'Reset applied to training set of size %d\n',size(trainset.t,2))
     end
-    prevRob=robustness;
     % empty trainset at reset, or empty trainset after first iter because it is random trajectory, if rmRand is selected by user.
     if  trainIter ==0 || (trainIter == 1 && obj.rmRand)
         trainset.X = {}; trainset.XU={}; trainset.t = {};
-        prevRob=inf;
     end
 
     %if first iter, random trajectory setting selected, or critical trajectory is
@@ -81,6 +79,7 @@ while soln.sims <= obj.maxSims && ~falsified
         xak=interp1(t,critX,tak,obj.trajInterpolation); %pass x0 as full x to avoid simulation again
         u=critU;
     end
+
     %add trajectory to koopman trainset
     trainset.t{end+1} = tak;
     trainset.X{end+1} = xak';
@@ -119,6 +118,7 @@ while soln.sims <= obj.maxSims && ~falsified
         offsetIter = 0;
         while offsetIter <= max(obj.offsetStrat,0) %offset once if offset in same iteration is selected (offsetStrat=1)
             [critX0, critU] = falsifyingTrajectory(obj,curSoln);
+
             % run most critical inputs on the real system
             [t, critX, simTime] = simulate(obj, critX0, critU);
             soln.sims = soln.sims+1;
@@ -188,12 +188,48 @@ function repeatedTraj = checkRepeatedTraj(critX,critU,trainset,verb)
 %check if critical initial set & input are the same as found before
 repeatedTraj = false;
 for r = 1:length(trainset.X)
-    if isequal(critX(1,:)',trainset.X{r}(:,1)) && isequal(critU(:,2:end),trainset.XU{r}(:,1:end-1)')
+
+%     A=trainset.XU{r};
+%     B=critU(:,2:end)';
+%     normalized_distance = norm(A - B) / (sqrt(2) * max(norm(A), norm(B)));
+%     vprintf(verb,2,"normalize distance with trainset %d is %f \n",r,normalized_distance)
+
+    if isequal(critX(1,:)',trainset.X{r}(:,1)) && isequal(critU(:,2:end)',trainset.XU{r})
         repeatedTraj = true;
-        vprintf(verb,3,"repeated critical trajectory, generating a new random trajectory \n")
+        vprintf(verb,2,2,"repeated critical trajectory, generating a new random trajectory \n")
         break
     end
 end
+end
+
+function minND=getMinNormDistance(critX,critU,trainset,R0,U,verb)
+minND=inf;
+for r = 1:length(trainset.X)
+
+    A=[];
+    B=[];
+    if ~isempty(R0) && any(rad(R0) ~= 0) %non-exact initial set
+        range=R0.sup-R0.inf;
+        nonzero=find(range);
+        A = (trainset.X{r}(nonzero,1)-R0.inf(nonzero))./(range(nonzero));
+        B = (critX(1,nonzero)'-R0.inf(nonzero))./(range(nonzero));
+    end
+    if ~isempty(U) && any(rad(U) ~= 0) %non-exact inputs
+        range=U.sup-U.inf;
+        nonzero=find(range);
+        a=reshape(trainset.XU{r}(nonzero,:)./(range(nonzero)),[],1);
+        A = [A;a];
+        b=critU(:,2:end)';
+        b=b(nonzero,:);
+        b=reshape(b./(range(nonzero)),[],1);
+        B=[B;b];
+    end
+    ND = norm(A - B)/numel(A);
+    if ND < minND
+        minND=ND;
+    end
+end
+vprintf(verb,3,"min normalize distance with trainset is %f \n",minND)
 end
 
 function gap=getMilpGap(opts)
