@@ -45,7 +45,7 @@ while soln.sims <= obj.maxSims && ~falsified
         break
     end
     %reset after size of trainset==nResets;
-    if (isnumeric(obj.nResets) && numel(trainset.X) == obj.nResets) || (strcmp(obj.nResets,'auto') && trainIter>0 && getMinNormDistance(critX,critU,trainset,obj.R0,obj.U,obj.verb)<0.01) 
+    if (isnumeric(obj.nResets) && numel(trainset.X) == obj.nResets) || (strcmp(obj.nResets,'auto') && trainIter>0 && getMinNormDistance(critX,critU,trainset,obj.R0,obj.U,obj.verb)<0.01)
         trainIter = 0;
         %reset offsets
         for ii=1:numel(obj.spec)
@@ -189,10 +189,10 @@ function repeatedTraj = checkRepeatedTraj(critX,critU,trainset,verb)
 repeatedTraj = false;
 for r = 1:length(trainset.X)
 
-%     A=trainset.XU{r};
-%     B=critU(:,2:end)';
-%     normalized_distance = norm(A - B) / (sqrt(2) * max(norm(A), norm(B)));
-%     vprintf(verb,2,"normalize distance with trainset %d is %f \n",r,normalized_distance)
+    %     A=trainset.XU{r};
+    %     B=critU(:,2:end)';
+    %     normalized_distance = norm(A - B) / (sqrt(2) * max(norm(A), norm(B)));
+    %     vprintf(verb,2,"normalize distance with trainset %d is %f \n",r,normalized_distance)
 
     if isequal(critX(1,:)',trainset.X{r}(:,1)) && isequal(critU(:,2:end)',trainset.XU{r})
         repeatedTraj = true;
