@@ -189,7 +189,7 @@ classdef KF
         function [tout, yout, obj] = simulate(obj, x0, u)
             tic
             if isa(obj.model, 'string') || isa(obj.model,"char")
-                [tout, yout] = runSimulink(obj.model, obj.T, x0, u);
+                evalc('[tout, yout] = runSimulink(obj.model, obj.T, x0, u)');
             elseif isa(obj.model,'function_handle')
                 %function handle must have 3 inputs T,x0,u
                 [tout, yout] = obj.model(obj.T, x0, u);

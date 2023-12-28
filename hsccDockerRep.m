@@ -1,4 +1,4 @@
 %setup koopman falsification
-autoSetupKF;
+dockerSetupKF;
 %run all experiments
 runAllHscc;
