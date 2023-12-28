@@ -3,7 +3,7 @@ rng(0)
 pyrunfile("seed.py")
 
 kf = modelF16();
-[t, x, x0, u, simTime] = randSimulation(kf);
+[t, x, u, simTime] = randSimulation(kf);
 tak = (0:kf.ak.dt:kf.T)'; %define autokoopman time points
 xak = interp1(t,x,tak,kf.trajInterpolation); %define autokoopman trajectory points
 
@@ -19,13 +19,16 @@ B = koopModel.B;
 g = koopModel.g;
 R0=kf.R0;
 
+dims=[26,21];
+
 n = dim(R0); dig = length(num2str(n));
 names = {}; for i = 1:n; names{i,1} = ['x',num2str(i,['%0',num2str(dig), '.f'])]; end
 tay = taylm(R0,6,names);
 tay = g(tay);
 R0 = polyZonotope(tay);
+R0=zonotope(R0);
 hold on;
-plot(R0,[21,22])
+plot(R0,dims)
 
 R0_=split(kf.R0,6);
 R0 = R0_{1};
@@ -34,7 +37,8 @@ names = {}; for i = 1:n; names{i,1} = ['x',num2str(i,['%0',num2str(dig), '.f'])]
 tay = taylm(R0);
 tay = g(tay);
 R0 = polyZonotope(tay);
-plot(R0,[21,22],'g')
+R0=zonotope(R0);
+plot(R0,dims,'g')
 
 R0_=split(kf.R0,6);
 R0 = R0_{2};
@@ -43,11 +47,9 @@ names = {}; for i = 1:n; names{i,1} = ['x',num2str(i,['%0',num2str(dig), '.f'])]
 tay = taylm(R0);
 tay = g(tay);
 R0 = polyZonotope(tay);
-plot(R0,[21,22],'r')
+R0=zonotope(R0);
+plot(R0,dims,'r')
 
-
-% w1 = width(interval(zonotope(zeros(size(R0.c)),R0.Grest)))
-% w2 = width(interval(polyZonotope(R0.c,R0.G,[],R0.expMat(1:n,:))))
 
 
 

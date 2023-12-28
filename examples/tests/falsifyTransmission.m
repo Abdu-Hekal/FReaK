@@ -11,8 +11,7 @@ eq = implies(globally(x(2)<3000,interval(0,30)),globally(x(1)<35,interval(0,4)))
 kfModel.spec = specification(eq,'logic');
 
 kfModel.maxSims=100;
-kfModel.verb=3;
-kfModel.nResets='auto';
+kfModel.verb=2;
 
 [kfSoln,trainset] = falsify(kfModel);
 

@@ -196,7 +196,7 @@ for r = 1:length(trainset.X)
 
     if isequal(critX(1,:)',trainset.X{r}(:,1)) && isequal(critU(:,2:end)',trainset.XU{r})
         repeatedTraj = true;
-        vprintf(verb,2,2,"repeated critical trajectory, generating a new random trajectory \n")
+        vprintf(verb,3,2,"repeated critical trajectory, generating a new random trajectory \n")
         break
     end
 end
