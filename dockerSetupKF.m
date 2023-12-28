@@ -1,4 +1,4 @@
-function autoSetupKF()
+function dockerSetupKF()
 
 %go to koopman falsification home folder
 cdr = pwd; %current folder
@@ -65,6 +65,7 @@ filePath = which('InitBreach');
 warning('off', 'MATLAB:rmpath:DirNotFound');
 rmpath(genpath(fullfile(breachFolder, 'Ext')))
 rmpath(genpath(fullfile(breachFolder, 'Examples')))
+rmpath(genpath(fullfile(breachFolder, 'Online')))
 warning('on', 'MATLAB:rmpath:DirNotFound');
 end
 
