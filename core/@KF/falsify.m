@@ -1,4 +1,4 @@
-function [soln,trainset] = falsify(obj)
+function [soln,trainset] = falsify(obj,varargin)
 
 % falsify - Given a model and a set of specs (safe/unsafe set/stl),
 %   perform the core falsification procedure to find a falsifying trajectory
@@ -15,6 +15,7 @@ function [soln,trainset] = falsify(obj)
 % Inputs:
 %    obj - KF object containing the Koopman model and various parameters
 %              needed for the falsification process.
+%    trainset (optional) - initial trainset to warmstart training
 %
 % Outputs:
 %    obj - KF object containing the results of the falsification process,
@@ -39,51 +40,58 @@ runtime=tic;
 trainIter = 0;
 falsified=false;
 
+if nargin > 1
+    trainset = varargin{1};
+    validateTrainset(trainset,obj.U)
+end
 while soln.sims <= obj.maxSims && ~falsified
-    %timeout
-    if toc(runtime) > obj.timeout
-        break
-    end
-    %reset after size of trainset==nResets;
-    if (isnumeric(obj.nResets) && numel(trainset.X) == obj.nResets) || (strcmp(obj.nResets,'auto') && trainIter>0 && getMinNormDistance(critX,critU,trainset,obj.R0,obj.U,obj.verb)<0.01)
-        trainIter = 0;
-        %reset offsets
-        for ii=1:numel(obj.spec)
-            spec=obj.spec(ii);
-            specSolns(spec).koopMilp.offsetMap=containers.Map('KeyType', 'double', 'ValueType', 'double');
+    if ~(soln.sims==0 && ~isempty(trainset.t)) %jump straight to learning if an initial trainset is provided
+        %timeout
+        if toc(runtime) > obj.timeout
+            break
         end
-        vprintf(obj.verb,2,2,'Reset applied to training set of size %d\n',size(trainset.t,2))
-    end
-    % empty trainset at reset, or empty trainset after first iter because it is random trajectory, if rmRand is selected by user.
-    if  trainIter ==0 || (trainIter == 1 && obj.rmRand)
-        trainset.X = {}; trainset.XU={}; trainset.t = {};
-    end
-
-    %if first iter, random trajectory setting selected, or critical trajectory is
-    %repeated, retrain with random xu else retrain with prev traj
-    if trainIter==0 || obj.trainRand>=2 || ( obj.trainRand==1 && rem(trainIter, 2) == 0) || checkRepeatedTraj(critX,critU,trainset,obj.verb)
-        if trainIter>0 && obj.solver.opts.usex0==1 && checkRepeatedTraj(critX,critU,trainset,obj.verb)
-            obj.solver.opts.usex0=0; %turn off warmstarting if repeated trajectory returned by solver
-            disp('Turned off warmstarting due to repeated solutions')
+        %reset after size of trainset==nResets;
+        if (isnumeric(obj.nResets) && numel(trainset.X) >= obj.nResets) || (strcmp(obj.nResets,'auto') && trainIter>0 && getMinNormDistance(critX,critU,trainset,obj.R0,obj.U,obj.verb)<0.01)
+            trainIter = 0;
+            %reset offsets
+            for ii=1:numel(obj.spec)
+                spec=obj.spec(ii);
+                specSolns(spec).koopMilp.offsetMap=containers.Map('KeyType', 'double', 'ValueType', 'double');
+            end
+            vprintf(obj.verb,2,2,'Reset applied to training set of size %d\n',size(trainset.t,2))
         end
-        [t, x, u, simTime] = randSimulation(obj);
-        soln.sims = soln.sims+1;
-        soln.simTime = soln.simTime+simTime;
-        %check if random input falsifies system, and break if it does
-        [soln,falsified]=checkFalsification(soln,x,u,t,obj.spec,obj.inputInterpolation,'reset simulation',obj.verb);
-        if falsified; break; end
+        % empty trainset at reset, or empty trainset after first iter because it is random trajectory, if rmRand is selected by user.
+        if  trainIter ==0 || (trainIter == 1 && obj.rmRand)
+            trainset.X = {}; trainset.XU={}; trainset.t = {};
+        end
 
-        tak = (0:obj.ak.dt:obj.T)'; %define autokoopman time points
-        xak = interp1(t,x,tak,obj.trajInterpolation); %define autokoopman trajectory points
-    else
-        xak=interp1(t,critX,tak,obj.trajInterpolation); %pass x0 as full x to avoid simulation again
-        u=critU;
+        %if first iter, random trajectory setting selected, or critical trajectory is
+        %repeated, retrain with random xu else retrain with prev traj
+        if trainIter==0 || obj.trainRand>=2 || ( obj.trainRand==1 && rem(trainIter, 2) == 0) || checkRepeatedTraj(critX,critU,trainset,obj.verb)
+            if trainIter>0 && obj.solver.opts.usex0==1 && checkRepeatedTraj(critX,critU,trainset,obj.verb)
+                obj.solver.opts.usex0=0; %turn off warmstarting if repeated trajectory returned by solver
+                disp('Turned off warmstarting due to repeated solutions')
+            end
+            [t, x, u, simTime] = randSimulation(obj);
+            soln.sims = soln.sims+1;
+            soln.simTime = soln.simTime+simTime;
+            %check if random input falsifies system, and break if it does
+            [soln,falsified]=checkFalsification(soln,x,u,t,obj.spec,obj.inputInterpolation,'reset simulation',obj.verb);
+            if falsified; break; end
+
+            tak = (0:obj.ak.dt:obj.T)'; %define autokoopman time points
+            xak = interp1(t,x,tak,obj.trajInterpolation); %define autokoopman trajectory points
+        else
+            xak=interp1(t,critX,tak,obj.trajInterpolation); %pass x0 as full x to avoid simulation again
+            u=critU;
+        end
+
+        %add trajectory to koopman trainset
+        trainset.t{end+1} = tak;
+        trainset.X{end+1} = xak';
+        trainset.XU{end+1} = u(:,2:end)';
+
     end
-
-    %add trajectory to koopman trainset
-    trainset.t{end+1} = tak;
-    trainset.X{end+1} = xak';
-    trainset.XU{end+1} = u(:,2:end)';
 
     %run autokoopman and learn linearized model
     [koopModel,koopTime] = learnKoopModel(obj, trainset);
@@ -243,3 +251,19 @@ else
 end
 end
 
+function validateTrainset(trainset,U)
+assert(isstruct(trainset), 'trainset must be a struct');
+assert(isfield(trainset, 'X'), 'trainset must have a field named "X" which is a cell of training trajectories');
+assert(isfield(trainset, 't'), 'trainset must have a field named "t" which is a cell of times corresponding to training trajectories');
+assert(numel(trainset.X)==numel(trainset.t),'number of training trajectories must be the same as number of time arrays')
+for ii=1:numel(trainset.t)
+    assert(size(trainset.X{ii},2)==size(trainset.t{ii},1),'length of training trajectory must be same as time points')
+end
+if ~isempty(U)
+    assert(isfield(trainset, 'XU'), 'model has inputs, trainset must have a field named "XU" which is a cell of training inputs');
+    assert(numel(trainset.XU)==numel(trainset.t),'number of input training data must be the same as number of time arrays and training trajectories')
+    for ii=1:numel(trainset.t)
+        assert(size(trainset.XU{ii},2)==size(trainset.t{ii},1),'length of training inputs must be same as time points')
+    end
+end
+end
