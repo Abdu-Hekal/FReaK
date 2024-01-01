@@ -80,6 +80,14 @@ for e = 1:numel(enhancements)
             % initialize seeds
             rng(0)
             pyrunfile("seed.py")
+            disp("--------------------------------------------------------")
+            name = req{i, 1};
+            fprintf('Benchmark: %s\n', name);
+            fprintf('enhancement=%d \n',enhancements(e));
+            %initialize progress bar
+            msg = sprintf('Runs completed: 0/10 \n');
+            fprintf(msg);
+            reverseStr = repmat(sprintf('\b'), 1, length(msg));
             for j = 1:10
                 kfModel = bench.kfModel();
                 name = req{i, 1};
@@ -122,9 +130,7 @@ for e = 1:numel(enhancements)
             end
             if isKey(solns,name)
                 %print info
-                disp("--------------------------------------------------------")
-                fprintf('Benchmark: %s\n', name);
-                fprintf('enhancement=%d \n',enhancements(e));
+                fprintf(reverseStr) %remove progress bar
                 if ~isempty(solns(name))
                     printInfo(solns(name),j)
                 else

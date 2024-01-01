@@ -48,9 +48,20 @@ for o = 1:numel(observables)
                 rng(0)
                 pyrunfile("seed.py")
                 disp("--------------------------------------------------------")
+                name = req{i, 1};
+                fprintf('Benchmark: %s\n', name);
+                if reach==0
+                    disp('- Baseline -')
+                else
+                    disp('- Reach -')
+                end
+                fprintf('Number of observables=%d \n',observables(o));
+                %initialize progress bar
+                msg = sprintf('Runs completed: 0/10 \n');
+                fprintf(msg);
+                reverseStr = repmat(sprintf('\b'), 1, length(msg));
                 for j = 1:10
                     kfModel = bench.kfModel();
-                    name = req{i, 1};
                     kfModel.ak.dt = req{i, 2};
                     eq = req{i, 3};
                     %settings
@@ -76,15 +87,13 @@ for o = 1:numel(observables)
                         soln{1}{end+1}=kfSoln;
                         solns(name)=soln;
                     end
+                    % Display the progress
+                    msg = sprintf('Runs completed: %d/10 \n',j); %Don't forget this semicolon
+                    fprintf([reverseStr, msg]);
+                    reverseStr = repmat(sprintf('\b'), 1, length(msg));
                 end
                 %print info
-                fprintf('Benchmark: %s\n', name);
-                if reach==0
-                    disp('Baseline:')
-                else
-                    disp('Reach:')
-                end
-                fprintf('Number of observables=%d \n',observables(o));
+                fprintf(reverseStr) %remove progress bar
                 if ~isempty(solns(name))
                     printInfo(solns(name),j)
                 else

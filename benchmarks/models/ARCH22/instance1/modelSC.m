@@ -20,6 +20,5 @@ function model = modelSC()
     model.T=35; 
     model.ak.dt= 0.1; %0.25;
     model.inputInterpolation='pchip';
-    model.cp=3500;
 
 end

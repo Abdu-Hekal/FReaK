@@ -25,9 +25,6 @@ function model = modelF16()
     model.dt = 0.01; 
     model.ak.dt= 0.1; 
     model.nResets=5;
-%     model.solver.dt=10;
-    model.cp=1500;
-    model.trainRand = 0;
 
     x = stl('x',16);
     eq = globally(x(12)>0,interval(0,15));

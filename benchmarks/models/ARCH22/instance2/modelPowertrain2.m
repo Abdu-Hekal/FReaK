@@ -18,8 +18,7 @@ model.R0 = interval(0,0);
 model.U = interval([0;900],[61.1;1100]);
 
 model.T=50;
-model.ak.dt= 5;
-%     model.solver.dt=10;
+model.ak.dt= 1;
 model.cp=[10,10];
 
 model.inputInterpolation='previous';

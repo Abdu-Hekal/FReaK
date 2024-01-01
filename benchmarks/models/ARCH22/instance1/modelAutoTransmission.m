@@ -20,7 +20,6 @@ function model = modelAutoTransmission()
     model.T=30; 
     model.dt = 0.01;
     model.ak.dt=1; %2.5
-    model.cp=[300 300];
 
     x = stl('x',3);
     eq = globally(x(2) < 4750,interval(0,10));

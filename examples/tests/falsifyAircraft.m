@@ -14,11 +14,17 @@ for i = 1:size(req, 1)
     % initialize seeds
     rng(0)
     pyrunfile("seed.py")
+    %name and stl
+    name = req{i, 1};
+    eq = req{i, 2};
     disp("--------------------------------------------------------")
+    fprintf('Benchmark: %s\n', name);
+    %initialize progress bar
+    msg = sprintf('Runs completed: 0/10 \n');
+    fprintf(msg);
+    reverseStr = repmat(sprintf('\b'), 1, length(msg));
     for j = 1:10
         kfModel = bench.kfModel();
-        name = req{i, 1};
-        eq = req{i, 2};
 
         kfModel.spec = specification(eq,'logic');
         kfSoln = falsify(kfModel);
@@ -31,13 +37,13 @@ for i = 1:size(req, 1)
             soln{1}{end+1}=kfSoln;
             solns(name)=soln;
         end
-
-        fprintf("number of simulations %d \n",kfSoln.sims)
-        fprintf('falsified iteration %d \n',j);
+        % Display the progress
+        msg = sprintf('Runs completed: %d/10 \n',j); %Don't forget this semicolon
+        fprintf([reverseStr, msg]);
+        reverseStr = repmat(sprintf('\b'), 1, length(msg));
     end
     %print info
-    fprintf('Benchmark: %s\n', name);
-    fprintf('Number of runs: %d\n', j);
+    fprintf(reverseStr) %remove progress bar
     if ~isempty(solns(name))
         printInfo(solns(name),j)
     else
