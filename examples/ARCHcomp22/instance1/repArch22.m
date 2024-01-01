@@ -90,7 +90,7 @@ for b = 1:length(benches)
         name = req{i, 1};
         fprintf('Benchmark: %s\n', name);
         %initialize progress bar
-        msg = sprintf('Runs completed: 0/10 \n');
+        msg = sprintf('Runs completed: 0/10');
         fprintf(msg);
         reverseStr = repmat(sprintf('\b'), 1, length(msg));
         for j = 1:10
@@ -118,7 +118,7 @@ for b = 1:length(benches)
             end
 
             % Display the progress
-            msg = sprintf('Runs completed: %d/10 \n',j); %Don't forget this semicolon
+            msg = sprintf('Runs completed: %d/10',j); %Don't forget this semicolon
             fprintf([reverseStr, msg]);
             reverseStr = repmat(sprintf('\b'), 1, length(msg));
         end

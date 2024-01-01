@@ -85,7 +85,7 @@ for e = 1:numel(enhancements)
             fprintf('Benchmark: %s\n', name);
             fprintf('enhancement=%d \n',enhancements(e));
             %initialize progress bar
-            msg = sprintf('Runs completed: 0/10 \n');
+            msg = sprintf('Runs completed: 0/10');
             fprintf(msg);
             reverseStr = repmat(sprintf('\b'), 1, length(msg));
             for j = 1:10
@@ -127,6 +127,10 @@ for e = 1:numel(enhancements)
                     soln{1}{end+1}=kfSoln;
                     solns(name)=soln;
                 end
+                % Display the progress
+                msg = sprintf('Runs completed: %d/10',j); %Don't forget this semicolon
+                fprintf([reverseStr, msg]);
+                reverseStr = repmat(sprintf('\b'), 1, length(msg));
             end
             if isKey(solns,name)
                 %print info
