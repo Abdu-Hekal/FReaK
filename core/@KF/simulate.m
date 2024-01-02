@@ -43,6 +43,11 @@ end
 
 tic
 if isa(obj.model, 'string') || isa(obj.model,"char")
+     %skip passing x0 as it is exact and set in the model. TODO: check if
+     %needs to be passed
+    if all(rad(obj.R0) == 0)
+        x0=[];
+    end
     [tout, yout] = runSimulink(obj.model, obj.T, x0, usim);
 elseif isa(obj.model,'function_handle')
     %function handle must have 3 inputs T,x0,u
