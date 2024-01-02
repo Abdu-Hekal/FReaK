@@ -45,7 +45,6 @@ diary('nresets.txt');
 
 resets=[2,3,5,10,20];
 for r = 1:numel(resets)
-    solns=dictionary(string.empty,cell.empty);
     for b = 1:length(benches)
         bench = benches{b};
         req = bench.requirements;
@@ -54,41 +53,28 @@ for r = 1:numel(resets)
             rng(0)
             pyrunfile("seed.py")
             disp("--------------------------------------------------------")
-            for j = 1:10
-                kfModel = bench.kfModel();
-                name = req{i, 1};
-                kfModel.ak.dt = req{i, 2};
-                eq = req{i, 3};
-                %settings
-                kfModel.nResets=resets(r);
+            kfModel = bench.kfModel();
+            name = req{i, 1};
+            kfModel.ak.dt = req{i, 2};
+            eq = req{i, 3};
+            %settings
+            kfModel.nResets=resets(r);
 
-                if name == "NNx"
-                    kfModel.U = interval(1.95,2.05);
-                end
-                if name == "AFC33"
-                    kfModel.U = interval([61.2;900],[81.2;1100]);
-                end
-
-                kfModel.spec = specification(eq,'logic');
-                kfSoln = falsify(kfModel);
-
-                if j==1
-                    solns(name)={{}};
-                end
-                if kfSoln.falsified
-                    soln=solns(name);
-                    soln{1}{end+1}=kfSoln;
-                    solns(name)=soln;
-                end
+            if name == "NNx"
+                kfModel.U = interval(1.95,2.05);
             end
+            if name == "AFC33"
+                kfModel.U = interval([61.2;900],[81.2;1100]);
+            end
+
+            kfModel.spec = specification(eq,'logic');
+            kfModel.runs=10;
+            kfSolns = falsify(kfModel);
+
             %print info
             fprintf('Benchmark: %s\n', name);
             fprintf('Number of resets=%d \n',resets(r));
-            if ~isempty(solns(name))
-                printInfo(solns(name),j)
-            else
-                fprintf('Number of successful falsified traces: 0/%d\n',j)
-            end
+            printInfo(kfSolns)
         end
     end
 end

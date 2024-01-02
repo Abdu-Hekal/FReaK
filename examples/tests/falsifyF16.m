@@ -5,13 +5,10 @@ kf.verb=2;
 kf.nResets=10;
 kf.maxSims=1;
 
-[kfSoln,trainset] = falsify(kf);
-
+[kfSolns,trainset] = falsify(kf);
+kfSoln=kfSolns{1};
 if kfSoln.falsified
     visualizeFalsification(kfSoln.best.x, trainset.t{1}, kf.spec, plot_vars)
-    disp(['simulations required: ',num2str(kf.soln.sims)])
-else
-    disp("No falsifiying trace found")
 end
 
 visualizeTrain(trainset,kfSoln.koopModel, plot_vars)

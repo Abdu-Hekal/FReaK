@@ -39,7 +39,6 @@ diary('nobservables.txt');
 observables=[10,20,30,40,50];
 for o = 1:numel(observables)
     for reach=0:1
-        solns=dictionary(string.empty,cell.empty);
         for b = 1:length(benches)
             bench = benches{b};
             req = bench.requirements;
@@ -48,48 +47,35 @@ for o = 1:numel(observables)
                 rng(0)
                 pyrunfile("seed.py")
                 disp("--------------------------------------------------------")
-                for j = 1:10
-                    kfModel = bench.kfModel();
-                    name = req{i, 1};
-                    kfModel.ak.dt = req{i, 2};
-                    eq = req{i, 3};
-                    %settings
-                    kfModel.reach.on=reach;
-                    kfModel.ak.nObs=observables(o);
-                    kfModel.ak.rank=[1,observables(o),observables(o)/5];
+                kfModel = bench.kfModel();
+                name = req{i, 1};
+                kfModel.ak.dt = req{i, 2};
+                eq = req{i, 3};
+                %settings
+                kfModel.reach.on=reach;
+                kfModel.ak.nObs=observables(o);
+                kfModel.ak.rank=[1,observables(o),observables(o)/5];
 
-                    if name == "NNx"
-                        kfModel.U = interval(1.95,2.05);
-                    end
-                    if name == "AFC33"
-                        kfModel.U = interval([61.2;900],[81.2;1100]);
-                    end
-
-                    kfModel.spec = specification(eq,'logic');
-                    kfSoln = falsify(kfModel);
-
-                    if j==1
-                        solns(name)={{}};
-                    end
-                    if kfSoln.falsified
-                        soln=solns(name);
-                        soln{1}{end+1}=kfSoln;
-                        solns(name)=soln;
-                    end
+                if name == "NNx"
+                    kfModel.U = interval(1.95,2.05);
                 end
+                if name == "AFC33"
+                    kfModel.U = interval([61.2;900],[81.2;1100]);
+                end
+
+                kfModel.spec = specification(eq,'logic');
+                kfModel.runs=10;
+                kfSolns = falsify(kfModel);
+
                 %print info
                 fprintf('Benchmark: %s\n', name);
                 if reach==0
-                    disp('Baseline:')
+                    disp('- Baseline -')
                 else
-                    disp('Reach:')
+                    disp('- Reach -')
                 end
                 fprintf('Number of observables=%d \n',observables(o));
-                if ~isempty(solns(name))
-                    printInfo(solns(name),j)
-                else
-                    fprintf('Number of successful falsified traces: 0/%d\n',j)
-                end
+                printInfo(kfSolns)
             end
         end
     end

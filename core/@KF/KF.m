@@ -85,6 +85,8 @@ classdef KF
         % Time trade off? (default=true)
 
         %SETTINGS
+        %runs: number of falsification attempts (default=1)
+        runs
         % maxSims: maximum number of simulations for training before
         % terminating, (default=100)
         maxSims
@@ -133,6 +135,7 @@ classdef KF
         % Constructor
         function obj = KF(model)
             obj.model=model;
+            obj.runs=1;
             obj.dt=0.01;
             obj.maxSims=5000;
             obj.timeout=inf;

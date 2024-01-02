@@ -15,34 +15,18 @@ for i = 1:size(req, 1)
     rng(0)
     pyrunfile("seed.py")
     disp("--------------------------------------------------------")
-    for j = 1:10
-        kfModel = bench.kfModel();
-        name = req{i, 1};
-        eq = req{i, 2};
+    kfModel = bench.kfModel();
+    name = req{i, 1};
+    eq = req{i, 2};
 
-        kfModel.spec = specification(eq,'logic');
-        kfSoln = falsify(kfModel);
+    kfModel.spec = specification(eq,'logic');
+    kfModel.runs=10;
+    kfSolns = falsify(kfModel);
 
-        if j==1
-            solns(name)={{}};
-        end
-        if kfSoln.falsified
-            soln=solns(name);
-            soln{1}{end+1}=kfSoln;
-            solns(name)=soln;
-        end
-
-        fprintf("number of simulations %d \n",kfSoln.sims)
-        fprintf('falsified iteration %d \n',j);
-    end
     %print info
     fprintf('Benchmark: %s\n', name);
-    fprintf('Number of runs: %d\n', j);
-    if ~isempty(solns(name))
-        printInfo(solns(name),j)
-    else
-        fprintf('Number of successful falsified traces: 0/%d\n',j)
-    end
+    printInfo(kfSolns)
+
 end
 diary off;
 

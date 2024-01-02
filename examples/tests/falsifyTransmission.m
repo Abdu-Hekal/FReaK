@@ -13,7 +13,8 @@ kfModel.spec = specification(eq,'logic');
 kfModel.maxSims=100;
 kfModel.verb=2;
 
-[kfSoln,trainset] = falsify(kfModel);
+[kfSolns,trainset] = falsify(kfModel);
+kfSoln=kfSolns{1};
 
 if kfSoln.falsified
     disp(['simulations required: ',num2str(kfSoln.sims)])

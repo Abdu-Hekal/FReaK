@@ -59,7 +59,6 @@ diary('timestep.txt');
 
 timesteps=[0.1,0.5,1,2.5,5,10];
 for t = 1:numel(timesteps)
-    solns=dictionary(string.empty,cell.empty);
     for b = 1:length(benches)
         bench = benches{b};
         req = bench.requirements;
@@ -68,38 +67,25 @@ for t = 1:numel(timesteps)
             rng(0)
             pyrunfile("seed.py")
             disp("--------------------------------------------------------")
-            for j = 1:10
-                kfModel = bench.kfModel();
-                name = req{i, 1};
-                eq = req{i, 3};
-                %settings
-                kfModel.timeout=1000;
-                kfModel.ak.dt=timesteps(t);
+            kfModel = bench.kfModel();
+            name = req{i, 1};
+            eq = req{i, 3};
+            %settings
+            kfModel.timeout=1000;
+            kfModel.ak.dt=timesteps(t);
 
-                if name == "NNx"
-                    kfModel.U = interval(1.95,2.05);
-                end
-
-                kfModel.spec = specification(eq,'logic');
-                kfSoln = falsify(kfModel);
-
-                if j==1
-                    solns(name)={{}};
-                end
-                if kfSoln.falsified
-                    soln=solns(name);
-                    soln{1}{end+1}=kfSoln;
-                    solns(name)=soln;
-                end
+            if name == "NNx"
+                kfModel.U = interval(1.95,2.05);
             end
+
+            kfModel.spec = specification(eq,'logic');
+            kfModel.runs=10;
+            kfSolns = falsify(kfModel);
+
             %print info
             fprintf('Benchmark: %s\n', name);
             fprintf('Timestep=%.1f \n',timesteps(t));
-            if ~isempty(solns(name))
-                printInfo(solns(name),j)
-            else
-                fprintf('Number of successful falsified traces: 0/%d\n',j)
-            end
+            printInfo(kfSolns)
         end
     end
 end

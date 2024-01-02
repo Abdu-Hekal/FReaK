@@ -67,6 +67,7 @@ assert(isa(obj.spec, 'specification'), 'Falsifying spec (obj.spec) must be defin
 all_steps = obj.T/obj.dt;
 assert(floor(all_steps)==all_steps,'Time step (dt) must be a factor of Time horizon (T)')
 
+assert(isnumeric(obj.runs) && isscalar(obj.runs) && obj.runs > 0 && mod(obj.runs, 1) == 0, 'The number of runs must be an integer greater than 0.');
 assert(islogical(obj.reach.on) || isnumeric(obj.reach.on) && isscalar(obj.reach.on) && ismember(obj.reach.on, [0, 1]), 'Reachability setting (obj.reach.on) must be a boolean');
 assert(isnumeric(obj.reach.tayOrder) && isscalar(obj.reach.tayOrder) && obj.reach.tayOrder > 0 && round(obj.reach.tayOrder) == obj.reach.tayOrder, 'Taylor order (obj.reach.tayOrder) must be a positive, integer, scalar number');
 

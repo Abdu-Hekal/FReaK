@@ -78,7 +78,6 @@ benches{end+1} = bench;
 % Start recording the command line output to a file
 diary('instance1.txt');
 
-solns=dictionary(string.empty,cell.empty);
 for b = 1:length(benches)
     bench = benches{b};
     req = bench.requirements;
@@ -87,44 +86,28 @@ for b = 1:length(benches)
         rng(0)
         pyrunfile("seed.py")
         disp("--------------------------------------------------------")
-        for j = 1:10
-            kfModel = bench.kfModel();
-            name = req{i, 1};
-            kfModel.ak.dt = req{i, 2};
-            eq = req{i, 3};
+        kfModel = bench.kfModel();
+        name = req{i, 1};
+        kfModel.ak.dt = req{i, 2};
+        eq = req{i, 3};
 
-            if name == "NNx"
-                kfModel.U = interval(1.95,2.05);
-            end
-            if name == "AFC33"
-                kfModel.U = interval([61.2;900],[81.2;1100]);
-            end
-
-            kfModel.spec = specification(eq,'logic');
-            kfModel.verb=0;
-            kfModel.nResets=5; %'auto'
-            kfSoln = falsify(kfModel);
-
-            if j==1
-                solns(name)={{}};
-            end
-            if kfSoln.falsified
-                soln=solns(name);
-                soln{1}{end+1}=kfSoln;
-                solns(name)=soln;
-            end
-            
-            fprintf("number of simulations to falsify %d \n",kfSoln.sims)
-            fprintf('falsified iteration %d \n',j);
+        if name == "NNx"
+            kfModel.U = interval(1.95,2.05);
         end
+        if name == "AFC33"
+            kfModel.U = interval([61.2;900],[81.2;1100]);
+        end
+
+        kfModel.spec = specification(eq,'logic');
+        kfModel.runs=10;
+        kfModel.verb=0;
+        kfModel.nResets=5; %'auto'
+        kfSolns = falsify(kfModel);
+
         %print info
         fprintf('Benchmark: %s\n', name);
-        fprintf('Number of runs: %d\n', j);
-        if ~isempty(solns(name))
-            printInfo(solns(name),j)
-        else
-            fprintf('Number of successful falsified traces: 0/%d\n',j)
-        end
+        printInfo(kfSolns)
+
     end
 end
 % Stop recording the command line output

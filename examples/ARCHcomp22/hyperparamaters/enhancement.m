@@ -80,57 +80,44 @@ for e = 1:numel(enhancements)
             % initialize seeds
             rng(0)
             pyrunfile("seed.py")
-            for j = 1:10
-                kfModel = bench.kfModel();
-                name = req{i, 1};
-                kfModel.ak.dt = req{i, 2};
-                eq = req{i, 3};
-                %settings
-                kfModel.timeout=1000;
-                if enhancements(e)==0
-                    kfModel.nResets=inf; kfModel.rmRand=0; kfModel.offsetStrat=0; kfModel.reach.on=0;
-                elseif enhancements(e)==1
-                    kfModel.nResets=5; kfModel.rmRand=0; kfModel.offsetStrat=0; kfModel.reach.on=0;
-                elseif enhancements(e)==2
-                    kfModel.nResets=5; kfModel.rmRand=0; kfModel.offsetStrat=-1; kfModel.reach.on=0;
-                elseif enhancements(e)==3
-                    kfModel.nResets=5; kfModel.rmRand=0; kfModel.offsetStrat=-1; kfModel.reach.on=1;
-                elseif enhancements(e)==4
-                    kfModel.nResets=5; kfModel.rmRand=1; kfModel.offsetStrat=-1; kfModel.reach.on=1;
-                end
-
-                %skip at6 benchmarks if no offset (unable to falsify any of them without offset)
-                if enhancements(e)<2 && contains(name,'AT6')
-                    break;
-                end
-
-                if name == "NNx"
-                    kfModel.U = interval(1.95,2.05);
-                end
-
-                kfModel.spec = specification(eq,'logic');
-                kfSoln = falsify(kfModel);
-
-                if j==1
-                    solns(name)={{}};
-                end
-                if kfSoln.falsified
-                    soln=solns(name);
-                    soln{1}{end+1}=kfSoln;
-                    solns(name)=soln;
-                end
+            disp("--------------------------------------------------------")
+            kfModel = bench.kfModel();
+            name = req{i, 1};
+            kfModel.ak.dt = req{i, 2};
+            eq = req{i, 3};
+            %settings
+            kfModel.timeout=1000;
+            if enhancements(e)==0
+                kfModel.nResets=inf; kfModel.rmRand=0; kfModel.offsetStrat=0; kfModel.reach.on=0;
+            elseif enhancements(e)==1
+                kfModel.nResets=5; kfModel.rmRand=0; kfModel.offsetStrat=0; kfModel.reach.on=0;
+            elseif enhancements(e)==2
+                kfModel.nResets=5; kfModel.rmRand=0; kfModel.offsetStrat=-1; kfModel.reach.on=0;
+            elseif enhancements(e)==3
+                kfModel.nResets=5; kfModel.rmRand=0; kfModel.offsetStrat=-1; kfModel.reach.on=1;
+            elseif enhancements(e)==4
+                kfModel.nResets=5; kfModel.rmRand=1; kfModel.offsetStrat=-1; kfModel.reach.on=1;
             end
-            if isKey(solns,name)
-                %print info
-                disp("--------------------------------------------------------")
-                fprintf('Benchmark: %s\n', name);
-                fprintf('enhancement=%d \n',enhancements(e));
-                if ~isempty(solns(name))
-                    printInfo(solns(name),j)
-                else
-                    fprintf('Number of successful falsified traces: 0/%d\n',j)
-                end
+
+            %skip at6 benchmarks if no offset (unable to falsify any of them without offset)
+            if enhancements(e)<2 && contains(name,'AT6')
+                break;
             end
+
+            if name == "NNx"
+                kfModel.U = interval(1.95,2.05);
+            end
+
+            kfModel.spec = specification(eq,'logic');
+            kfModel.runs=10;
+            kfSolns = falsify(kfModel);
+
+            %print info
+            fprintf('Benchmark: %s\n', name);
+            fprintf('enhancement=%d \n',enhancements(e));
+            printInfo(kfSolns)
+
+
         end
     end
 end

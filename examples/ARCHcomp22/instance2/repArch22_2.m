@@ -89,14 +89,13 @@ gamma=0.007;
 bench.requirements = {; ...
     "AFC27",1, globally(implies(rise|fall,globally(abs(x(1))<beta,interval(1,5))),interval(11,50)); ...
     "AFC29",1,globally(abs(x(1))<gamma,interval(11,50)) ; ...
-%     "AFC33",1, globally(abs(x(1))<gamma,interval(11,50)) ; ...
+    %     "AFC33",1, globally(abs(x(1))<gamma,interval(11,50)) ; ...
     };
 benches{end+1} = bench;
 
 % Start recording the command line output to a file
 diary('instance2.txt');
 
-solns=dictionary(string.empty,cell.empty);
 for b = 1:length(benches)
     bench = benches{b};
     req = bench.requirements;
@@ -105,43 +104,27 @@ for b = 1:length(benches)
         rng(0)
         pyrunfile("seed.py")
         disp("--------------------------------------------------------")
-        for j = 1:10
-            kfModel = bench.kfModel();
-            name = req{i, 1};
-            kfModel.ak.dt = req{i, 2};
-            eq = req{i, 3};
+        kfModel = bench.kfModel();
+        name = req{i, 1};
+        kfModel.ak.dt = req{i, 2};
+        eq = req{i, 3};
 
-            if name == "NNx"
-                kfModel.U = interval(1.95,2.05);
-                kfModel.T=3;
-            end
-            if name == "AFC33"
-                kfModel.U = interval([61.2;900],[81.2;1100]);
-            end
-
-            kfModel.spec = specification(eq,'logic');
-            kfSoln = falsify(kfModel);
-
-            if j==1
-                solns(name)={{}};
-            end
-            if kfSoln.falsified
-                soln=solns(name);
-                soln{1}{end+1}=kfSoln;
-                solns(name)=soln;
-            end
-
-            fprintf("number of simulations to falsify %d \n",kfSoln.sims)
-            fprintf('falsified iteration %d \n',j);
+        if name == "NNx"
+            kfModel.U = interval(1.95,2.05);
+            kfModel.T=3;
         end
+        if name == "AFC33"
+            kfModel.U = interval([61.2;900],[81.2;1100]);
+        end
+        kfModel.spec = specification(eq,'logic');
+        kfModel.runs=10;
+        kfModel.verb=0;
+        kfModel.nResets=5; %'auto'
+        kfSolns = falsify(kfModel);
+
         %print info
         fprintf('Benchmark: %s\n', name);
-        fprintf('Number of runs: %d\n', j);
-        if ~isempty(solns(name))
-            printInfo(solns(name),j)
-        else
-            fprintf('Number of successful falsified traces: 0/%d\n',j)
-        end
+        printInfo(kfSolns)
     end
 end
 % Stop recording the command line output
