@@ -3,15 +3,15 @@ function stl = coraBreachConvert(cora_stl)
 stl = str(cora_stl);
 
 if contains(stl,'U')
-    error("bluSTL does not currently (correctly) support until operator")
+    error("KF does not currently (correctly) support until operator")
 end
 
 if contains(stl,'X')
-    error("bluSTL does not currently support next operator")
+    error("KF does not currently support next operator")
 end
 
 if contains(stl,'R')
-    error("bluSTL does not currently support release operator")
+    error("KF does not currently support release operator")
 end
 
 
