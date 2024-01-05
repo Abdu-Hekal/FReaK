@@ -78,12 +78,12 @@ assert(isnumeric(obj.maxSims) && isscalar(obj.maxSims) && obj.maxSims > 0 && rou
 assert(isnumeric(obj.timeout) && isscalar(obj.timeout) && obj.timeout > 0, 'Timeout (obj.timeout) must be a positive, scalar number');
 
 assert((isnumeric(obj.nResets) && isscalar(obj.nResets) && obj.nResets > 0 && round(obj.nResets) == obj.nResets) || strcmp('auto',obj.nResets), 'Reset number (obj.maxSims) must be a positive, integer, scalar number OR a string (auto)');
-assert(isnumeric(obj.trainRand) && isscalar(obj.trainRand) && obj.trainRand >= 0 && obj.trainRand <= 3 && round(obj.trainRand) == obj.trainRand,'Training option (obj.trainRand) must be an integer between 0 and 3')
+assert(isnumeric(obj.trainStrat) && isscalar(obj.trainStrat) && obj.trainStrat >= 0 && obj.trainStrat <= 3 && round(obj.trainStrat) == obj.trainStrat,'Training option (obj.trainStrat) must be an integer between 0 and 3')
 assert(islogical(obj.rmRand) || isnumeric(obj.rmRand) && isscalar(obj.rmRand) && ismember(obj.rmRand, [0, 1]), 'Remove random training trajectory (obj.rmRand) must be a boolean');
-if obj.trainRand==1 || obj.trainRand==2
+if obj.trainStrat==2 || obj.trainStrat==3
     if obj.rmRand
         obj.rmRand=false;
-        vprintf(obj.verb,1,"Random training mode selected (obj.trainRand=%d), consequently obj.rmRand is set to false\n",obj.trainRand)
+        vprintf(obj.verb,1,"Random or neighborhood training mode selected (obj.trainStrat=%d), consequently obj.rmRand is set to false\n",obj.trainStrat)
     end
 end
 assert(isnumeric(obj.offsetStrat) && isscalar(obj.offsetStrat) && obj.offsetStrat >= -1 && obj.offsetStrat <= 1 && round(obj.offsetStrat) == obj.offsetStrat,'Offset strategy (obj.offsetStrat) must be an integer between -1 and 1')

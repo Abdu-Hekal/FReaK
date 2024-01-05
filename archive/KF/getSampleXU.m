@@ -1,8 +1,8 @@
-function [x0,u] = getSampleXU(obj)
+function [x0,u] = getSampleXU(obj,bestSoln)
 % getSampleXU - Generate a sample of initial state (x0) and input signal (u)
 %
 % Syntax:
-%    [x0, u] = getSampleXU(obj)
+%    [x0, u] = getSampleXU(obj,bestSoln)
 %
 % Description:
 %    This function generates a sample of initial state (x0) and input signal (u)
@@ -13,6 +13,7 @@ function [x0,u] = getSampleXU(obj)
 % Inputs:
 %    obj - KF object containing the Koopman model and various parameters
 %              needed for the falsification process.
+%   bestSoln - bestSoln found so far
 %
 % Outputs:
 %    x0 - Sampled initial state.
@@ -30,17 +31,17 @@ function [x0,u] = getSampleXU(obj)
 %
 % ------------- BEGIN CODE --------------
 
-if obj.trainRand~=2 || obj.bestSoln.rob==inf %no previous solution, i.e. obj.trainRand~=2 or first iteration
+if obj.trainStrat~=2 || bestSoln.rob==inf %no previous solution, i.e. obj.trainStrat~=2 or first iteration
     [x0,u]=getRandomSampleXU(obj);
 else
-    [x0,u]=getDispSampleXU(obj);
+    [x0,u]=getDispSampleXU(obj,bestSoln);
 end
 end
 
-function [x0,u]=getDispSampleXU(obj) %TODO: implement control points
+function [x0,u]=getDispSampleXU(obj,bestSoln) %TODO: implement control points
 
-u = obj.bestSoln.u(:,2:end);
-x0 = obj.bestSoln.x(1,:)';
+u = bestSoln.u(:,2:end);
+x0 = bestSoln.x(1,:)';
 uRange = obj.U;
 x0Range = obj.R0;
 u1 = size(u, 1);      % Number of time points
@@ -54,12 +55,13 @@ u = reshape(u,[],1);
 curSample = [u; x0];
 
 maxPerturb = perturb * (upperBound-lowerBound);
+
 lowerBound = max(curSample-maxPerturb,lowerBound); %maximum of perturbation and bounds on inputs
 upperBound = min(curSample+maxPerturb,upperBound); %minimum of perturbation and bounds on inputs
 
 newSample = (upperBound - lowerBound) .* rand(size(curSample)) + lowerBound;
 newU = newSample(1:u1*u2);
-u= [obj.bestSoln.u(:,1),reshape(newU,u1,u2)]; %append time from previously found best solution
+u= [bestSoln.u(:,1),reshape(newU,u1,u2)]; %append time from previously found best solution
 x0 = newSample(u1*u2+1:end);
 
 end

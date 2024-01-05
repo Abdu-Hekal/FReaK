@@ -47,6 +47,7 @@ for run=1:obj.runs
     [obj,trainset,soln,specSolns] = initialize(obj);
     trainIter = 0;
     falsified=false;
+    perturb=0;
 
     if nargin > 1
         trainset = varargin{1};
@@ -59,7 +60,7 @@ for run=1:obj.runs
                 break
             end
             %reset after size of trainset==nResets;
-            if (isnumeric(obj.nResets) && numel(trainset.X) >= obj.nResets) || (strcmp(obj.nResets,'auto') && trainIter>0 && getMinNormDistance(critX,critU,trainset,obj.R0,obj.U,obj.verb)<0.01)
+            if (isnumeric(obj.nResets) && numel(trainset.X) >= obj.nResets) || (strcmp(obj.nResets,'auto') && trainIter>0 && getMinNormDistance(critX,critU,trainset,obj.R0,obj.U,obj.verb)<0.1)
                 trainIter = 0;
                 %reset offsets
                 for ii=1:numel(obj.spec)
@@ -75,16 +76,17 @@ for run=1:obj.runs
 
             %if first iter, random trajectory setting selected, or critical trajectory is
             %repeated, retrain with random xu else retrain with prev traj
-            if trainIter==0 || obj.trainRand>=2 || ( obj.trainRand==1 && rem(trainIter, 2) == 0) || checkRepeatedTraj(critX,critU,trainset,obj.verb)
+            if trainIter==0 || obj.trainStrat>=2 || checkRepeatedTraj(critX,critU,trainset,obj.verb)
                 if trainIter>0 && obj.solver.opts.usex0==1 && checkRepeatedTraj(critX,critU,trainset,obj.verb)
                     obj.solver.opts.usex0=0; %turn off warmstarting if repeated trajectory returned by solver
                     disp('Turned off warmstarting due to repeated solutions')
                 end
-                [t, x, u, simTime] = randSimulation(obj);
+                [t, x,u, simTime,perturb] = sampleSimulation(obj, soln.best,perturb);
                 soln.sims = soln.sims+1;
                 soln.simTime = soln.simTime+simTime;
                 %check if random input falsifies system, and break if it does
-                [soln,falsified]=checkFalsification(soln,x,u,t,obj.spec,obj.inputInterpolation,'reset simulation',obj.verb);
+                [soln,falsified,~,~,newBest_]=checkFalsification(soln,x,u,t,obj.spec,obj.inputInterpolation,'reset simulation',obj.verb);
+                if newBest_; perturb=obj.sampPerturb; end %reset pertrubation if new best soln found
                 if falsified; break; end
 
                 tak = (0:obj.ak.dt:obj.T)'; %define autokoopman time points
@@ -140,11 +142,12 @@ for run=1:obj.runs
                 soln.sims = soln.sims+1;
                 soln.simTime = soln.simTime+simTime;
 
-                [soln,falsified,robustness,Bdata]=checkFalsification(soln,critX,critU,t,obj.spec,obj.inputInterpolation,'kf optimization',obj.verb);
+                [soln,falsified,robustness,Bdata,newBest_]=checkFalsification(soln,critX,critU,t,obj.spec,obj.inputInterpolation,'kf optimization',obj.verb);
+                if newBest_; perturb=0; end %reset pertrubation if new best soln found
                 if falsified; break; end
 
                 if robustness~=inf %there exist a value for robustness for which we can neighborhood train or offset
-                    if obj.trainRand==2 && robustness >= soln.best.rob %neighborhood training mode
+                    if obj.trainStrat==2 && robustness >= soln.best.rob %neighborhood training mode
                         %remove last entry because it is not improving the obj
                         trainset.X(end) = []; trainset.XU(end)=[]; trainset.t(end) = [];
                     end
@@ -225,7 +228,7 @@ for r = 1:length(trainset.X)
 
     if isequal(critX(1,:)',trainset.X{r}(:,1)) && isequal(critU(:,2:end)',trainset.XU{r})
         repeatedTraj = true;
-        vprintf(verb,3,2,"repeated critical trajectory, generating a new random trajectory \n")
+        vprintf(verb,2,2,"repeated critical trajectory, generating a new random trajectory \n")
         break
     end
 end

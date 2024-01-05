@@ -95,14 +95,17 @@ classdef KF
         % nResets: reset training set after n trajectories (default=5),
         % note that we also reset if milp fails to solve (model is bad)
         nResets
-        % trainRand: int, set to 3 to train with random trajectory, 2 to
-        % train with random neighborhood trajectory, 0 to train with
-        % previously found crit trajectory or 1 to alternate between prev
-        % and random. (default=0)
-        trainRand
+        % trainStrat: int, set to 3 to train with random trajectory, 2 to
+        % train with random neighborhood trajectory, 1 to train with
+        % previously found crit trajectory and reset to neighbor trajectory
+        % or 0 to train with previously found crit trajectory and reset to 
+        % random trajectory (default=0)
+        trainStrat
         % rmRand: bool, set to true to remove first random trajectory when
         % training or false otherwise, (default=true)
         rmRand
+        % perturbation percentage increase for generating neighborhood samples
+        sampPerturb
         % offsetStrat: int, set 1 to refine with offset, 0 for no offset,
         % -1 to offset next iteration (after retraining koopman model),
         % (default=-1).
@@ -140,8 +143,9 @@ classdef KF
             obj.maxSims=5000;
             obj.timeout=inf;
             obj.nResets=5; %5
-            obj.trainRand=0;
+            obj.trainStrat=0;
             obj.rmRand=true; %true
+            obj.sampPerturb=0.05;
             obj.offsetStrat=-1; %-1
             obj.inputInterpolation='previous';
             obj.trajInterpolation='linear';

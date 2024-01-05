@@ -1,6 +1,6 @@
-function [soln,falsified,robustness,Bdata]=checkFalsification(soln,x,u,t,specs,inputInterpolation,method,verb)
+function [soln,falsified,robustness,Bdata,newBest]=checkFalsification(soln,x,u,t,specs,inputInterpolation,method,verb)
 falsified=false; robustness=inf;
-Bdata=NaN;
+Bdata=NaN; newBest=false;
 for ii=1:numel(specs)
     spec=specs(ii);
     % different types of specifications
@@ -20,10 +20,11 @@ for ii=1:numel(specs)
             falsified=true;
         end
     end
-    if robustness < soln.best.rob || falsified
+    if robustness < soln.best.rob
         vprintf(verb,2,"new best robustness!: %.3f after %d simulations due to: %s \n",robustness,soln.sims,method)
         soln.best.rob=robustness;
         soln.best.x=x; soln.best.u=u; soln.best.t=t;
+        newBest=true; %found a new best soln
     end
     if falsified
         break;
