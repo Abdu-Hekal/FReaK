@@ -48,6 +48,7 @@ for run=1:obj.runs
     trainIter = 0;
     falsified=false;
     perturb=0;
+    tak = (0:obj.ak.dt:obj.T)'; %define autokoopman time points
 
     if nargin > 1
         trainset = varargin{1};
@@ -89,7 +90,6 @@ for run=1:obj.runs
                 if newBest_; perturb=obj.sampPerturb; end %reset pertrubation if new best soln found
                 if falsified; break; end
 
-                tak = (0:obj.ak.dt:obj.T)'; %define autokoopman time points
                 xak = interp1(t,x,tak,obj.trajInterpolation); %define autokoopman trajectory points
             else
                 xak=interp1(t,critX,tak,obj.trajInterpolation); %pass x0 as full x to avoid simulation again

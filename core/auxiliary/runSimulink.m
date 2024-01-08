@@ -51,6 +51,7 @@ function [tout, yout] = runSimulink(model_name, T, x0, u)
 
     % Configure simulation parameters
     assignin('base','T',T);
+    simIn = simIn.setModelParameter('InitInArrayFormatMsg', 'none'); %turn off warning of initial set is array
     simIn = simIn.setModelParameter('StopTime', 'T');
     simIn = simIn.setModelParameter('SaveTime', 'on', 'TimeSaveName', 'tout');
     simIn = simIn.setModelParameter('SaveOutput', 'on', 'OutputSaveName', 'yout');

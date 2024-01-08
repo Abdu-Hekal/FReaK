@@ -22,4 +22,8 @@ function model = modelSC()
     model.inputInterpolation='pchip';
     model.cp=3500;
 
+    x = stl('x',4);
+    eq=globally(x(4)>=87 & x(4)<=87.5,interval(30,35));
+    model.spec = specification(eq,'logic');
+
 end
