@@ -93,9 +93,6 @@ bench.requirements = {; ...
     };
 benches{end+1} = bench;
 
-% Start recording the command line output to a file
-diary('instance2.txt');
-
 solns=dictionary(string.empty,cell.empty);
 for b = 1:length(benches)
     bench = benches{b};
@@ -142,13 +139,15 @@ for b = 1:length(benches)
         end
         %print info
         fprintf(reverseStr) %remove progress bar
+        % Start recording the command line output to a file
+        diary('instance2.txt');
         if ~isempty(solns(name))
             printInfo(solns(name),j)
         else
             fprintf('Number of successful falsified traces: 0/%d\n',j)
         end
+        % Stop recording the command line output
+        diary off;
     end
 end
-% Stop recording the command line output
-diary off;
 end

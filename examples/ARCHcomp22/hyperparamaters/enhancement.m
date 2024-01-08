@@ -67,9 +67,6 @@ bench.requirements = {; ...
     };
 benches{end+1} = bench;
 
-% Start recording the command line output to a file
-diary('enhancement.txt');
-
 enhancements=[0,1,2,3,4];
 for e = 1:numel(enhancements)
     solns=dictionary(string.empty,cell.empty);
@@ -80,10 +77,12 @@ for e = 1:numel(enhancements)
             % initialize seeds
             rng(0)
             pyrunfile("seed.py")
+            diary('enhancement.txt');
             disp("--------------------------------------------------------")
             name = req{i, 1};
             fprintf('Benchmark: %s\n', name);
             fprintf('enhancement=%d \n',enhancements(e));
+            diary off;
             %initialize progress bar
             msg = sprintf('Runs completed: 0/10');
             fprintf(msg);
@@ -135,16 +134,18 @@ for e = 1:numel(enhancements)
             if isKey(solns,name)
                 %print info
                 fprintf(reverseStr) %remove progress bar
+                % Start recording the command line output to a file
+                diary('enhancement.txt');
                 if ~isempty(solns(name))
                     printInfo(solns(name),j)
                 else
                     fprintf('Number of successful falsified traces: 0/%d\n',j)
                 end
+                % Stop recording the command line output
+                diary off;
             end
         end
     end
 end
-% Stop recording the command line output
-diary off;
 end
 

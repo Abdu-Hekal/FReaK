@@ -5,9 +5,6 @@ bench.requirements = {; ...
     "phi2",globally(x(3)>0,interval(0,4)); ...
     };
 
-% Start recording the command line output to a file
-diary('aircraft.txt');
-
 solns=dictionary(string.empty,cell.empty);
 req = bench.requirements;
 for i = 1:size(req, 1)
@@ -17,8 +14,12 @@ for i = 1:size(req, 1)
     %name and stl
     name = req{i, 1};
     eq = req{i, 2};
+    % Start recording the command line output to a file
+    diary('aircraft.txt');
     disp("--------------------------------------------------------")
     fprintf('Benchmark: %s\n', name);
+    diary off;
+
     %initialize progress bar
     msg = sprintf('Runs completed: 0/10');
     fprintf(msg);
@@ -44,12 +45,14 @@ for i = 1:size(req, 1)
     end
     %print info
     fprintf(reverseStr) %remove progress bar
+    % Start recording the command line output to a file
+    diary('aircraft.txt');
     if ~isempty(solns(name))
         printInfo(solns(name),j)
     else
         fprintf('Number of successful falsified traces: 0/%d\n',j)
     end
+    diary off;
 end
-diary off;
 
 

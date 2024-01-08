@@ -33,9 +33,6 @@ bench.requirements = {; ...
     };
 benches{end+1} = bench;
 
-% Start recording the command line output to a file
-diary('nobservables.txt');
-
 observables=[10,20,30,40,50];
 for o = 1:numel(observables)
     for reach=0:1
@@ -47,6 +44,7 @@ for o = 1:numel(observables)
                 % initialize seeds
                 rng(0)
                 pyrunfile("seed.py")
+                diary('nobservables.txt');
                 disp("--------------------------------------------------------")
                 name = req{i, 1};
                 fprintf('Benchmark: %s\n', name);
@@ -56,6 +54,8 @@ for o = 1:numel(observables)
                     disp('- Reach -')
                 end
                 fprintf('Number of observables=%d \n',observables(o));
+                diary off;
+
                 %initialize progress bar
                 msg = sprintf('Runs completed: 0/10');
                 fprintf(msg);
@@ -94,17 +94,20 @@ for o = 1:numel(observables)
                 end
                 %print info
                 fprintf(reverseStr) %remove progress bar
+                % Start recording the command line output to a file
+                diary('nobservables.txt');
                 if ~isempty(solns(name))
                     printInfo(solns(name),j)
                 else
                     fprintf('Number of successful falsified traces: 0/%d\n',j)
                 end
+                % Stop recording the command line output
+                diary off;
             end
         end
     end
 end
-% Stop recording the command line output
-diary off;
+
 end
 
 

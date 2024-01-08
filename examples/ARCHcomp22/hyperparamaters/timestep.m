@@ -54,8 +54,6 @@ bench.requirements = {; ...
     };
 benches{end+1} = bench;
 
-% Start recording the command line output to a file
-diary('timestep.txt');
 timesteps=[0.1,0.5,1,2.5,5,10];
 for t = 1:numel(timesteps)
     solns=dictionary(string.empty,cell.empty);
@@ -66,10 +64,13 @@ for t = 1:numel(timesteps)
             % initialize seeds
             rng(0)
             pyrunfile("seed.py")
+            diary('timestep.txt');
             disp("--------------------------------------------------------")
             name = req{i, 1};
             fprintf('Benchmark: %s\n', name);
             fprintf('Timestep=%.1f \n',timesteps(t));
+            diary off;
+
             %initialize progress bar
             msg = sprintf('Runs completed: 0/10');
             fprintf(msg);
@@ -103,15 +104,18 @@ for t = 1:numel(timesteps)
             end
             %print info
             fprintf(reverseStr) %remove progress bar
+            % Start recording the command line output to a file
+            diary('timestep.txt');
             if ~isempty(solns(name))
                 printInfo(solns(name),j)
             else
                 fprintf('Number of successful falsified traces: 0/%d\n',j)
             end
+            % Stop recording the command line output
+            diary off;
         end
     end
 end
-% Stop recording the command line output
-diary off;
+
 end
 
