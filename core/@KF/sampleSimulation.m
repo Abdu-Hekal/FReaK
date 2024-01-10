@@ -14,9 +14,6 @@ function [tout, yout, u, simTime,perturb] = sampleSimulation(obj,varargin)
 %
 % Inputs:
 %    obj - Koopman Falsification (KF) object
-%    bestSoln (optional) - best soln found so far. used for generating
-%    perturbed sample
-%    perturb (optional) - perturbation factor (default=0)
 %
 % Outputs:
 %    tout - Time vector of simulation
@@ -35,67 +32,90 @@ function [tout, yout, u, simTime,perturb] = sampleSimulation(obj,varargin)
 % Last revision: ---
 %------------- BEGIN CODE --------------
 
-bestSoln=[]; perturb=0;
+allU=[]; allRob=[];
 if nargin>1
-    bestSoln=varargin{1};
-    assert(isstruct(bestSoln), 'provided argument must be a struct storing best solution');
-    % Check if the struct has fields x, u, and t
-    assert(isfield(bestSoln, 'x'), 'bestSoln must have a field named x');
-    assert(isfield(bestSoln, 'u'), 'bestSoln must have a field named u');
-    assert(isfield(bestSoln, 't'), 'bestSoln must have a field named t');
+    allU=varargin{1};
 end
 if nargin>2
-    assert(isnumeric(perturb), 'perturb must be a numeric value');
-    assert(perturb >= 0 && perturb <= 1, 'perturb must be between 0 and 1');
-    perturb=varargin{2};
+    allRob=varargin{2};
 end
-if isempty(bestSoln) || obj.trainStrat==0 || obj.trainStrat==3 || bestSoln.rob==inf
+if isempty(allU) || obj.trainStrat==0 || obj.trainStrat==3
     [x0,u] = getRandomSampleXU(obj);
     [tout, yout, simTime] = simulate(obj, x0, u);
 else
-    if perturb==0 %return exact bestSoln as new training sample
-        tout=bestSoln.t;
-        yout=bestSoln.x;
-        u=bestSoln.u;
-        simTime=0;
-    else
-        [x0,u]=getDispSampleXU(obj,bestSoln,perturb);
-        [tout, yout, simTime] = simulate(obj, x0, u);
+    try
+        [x0,u]=getDispSampleXU(obj,allU,allRob);
+    catch
+        vprintf(obj.verb,1,'Error in mopso optimization for reset, using random reset \n')
+        [x0,u] = getRandomSampleXU(obj);
     end
-    perturb=min(1,perturb+obj.sampPerturb);
+    [tout, yout, simTime] = simulate(obj, x0, u);
 end
 end
 
-function [x0,u]=getDispSampleXU(obj,bestSoln,perturb)
+function [x0,u]=getDispSampleXU(obj,allU,allRob)
 
-u = bestSoln.u(:,2:end);
-x0 = bestSoln.x(1,:)';
 uRange = obj.U;
 x0Range = obj.R0;
-u1 = size(u, 1);      % Number of time points
-u2 = size(u, 2);      % Number of inputs
-
-lowerBound = [];
-upperBound=[];
-for i=1:size(uRange,1)
-    lowerBound=[lowerBound;repmat(uRange.inf(i),size(u,1),1)];
-    upperBound = [upperBound;repmat(uRange.sup(i),size(u,1),1)];
+u1=size(uRange,1); %shape of input ports
+nInputs = size(allU, 2); % total number of inputs
+if ~all(rad(x0Range) == 0) %find number of external inputs
+    nExtInputs=nInputs-dim(x0Range);
+else
+    nExtInputs=nInputs;
 end
-lowerBound=[lowerBound;x0Range.inf];
-upperBound=[upperBound;x0Range.sup];
+assert(mod(nInputs, u1) == 0, 'total number of inputs is not divisible by number of input ports');
+lowerBound=repelem(uRange.inf,round(nExtInputs/u1))';
+upperBound = repelem(uRange.sup,round(nExtInputs/u1))';
 
-u = reshape(u,[],1);
-curSample = [u; x0];
+if ~all(rad(x0Range) == 0) %append initial set bounds if not exact
+    lowerBound=[lowerBound,x0Range.inf'];
+    upperBound=[upperBound,x0Range.sup'];
+end
 
-maxPerturb = perturb * (upperBound-lowerBound);
+% Initialize MOPSO Parameters
+MOparams.Np = 20;        % Population size
+MOparams.Nr = 20;        % Repository size
+MOparams.maxgen = 50;    % Maximum number of generations
+MOparams.W = 0.4;         % Inertia weight
+MOparams.C1 = 2;          % Individual confidence factor
+MOparams.C2 = 2;          % Swarm confidence factor
+MOparams.ngrid = 20;      % Number of grids in each dimension
+MOparams.maxvel = 5;      % Maxmium vel in percentage
+MOparams.u_mut = 0.5;     % Uniform mutation percentage
+MultiObj.nVar = nInputs;  % Set problem dimension
+MultiObj.var_min = lowerBound;
+MultiObj.var_max = upperBound;
 
-lowerBound = max(curSample-maxPerturb,lowerBound); %maximum of perturbation and bounds on inputs
-upperBound = min(curSample+maxPerturb,upperBound); %minimum of perturbation and bounds on inputs
+%Fit Gaussian Process Meta Mod  el
+GPmod = OK_Rmodel_kd_nugget(allU, allRob, 0, 2);
 
-newSample = (upperBound - lowerBound) .* rand(size(curSample)) + lowerBound;
-newU = newSample(1:u1*u2);
-u= [bestSoln.u(:,1),reshape(newU,u1,u2)]; %append time from previously found best solution
-x0 = newSample(u1*u2+1:end);
+% optimize EI and CD with MOPSO
+MultiObj.fun = @(x)[-EIcalc_kd(x,allU,GPmod,allRob), -CrowdingDist_kd(x,allU)];
 
+pf = MOPSO(MOparams,MultiObj);
+[minNegEI, index] = min(pf.pos_fit(:,1));
+
+crowded_EI_flag=1;
+alpha_lvl_set = 0.05; %the top percent of EI values to be inluded in the crowding distance phase
+%use crowded EI
+if crowded_EI_flag == 1
+    best_crowd = inf;
+    for k = 1:size(pf.pos,1)
+        if pf.pos_fit(k,1) <= (minNegEI*(1-alpha_lvl_set))
+            if pf.pos_fit(k,2) < best_crowd
+                best_crowd = pf.pos_fit(k,2);
+                newSample = pf.pos(k,:);
+            end
+        end
+    end
+    %use standard EI
+else
+    newSample = pf.pos(index,:);
+end
+newU = newSample(1:nExtInputs);
+tak = (0:obj.ak.dt:obj.T)'; %define autokoopman time points
+u= [tak,reshape(newU,[],u1)]; %append time points
+x0 = newSample(nExtInputs+1:end);
 end
 

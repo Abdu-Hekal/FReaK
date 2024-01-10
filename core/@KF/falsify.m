@@ -49,6 +49,7 @@ for run=1:obj.runs
     falsified=false;
     perturb=0;
     tak = (0:obj.ak.dt:obj.T)'; %define autokoopman time points
+    allU=[]; allRob=[]; %empty array to store all inputs and corresponding robustness
 
     if nargin > 1
         trainset = varargin{1};
@@ -61,7 +62,7 @@ for run=1:obj.runs
                 break
             end
             %reset after size of trainset==nResets;
-            if (isnumeric(obj.nResets) && numel(trainset.X) >= obj.nResets) || (strcmp(obj.nResets,'auto') && trainIter>0 && getMinNormDistance(critX,critU,trainset,obj.R0,obj.U,obj.verb)<0.1)
+            if (isnumeric(obj.nResets) && numel(trainset.X) >= obj.nResets) || (strcmp(obj.nResets,'auto') && trainIter>0 && getMinNormDistance(critX,critU,trainset,obj.R0,obj.U,obj.verb)<0.05)
                 trainIter = 0;
                 %reset offsets
                 for ii=1:numel(obj.spec)
@@ -82,11 +83,14 @@ for run=1:obj.runs
                     obj.solver.opts.usex0=0; %turn off warmstarting if repeated trajectory returned by solver
                     disp('Turned off warmstarting due to repeated solutions')
                 end
-                [t, x,u, simTime,perturb] = sampleSimulation(obj, soln.best,perturb);
+                [t, x,u, simTime] = sampleSimulation(obj, allU, allRob);
                 soln.sims = soln.sims+1;
                 soln.simTime = soln.simTime+simTime;
                 %check if random input falsifies system, and break if it does
-                [soln,falsified,~,~,newBest_]=checkFalsification(soln,x,u,t,obj.spec,obj.inputInterpolation,'reset simulation',obj.verb);
+                [soln,falsified,rob,~,newBest_]=checkFalsification(soln,x,u,t,obj.spec,obj.inputInterpolation,'reset simulation',obj.verb);
+                newU=reshape(u(:,2:end),1,[]);
+                if ~all(rad(obj.R0) == 0); newU=[newU,x(1,:)]; end %append initial set if not exact
+                allU=[allU;newU]; allRob=[allRob;rob];
                 if newBest_; perturb=obj.sampPerturb; end %reset pertrubation if new best soln found
                 if falsified; break; end
 
@@ -143,6 +147,9 @@ for run=1:obj.runs
                 soln.simTime = soln.simTime+simTime;
 
                 [soln,falsified,robustness,Bdata,newBest_]=checkFalsification(soln,critX,critU,t,obj.spec,obj.inputInterpolation,'kf optimization',obj.verb);
+                newU=reshape(u(:,2:end),1,[]);
+                if ~all(rad(obj.R0) == 0); newU=[newU,x(1,:)]; end %append initial set if not exact
+                allU=[allU;newU]; allRob=[allRob;rob];
                 if newBest_; perturb=0; end %reset pertrubation if new best soln found
                 if falsified; break; end
 
