@@ -101,7 +101,7 @@ for b = 1:length(benches)
         kfModel.spec = specification(eq,'logic');
         kfModel.runs=10;
         kfModel.nResets=5; %'auto'
-        kfModel.verb=0;
+        kfModel.verb=1;
         kfModel.trainStrat=1;
         kfSolns = falsify(kfModel);
 

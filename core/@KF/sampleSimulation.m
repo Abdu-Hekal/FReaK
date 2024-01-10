@@ -74,9 +74,9 @@ if ~all(rad(x0Range) == 0) %append initial set bounds if not exact
 end
 
 % Initialize MOPSO Parameters
-MOparams.Np = 20;        % Population size
-MOparams.Nr = 20;        % Repository size
-MOparams.maxgen = 50;    % Maximum number of generations
+MOparams.Np = 200;        % Population size
+MOparams.Nr = 200;        % Repository size
+MOparams.maxgen = 500;    % Maximum number of generations
 MOparams.W = 0.4;         % Inertia weight
 MOparams.C1 = 2;          % Individual confidence factor
 MOparams.C2 = 2;          % Swarm confidence factor
