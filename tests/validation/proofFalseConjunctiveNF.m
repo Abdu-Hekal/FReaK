@@ -10,7 +10,7 @@ conjunctiveeq = conjunctiveNormalForm(eq);
 spec = specification(eq,'logic');
 conjunctiveSpec=specification(conjunctiveeq,'logic');
 
-[tout, yout, x0, u]=kfModel.randSimulation();
+[tout, yout, u]=kfModel.sampleSimulation();
 tsim = (0:kfModel.dt:kfModel.T)'; %define time points for interpolating simulation
 usim = interp1(u(:,1),u(:,2:end),tsim,kfModel.inputInterpolation,"extrap"); %interpolate and extrapolate input points
 usim =  max(kfModel.U.inf',min(kfModel.U.sup',usim)); %ensure that extrapolation is within input bounds

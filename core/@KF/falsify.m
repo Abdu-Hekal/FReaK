@@ -1,4 +1,4 @@
-function [solns,trainset] = falsify(obj,varargin)
+function [solns,allData] = falsify(obj,varargin)
 
 % falsify - Given a model and a set of specs (safe/unsafe set/stl),
 %   perform the core falsification procedure to find a falsifying trajectory
@@ -22,8 +22,9 @@ function [solns,trainset] = falsify(obj,varargin)
 %           containing the results of the falsification process, including
 %           the falsifying trajectory, simulation time, and other information.
 %
-%    trainset - Structure containing the training data, including the trajectories and
-%               inputs used during the falsification process.
+%    allData - Structure containing all data, including the trajectories and
+%               inputs used during the falsification process as well as all 
+%               koopman models.
 %
 % See also:
 %
@@ -44,10 +45,10 @@ for run=1:obj.runs
 
     runtime=tic;
     %initialization and init assertions
-    [obj,trainset,soln,specSolns] = initialize(obj);
+    [obj,trainset,soln,specSolns,allData] = initialize(obj);
     trainIter = 0;
     falsified=false;
-    perturb=0;
+    perturb=0; %perturbation percentage for neighborhood reset
     tak = (0:obj.ak.dt:obj.T)'; %define autokoopman time points
 
     if nargin > 1
@@ -75,18 +76,21 @@ for run=1:obj.runs
                 trainset.X = {}; trainset.XU={}; trainset.t = {};
             end
 
-            %if first iter, random trajectory setting selected, or critical trajectory is
-            %repeated, retrain with random xu else retrain with prev traj
-            if trainIter==0 || obj.trainStrat>=2 || checkRepeatedTraj(critX,critU,trainset,obj.verb)
+            %if first iter, random or neighborhood training selected, or critical trajectory is
+            %repeated, retrain with new xu else retrain with prev traj
+            if trainIter==0 || obj.trainStrat>=1 || checkRepeatedTraj(critX,critU,trainset,obj.verb)
                 if trainIter>0 && obj.solver.opts.usex0==1 && checkRepeatedTraj(critX,critU,trainset,obj.verb)
                     obj.solver.opts.usex0=0; %turn off warmstarting if repeated trajectory returned by solver
                     disp('Turned off warmstarting due to repeated solutions')
                 end
-                [t, x,u, simTime,perturb] = sampleSimulation(obj, soln.best,perturb);
+                [t,x,u,simTime] = sampleSimulation(obj,allData,perturb);
+                perturb=min(1,perturb+obj.sampPerturb); %increase perturbation
                 soln.sims = soln.sims+1;
                 soln.simTime = soln.simTime+simTime;
                 %check if random input falsifies system, and break if it does
-                [soln,falsified,~,~,newBest_]=checkFalsification(soln,x,u,t,obj.spec,obj.inputInterpolation,'reset simulation',obj.verb);
+                [soln,falsified,robustness,~,newBest_]=checkFalsification(soln,x,u,t,obj.spec,obj.inputInterpolation,'reset simulation',obj.verb);
+                allData.X{end+1}=x; allData.XU{end+1}=u; allData.t{end+1}=t; allData.Rob=[allData.Rob;robustness];
+                if nargout>1;allData.koopModels{end+1}=[];end %store empty model as we are in reset
                 if newBest_; perturb=obj.sampPerturb; end %reset pertrubation if new best soln found
                 if falsified; break; end
 
@@ -105,8 +109,7 @@ for run=1:obj.runs
 
         %run autokoopman and learn linearized model
         [koopModel,koopTime] = learnKoopModel(obj, trainset);
-        soln.koopModel=koopModel; %store koopman model
-        soln.koopTime = soln.koopTime+koopTime;
+        soln.koopTime = soln.koopTime+koopTime; 
         % compute reachable set for Koopman linearized model (if reachability is used)
         if obj.reach.on
             reachTime=tic;
@@ -143,11 +146,13 @@ for run=1:obj.runs
                 soln.simTime = soln.simTime+simTime;
 
                 [soln,falsified,robustness,Bdata,newBest_]=checkFalsification(soln,critX,critU,t,obj.spec,obj.inputInterpolation,'kf optimization',obj.verb);
+                allData.X{end+1}=x; allData.XU{end+1}=u; allData.t{end+1}=t; allData.Rob=[allData.Rob;robustness];
+                if nargout>1;allData.koopModels{end+1}=koopModel;end %store koop model if needed
                 if newBest_; perturb=0; end %reset pertrubation if new best soln found
                 if falsified; break; end
 
                 if robustness~=inf %there exist a value for robustness for which we can neighborhood train or offset
-                    if obj.trainStrat==2 && robustness >= soln.best.rob %neighborhood training mode
+                    if obj.trainStrat==1 && robustness >= soln.best.rob %neighborhood training mode
                         %remove last entry because it is not improving the obj
                         trainset.X(end) = []; trainset.XU(end)=[]; trainset.t(end) = [];
                     end
@@ -195,6 +200,8 @@ for run=1:obj.runs
     %assign solution result
     soln.falsified=falsified;
     soln.runtime=toc(runtime); %record runtime
+    %store best soln
+    soln.best.koopModel=koopModel; %store koopman model
 
     LogicalStr = {'No', 'Yes'};
     vprintf(obj.verb,1,'<-------------------------------------------------------> \n')
@@ -220,15 +227,9 @@ function repeatedTraj = checkRepeatedTraj(critX,critU,trainset,verb)
 %check if critical initial set & input are the vsame as found before
 repeatedTraj = false;
 for r = 1:length(trainset.X)
-
-    %     A=trainset.XU{r};
-    %     B=critU(:,2:end)';
-    %     normalized_distance = norm(A - B) / (sqrt(2) * max(norm(A), norm(B)));
-    %     vprintf(verb,2,"normalize distance with trainset %d is %f \n",r,normalized_distance)
-
     if isequal(critX(1,:)',trainset.X{r}(:,1)) && isequal(critU(:,2:end)',trainset.XU{r})
         repeatedTraj = true;
-        vprintf(verb,2,2,"repeated critical trajectory, generating a new random trajectory \n")
+        vprintf(verb,2,2,"repeated critical trajectory, generating a new trajectory \n")
         break
     end
 end

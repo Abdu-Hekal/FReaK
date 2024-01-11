@@ -47,7 +47,6 @@ end
 
 %constraints for alpha
 Falpha= -1<=alpha<=1;
-
 %assign optim variables and outputs to system
 Sys.Finit=Falpha; Sys.alpha=alpha;
 

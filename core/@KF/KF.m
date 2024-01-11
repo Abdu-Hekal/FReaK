@@ -36,7 +36,7 @@ classdef KF
         model
         % R0: initial set (CORA class interval)
         R0
-        % U: set of admissible control inputs (class:interval or Zonotope)
+        % U: set of admissible control inputs (CORA class interval)
         U
         % spec: specification defined as an object of the CORA
         % specification class (safe/unsafe sets/stl)
@@ -95,12 +95,15 @@ classdef KF
         % nResets: reset training set after n trajectories (default=5),
         % note that we also reset if milp fails to solve (model is bad)
         nResets
-        % trainStrat: int, set to 3 to train with random trajectory, 2 to
-        % train with random neighborhood trajectory, 1 to train with
-        % previously found crit trajectory and reset to neighbor trajectory
-        % or 0 to train with previously found crit trajectory and reset to 
-        % random trajectory (default=0)
+        % trainStrat: int, set to 2 to train with new trajectory, 1 to
+        % train with strategy where samples are only addeded to
+        %trainset if they improve the robustness,
+        % or 0 to train with previously found crit trajectory (default=0)
         trainStrat
+        % resetStrat: int, set to 2 to reset to mopso (staliro soar strategy) 
+        % trajectory, 1 to reset to perturbed neighborhood trajectory, 
+        % or 0 to reset to random trajectory (default=0)
+        resetStrat
         % rmRand: bool, set to true to remove first random trajectory when
         % training or false otherwise, (default=true)
         rmRand
@@ -132,6 +135,8 @@ classdef KF
 
         %internal properties (DO NOT CHANGE)
         cpBool %used to set control inputs for pulse inputs
+        inputsInterval %1d interval of all applicable inputs (x0 and/or u)
+
 
     end
     methods
@@ -144,6 +149,7 @@ classdef KF
             obj.timeout=inf;
             obj.nResets=5; %5
             obj.trainStrat=0;
+            obj.resetStrat=0;
             obj.rmRand=true; %true
             obj.sampPerturb=0.05;
             obj.offsetStrat=-1; %-1

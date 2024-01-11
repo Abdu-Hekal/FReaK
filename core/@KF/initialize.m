@@ -1,4 +1,4 @@
-function [obj,trainset,soln,specSolns] = initialize(obj)
+function [obj,trainset,soln,specSolns,allData] = initialize(obj)
 % INITIALIZE Initialize the Koopman Falsification (KF) object and check for required parameters.
 %
 % Syntax:
@@ -60,7 +60,7 @@ function [obj,trainset,soln,specSolns] = initialize(obj)
 py.importlib.import_module('autokoopman');
 
 assert(isa(obj.model, 'string') | isa(obj.model,"char")| isa(obj.model,'function_handle'), 'obj.model must be a (1)string: name of simulink obj or a (2)function handle')
-assert(isa(obj.R0, 'interval'), 'Initial set (obj.R0) must be defined as an CORA interval')
+assert(isa(obj.R0, 'interval'), 'Initial set (obj.R0) must be defined as a CORA interval')
 assert(isnumeric(obj.T) && isscalar(obj.T), 'Time horizon (obj.T) must be defined as a numeric')
 assert(isnumeric(obj.dt) && isscalar(obj.dt), 'Time step (obj.dt) must be defined as a numeric')
 assert(isa(obj.spec, 'specification'), 'Falsifying spec (obj.spec) must be defined as a CORA specification')
@@ -78,12 +78,12 @@ assert(isnumeric(obj.maxSims) && isscalar(obj.maxSims) && obj.maxSims > 0 && rou
 assert(isnumeric(obj.timeout) && isscalar(obj.timeout) && obj.timeout > 0, 'Timeout (obj.timeout) must be a positive, scalar number');
 
 assert((isnumeric(obj.nResets) && isscalar(obj.nResets) && obj.nResets > 0 && round(obj.nResets) == obj.nResets) || strcmp('auto',obj.nResets), 'Reset number (obj.maxSims) must be a positive, integer, scalar number OR a string (auto)');
-assert(isnumeric(obj.trainStrat) && isscalar(obj.trainStrat) && obj.trainStrat >= 0 && obj.trainStrat <= 3 && round(obj.trainStrat) == obj.trainStrat,'Training option (obj.trainStrat) must be an integer between 0 and 3')
+assert(isnumeric(obj.trainStrat) && isscalar(obj.trainStrat) && obj.trainStrat >= 0 && obj.trainStrat <= 2 && round(obj.trainStrat) == obj.trainStrat,'Training option (obj.trainStrat) must be an integer between 0 and 2')
 assert(islogical(obj.rmRand) || isnumeric(obj.rmRand) && isscalar(obj.rmRand) && ismember(obj.rmRand, [0, 1]), 'Remove random training trajectory (obj.rmRand) must be a boolean');
-if obj.trainStrat==2 || obj.trainStrat==3
+if obj.trainStrat==1 || obj.trainStrat==2
     if obj.rmRand
         obj.rmRand=false;
-        vprintf(obj.verb,1,"Random or neighborhood training mode selected (obj.trainStrat=%d), consequently obj.rmRand is set to false\n",obj.trainStrat)
+        vprintf(obj.verb,1,"Training Strategy selected (obj.trainStrat=%d), consequently obj.rmRand is set to false\n",obj.trainStrat)
     end
 end
 assert(isnumeric(obj.offsetStrat) && isscalar(obj.offsetStrat) && obj.offsetStrat >= -1 && obj.offsetStrat <= 1 && round(obj.offsetStrat) == obj.offsetStrat,'Offset strategy (obj.offsetStrat) must be an integer between -1 and 1')
@@ -121,28 +121,29 @@ if ~isempty(obj.U) %check if obj has inputs
     if isempty(obj.cp)
         obj.cp=obj.T/obj.ak.dt*ones(1,length(obj.U));
     end
-
     assert(length(obj.U)==length(obj.cp),'Number of control points (obj.cp) must be equal to number of inputs (obj.U)')
+    %set cpBool
+    obj=setCpBool(obj);
 end
-
-%set cpBool
-obj=setCpBool(obj);
-
+%set input interval
+obj=setInputsInterval(obj);
 %struct to store soln
 soln=struct;
 soln.falsified=false;
 soln.koopTime=0; soln.reachTime=0;
 soln.optimTime=0; soln.simTime=0;
 soln.sims=0;
-soln.koopModel=NaN;
 %struct for best soln found
 soln.best.rob=inf;
 soln.best.x=NaN; soln.best.u=NaN; soln.best.t=NaN;
+soln.best.koopModel=NaN;
 %reset dict to store prev soln for each spec
 specSolns = dictionary(obj.spec,struct);
 %empty struct to store training data
 trainset.X = {}; trainset.XU={}; trainset.t = {};
-
+%empty struct to store all data
+allData.X={}; allData.XU={}; allData.t={}; allData.Rob=[];
+allData.koopModels={};
 end
 
 % -------------------------- Auxiliary Functions --------------------------
@@ -151,18 +152,28 @@ function obj=setCpBool(obj)
 all_steps = obj.T/obj.ak.dt;
 obj.cpBool = zeros(all_steps,length(obj.U));
 for k=1:length(obj.cp)
-    if ~isempty(obj.U)
-        assert(obj.cp(k)>0, 'your model has inputs defined, number of control points must be greater than zero')
-    end
+    obj.cp(k) = min(obj.cp(k),all_steps); %set control points to a max of number of ak discrete timesteps
+    assert(isnumeric(obj.cp(k)) && isscalar(obj.cp(k)) && obj.cp(k)>0 && round(obj.cp(k)) == obj.cp(k), 'number of control points must be an integer greater than zero')
     if obj.cp(k) == 1
-       assert(obj.cp(k)>0, 'if number of control points is 1, pconst interpolation must be used')
+       assert(strcmp(obj.inputInterpolation,'previous'), 'if number of control points is 1, previous interpolation must be used')
     end
     step = (obj.T/obj.ak.dt)/obj.cp(k);
-    step = max(1,step); %if step<1, then we have more control points than ak steps, set control points equal to number of steps
     assert(floor(step)==step,'number of control points (cp) must be a factor of T/ak.dt')
     obj.cpBool(1:step:end,k) = 1;
-    if ~isempty(obj.cpBool) && ~all(obj.cpBool(:,k)) %if cpbool is not just ones, then interpolation scheme must be pconst
+    if ~all(obj.cpBool(:,k)) %if cpbool is not just ones, then interpolation scheme must be 'previous' (pconst)
         assert(strcmp(obj.inputInterpolation,'previous'),'Currently only an input interpolation of "previous" is supported for a number of control points less than T/ak.dt')
     end
 end
+end
+
+function obj=setInputsInterval(obj)
+lowerBound=[obj.R0.inf];
+upperBound=[obj.R0.sup];
+for i=1:size(obj.U,1)
+    cp=find(obj.cpBool(:,i));
+    numU = numel(cp);
+    lowerBound=[lowerBound;repmat(obj.U.inf(i),numU,1)];
+    upperBound = [upperBound;repmat(obj.U.sup(i),numU,1)];
+end
+obj.inputsInterval = interval(lowerBound,upperBound);
 end

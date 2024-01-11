@@ -23,7 +23,7 @@ function [tout, yout, simTime] = simulate(obj, x0, u)
 % Example:
 %    [tout, yout, simTime] = simulate(obj, x0, u);
 %
-% See also: falsify, randSimulation
+% See also: falsify, sampleSimulation
 %
 % Author:      Abdelrahman Hekal
 % Written:     19-November-2023
@@ -40,8 +40,6 @@ if ~isempty(u)
 else
     usim=u; %no input for the model
 end
-
-tic
 if isa(obj.model, 'string') || isa(obj.model,"char")
      %skip passing x0 as it is exact and set in the model. TODO: check if
      %needs to be passed

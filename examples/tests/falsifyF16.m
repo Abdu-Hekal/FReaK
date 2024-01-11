@@ -5,10 +5,9 @@ kf.verb=2;
 kf.nResets=10;
 kf.maxSims=1;
 
-[kfSolns,trainset] = falsify(kf);
+[kfSolns,allData] = falsify(kf);
 kfSoln=kfSolns{1};
 if kfSoln.falsified
-    visualizeFalsification(kfSoln.best.x, trainset.t{1}, kf.spec, plot_vars)
+    visualizeFalsification(kfSoln.best.x, allData.t{1}, kf.spec, plot_vars)
 end
-
-visualizeTrain(trainset,kfSoln.koopModel, plot_vars)
+visualizeTrain(allData, plot_vars)

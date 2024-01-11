@@ -3,7 +3,7 @@ rng(0)
 pyrunfile("seed.py")
 
 kf = modelF16();
-[t, x, u, simTime] = randSimulation(kf);
+[t, x, u, simTime] = sampleSimulation(kf);
 tak = (0:kf.ak.dt:kf.T)'; %define autokoopman time points
 xak = interp1(t,x,tak,kf.trajInterpolation); %define autokoopman trajectory points
 

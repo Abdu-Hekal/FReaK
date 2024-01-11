@@ -36,7 +36,7 @@ function varargout = randFalsify(obj)
 % Example:
 %    soln = randFalsify(obj);
 %
-% See also: randSimulation, falsify
+% See also: sampleSimulation, falsify
 %
 % Author:      Abdelrahman Hekal
 % Written:     19-November-2023
@@ -52,7 +52,7 @@ if nargout > 1
     sims.t={}; sims.X={}; sims.XU={}; sims.ROB={};
 end
 for ii=1:obj.maxSims
-    [t, x, u] = randSimulation(obj);
+    [t, x, u] = sampleSimulation(obj);
     soln.sims = soln.sims+1; 
     [soln,falsified,robustness]=checkFalsification(soln,x,u,t,obj.spec,obj.inputInterpolation,'rand Simulation',obj.verb);
     if robustness < soln.best.rob
