@@ -10,4 +10,4 @@ kfSoln=kfSolns{1};
 if kfSoln.falsified
     visualizeFalsification(kfSoln.best.x, allData.t{1}, kf.spec, plot_vars)
 end
-visualizeTrain(allData, plot_vars)
+visualizeTrain(allData,kf.ak.dt, plot_vars)
