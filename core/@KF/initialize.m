@@ -136,7 +136,6 @@ soln.sims=0;
 %struct for best soln found
 soln.best.rob=inf;
 soln.best.x=NaN; soln.best.u=NaN; soln.best.t=NaN;
-soln.best.koopModel=NaN;
 %reset dict to store prev soln for each spec
 specSolns = dictionary(obj.spec,struct);
 %empty struct to store training data

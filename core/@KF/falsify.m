@@ -200,8 +200,6 @@ for run=1:obj.runs
     %assign solution result
     soln.falsified=falsified;
     soln.runtime=toc(runtime); %record runtime
-    %store best soln
-    soln.best.koopModel=koopModel; %store koopman model
 
     LogicalStr = {'No', 'Yes'};
     vprintf(obj.verb,1,'<-------------------------------------------------------> \n')
