@@ -24,10 +24,10 @@ setupCora()
 %setup mpt
 mpt_init
 
-% %add gurobi to path
-% addpath(genpath('/opt/gurobi/linux64/matlab'));
-% % run setup
-% gurobi_setup
+%add gurobi to path
+addpath(genpath('/opt/gurobi/linux64/matlab'));
+% run setup
+gurobi_setup
 
 %setup staliro
 setupStaliro()
@@ -95,7 +95,35 @@ function setupStaliro()
 filePath = which('setup_staliro');
 [staliroFolder, ~, ~] = fileparts(filePath);
 cd(staliroFolder)
-% setup_staliro;
+skip_mex=0;
+path_var=pwd;
+addpath(path_var);
+addpath([path_var,'/ha_robust_tester']);
+addpath([path_var,'/Distances']);
+addpath([path_var,'/auxiliary']);
+addpath([path_var,'/optimization']);
+addpath([path_var,'/optimization/auxiliary']);
+addpath([path_var,'/optimization/auxiliary/Global_Kriging']);
+addpath([path_var,'/LocalDescent']);
+addpath([path_var,'/signal_interpolation']);
+addpath([path_var,'/auxiliary/Singleton']);
+
+if exist([path_var,'/matlab_bgl'],'dir')==7
+    addpath([path_var,'/matlab_bgl']);
+end
+
+cd('Polarity')
+setup_polarity(skip_mex)
+cd('..')
+
+disp(' ')
+
+cd('dp_taliro')
+setup_dp_taliro(skip_mex)
+cd('..')
+
+
+disp(' ')
 warning('off', 'MATLAB:rmpath:DirNotFound');
 rmpath(genpath(fullfile(staliroFolder, 'BayesianSMC')))
 rmpath(genpath(fullfile(staliroFolder, 'benchmarks')))
