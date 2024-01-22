@@ -59,11 +59,18 @@ function [obj,trainset,soln,specSolns,allData] = initialize(obj)
 %Ensure that autokoopman is installed & imported in your python environment
 py.importlib.import_module('autokoopman');
 
-assert(isa(obj.model, 'string') | isa(obj.model,"char")| isa(obj.model,'function_handle'), 'obj.model must be a (1)string: name of simulink obj or a (2)function handle')
+assert(isa(obj.model, 'string')||isa(obj.model,"char")||isa(obj.model,'function_handle')||isa(obj.model,'OdeFcn')||isa(obj.model,'ode'), 'obj.model must be a (1)string: name of simulink obj, (2)function handle, (3) OdeFnc or (4)ode')
 assert(isa(obj.R0, 'interval'), 'Initial set (obj.R0) must be defined as a CORA interval')
-assert(isnumeric(obj.T) && isscalar(obj.T), 'Time horizon (obj.T) must be defined as a numeric')
+assert(isnumeric(obj.T) && isscalar(obj.T) && obj.T>0, 'Time horizon (obj.T) must be defined as a positive numeric')
 assert(isnumeric(obj.dt) && isscalar(obj.dt), 'Time step (obj.dt) must be defined as a numeric')
 assert(isa(obj.spec, 'specification'), 'Falsifying spec (obj.spec) must be defined as a CORA specification')
+%TODO: check that vars are only x and u and are equal to number of U and R0
+for ii=1:numel(obj.spec)
+    spec=obj.spec(ii);
+    if strcmp(spec.type,'logic')
+        vars=spec.set.variables;     
+    end
+end
 all_steps = obj.T/obj.dt;
 assert(floor(all_steps)==all_steps,'Time step (dt) must be a factor of Time horizon (T)')
 
@@ -88,7 +95,6 @@ if obj.trainStrat==1 || obj.trainStrat==2
 end
 assert(isnumeric(obj.offsetStrat) && isscalar(obj.offsetStrat) && obj.offsetStrat >= -1 && obj.offsetStrat <= 1 && round(obj.offsetStrat) == obj.offsetStrat,'Offset strategy (obj.offsetStrat) must be an integer between -1 and 1')
 assert(isnumeric(obj.verb) && isscalar(obj.verb) && obj.verb >= 0 && obj.verb <= 3 && round(obj.verb) == obj.verb,'Verbosity level (obj.verb) must be an integer between 0 and 3')
-
 
 
 %set autokoopman timestep if it is not set, else check it is compliant.

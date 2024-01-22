@@ -158,7 +158,7 @@ for run=1:obj.runs
                     end
                     %if first offset iteration (re-solve with offset if offsetStrat==1 or save offset for next iter if offsetStrat==-1),
                     % robustness is greater than gap termination criteria for milp solver and an offset mode selected by user.
-                    if offsetIter==0 && robustness > getMilpGap(obj.solver.opts) && abs(obj.offsetStrat)
+                    if offsetIter==0 && robustness > getMilpGap(obj.solver.opts) && abs(obj.offsetStrat) 
                         assert(strcmp(spec.type,'logic'),'offset is currently only implemented for stl spec, please turn off offset by setting offsetStrat=0')
                         offsetMap=bReachCulprit(Bdata,spec.set); %get predicates responsible for robustness value
                         if offsetMap.Count > 0 %if there there exists predicates that are culprit for (+ve) robustness

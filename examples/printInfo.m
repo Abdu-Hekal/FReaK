@@ -31,7 +31,12 @@ if avgFalsified>0
     fprintf('lower quartile= %.2f\n', lower_quart);
     fprintf('upper whisker= %.2f\n', upper_whisk);
     fprintf('lower whisker= %.2f\n', lower_whisk);
-    fprintf('Outliers= [%.2f]\n', outliers);
+    fprintf('Outliers=[')
+    for i=1:length(outliers)
+        fprintf(' %d,', outliers(i));
+    end
+    fprintf(']\n');
+
 end
 
 end

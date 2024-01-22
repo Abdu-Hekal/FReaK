@@ -31,14 +31,25 @@ try
     if (exist('InitBreach','file')==2)
         disp('Breach already installed.');
     else
-        zipURL = 'https://github.com/decyphir/breach/archive/refs/heads/master.zip';
-        installExtToolbox('breach',zipURL,'breach.zip')
+        userResponse = input('Breach not found, is it installed? (y/n)', 's');
+        if userResponse
+            error('please add Breach base folder with (InitBreach.m) to path')
+        else
+            zipURL = 'https://github.com/decyphir/breach/archive/refs/heads/master.zip';
+            installExtToolbox('breach',zipURL,'breach.zip')
+            installBreach; %compiles C/C++ mex functions used by Breach
+        end
     end
     if (exist('test_requiredToolboxes','file')==2)
         disp('CORA already installed.');
     else
-        zipURL = 'https://tumcps.github.io/CORA/data/archive/version/CORA_2022.zip';
-        installExtToolbox('CORA_2022',zipURL,'CORA_2022.zip');
+        userResponse = input('CORA not found, is it installed? (y/n)', 's');
+        if userResponse
+            error('please add CORA base folder with (test_requiredToolboxes.m) to path')
+        else
+            zipURL = 'https://tumcps.github.io/CORA/data/archive/version/CORA_2022.zip';
+            installExtToolbox('CORA_2022',zipURL,'CORA_2022.zip');
+        end
     end
 
     %setup Breach and CORA
@@ -51,11 +62,10 @@ try
 
     %go back to base folder
     cd(cdr);
-    %save modified path
-    savepath;
 
     disp('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -')
     disp('Koopman Falsification Successfully Setup!')
+    disp('Run "savepath;" to store path setup for future matlab sessions')
 
 catch ME
     disp('- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -')
@@ -154,6 +164,7 @@ filePath = which('InitBreach');
 warning('off', 'MATLAB:rmpath:DirNotFound');
 rmpath(genpath(fullfile(breachFolder, 'Ext')))
 rmpath(genpath(fullfile(breachFolder, 'Examples')))
+rmpath(genpath(fullfile(breachFolder, 'Online')))
 warning('on', 'MATLAB:rmpath:DirNotFound');
 end
 

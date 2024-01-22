@@ -1,4 +1,4 @@
-function [ret]=aircraftODE(T,X,u)
+function [ret]=blackboxAircraft(T,X,u)
 
 B0=0.07351;
 B1=-1.5E-3;

@@ -5,7 +5,7 @@ disp(' ')
 disp('aircraft example. ')
 disp(' ')
 
-model = @aircraftODE;
+model = @blackboxAircraft;
 
 disp(' ')
 disp(' The initial conditions defined as a hypercube:')
