@@ -2,7 +2,7 @@
 clear
 
 disp(' ')
-disp('aircraft example. ')
+disp('Staliro aircraft example. ')
 disp(' ')
 
 model = @aircraftODE;
@@ -16,7 +16,7 @@ disp(' The constraints on the input signals defined as a hypercube:')
 input_range = [34386 53973; 0 16]
 disp(' ')
 disp(' The number of control points for each input signal:')
-cp_array = [10 10];
+cp_array = [10 10]
 
 
 preds(1).str = 'c';

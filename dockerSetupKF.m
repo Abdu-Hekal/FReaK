@@ -24,11 +24,13 @@ setupCora()
 %setup mpt
 mpt_init
 
-%add gurobi to path
-addpath(genpath('/opt/gurobi/linux64/matlab'));
-% run setup
-gurobi_setup
+% %add gurobi to path
+% addpath(genpath('/opt/gurobi/linux64/matlab'));
+% % run setup
+% gurobi_setup
 
+%setup staliro
+setupStaliro()
 %go back to base folder
 cd(cdr);
 %save modified path
@@ -86,4 +88,19 @@ assert(success, ['File copy failed with message ' message]);
 if contains(path, sourceFolder)
     rmpath(sourceFolder)
 end
+end
+
+function setupStaliro()
+%remove conflicting breach files from path
+filePath = which('setup_staliro');
+[staliroFolder, ~, ~] = fileparts(filePath);
+cd(staliroFolder)
+% setup_staliro;
+warning('off', 'MATLAB:rmpath:DirNotFound');
+rmpath(genpath(fullfile(staliroFolder, 'BayesianSMC')))
+rmpath(genpath(fullfile(staliroFolder, 'benchmarks')))
+rmpath(genpath(fullfile(staliroFolder, 'CaseStudies')))
+rmpath(genpath(fullfile(staliroFolder, 'demoCreator')))
+rmpath(genpath(fullfile(staliroFolder, 'demos')))
+warning('on', 'MATLAB:rmpath:DirNotFound');
 end

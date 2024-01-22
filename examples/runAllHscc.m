@@ -9,6 +9,8 @@ repArch22_2() %instance 2
 %run aircraft falsification
 disp('******************* Aircraft *******************')
 falsifyAircraft()
+disp('******************* Aircraft - Staliro *******************')
+ah_aircraftODE()
 
 % run experiments for different hyper-parameters 
 disp('******************* Number of Observables *******************')
