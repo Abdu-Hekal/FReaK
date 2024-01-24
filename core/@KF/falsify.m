@@ -146,7 +146,7 @@ for run=1:obj.runs
                 soln.simTime = soln.simTime+simTime;
 
                 [soln,falsified,robustness,Bdata,newBest_]=checkFalsification(soln,critX,critU,t,obj.spec,obj.inputInterpolation,'kf optimization',obj.verb);
-                allData.X{end+1}=x; allData.XU{end+1}=u; allData.t{end+1}=t; allData.Rob=[allData.Rob;robustness];
+                allData.X{end+1}=critX; allData.XU{end+1}=critU; allData.t{end+1}=t; allData.Rob=[allData.Rob;robustness];
                 if nargout>1;allData.koopModels{end+1}=koopModel;end %store koop model if needed
                 if newBest_; perturb=0; end %reset pertrubation if new best soln found
                 if falsified; break; end
