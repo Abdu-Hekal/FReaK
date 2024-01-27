@@ -23,7 +23,7 @@ for ii=1:numel(specs)
     if robustness < soln.best.rob
         vprintf(verb,2,"new best robustness!: %.3f after %d simulations due to: %s \n",robustness,soln.sims,method)
         soln.best.rob=robustness;
-        soln.best.x=x; soln.best.u=u; soln.best.t=t;
+        soln.best.x=x; soln.best.u=u; soln.best.t=t; soln.best.spec=spec;
         newBest=true; %found a new best soln
     end
     if falsified

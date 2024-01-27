@@ -2,16 +2,16 @@ function visualizeFalsification(varargin)
 % visualizeFalsification - visualize the falsifying trace (and possibly unsafe set)
 %
 % Syntax:
-%    visualizeFalsification(crit_x, times, spec, plot_vars)
-%    visualizeFalsification(crit_x, times, spec, plot_vars,xlabel)
-%    visualizeFalsification(crit_x, times, spec, plot_vars,xlabel,ylabel)
+%    visualizeFalsification(critX, times, spec, plotVars)
+%    visualizeFalsification(critX, times, spec, plotVars,xlabel)
+%    visualizeFalsification(critX, times, spec, plotVars,xlabel,ylabel)
 %
 % Inputs:
-%    crit_x - the falsifying trajectory
+%    critX - the falsifying trajectory
 %    times - time points of the trajectory
 %    spec - falsifying spec
-%    plot_vars - dimensions of variables to plot (matrix or scalar value).
-%    If plot_vars is scalar value, plot against time
+%    plotVars - dimensions of variables to plot (matrix or scalar value).
+%    If plotVars is scalar value, plot against time
 %
 % Outputs:
 %    -
@@ -29,37 +29,37 @@ function visualizeFalsification(varargin)
 %------------- BEGIN CODE --------------
 numArgs = length(varargin);
 assert(numArgs>=4,'must have at least 4 args, critical trajectory, time points, falsifying spec and plot vars')
-crit_x=varargin{1};
+critX=varargin{1};
 times=varargin{2};
 spec=varargin{3};
-plot_vars=varargin{4};
+plotVars=varargin{4};
 
 for i = 1:size(spec,1)
     figure; hold on; box on;
 
-    if ~any(size(plot_vars)>[1,1]) %singular plot var, plot against time
-        plot(times,crit_x(:,plot_vars),'b','DisplayName','falsifying traj');
+    if ~any(size(plotVars)>[1,1]) %singular plot var, plot against time
+        plot(times,critX(:,plotVars),'b','DisplayName','falsifying traj');
     else
-        xlim([min(crit_x(:,1))-abs(0.2*min(crit_x(:,1))),max(crit_x(:,1))+abs(0.2*max(crit_x(:,1)))]);
-        ylim([min(crit_x(:,2))-abs(0.2*min(crit_x(:,2))),max(crit_x(:,2))+abs(0.2*min(crit_x(:,2)))]);
+        xlim([min(critX(:,1))-abs(0.2*min(critX(:,1))),max(critX(:,1))+abs(0.2*max(critX(:,1)))]);
+        ylim([min(critX(:,2))-abs(0.2*min(critX(:,2))),max(critX(:,2))+abs(0.2*min(critX(:,2)))]);
         if strcmp(spec(i,1).type,'unsafeSet')
             plot(spec(i,1).set, [1,2], 'FaceColor','red','FaceAlpha',.1,'DisplayName','unsafe set')
             %plot falsifying trace
-            plot(crit_x(:,plot_vars(1)),crit_x(:,plot_vars(2)),'b','DisplayName','falsifying traj');
+            plot(critX(:,plotVars(1)),critX(:,plotVars(2)),'b','DisplayName','falsifying traj');
         elseif strcmp(spec(i,1).type,'logic')
-            phi = negationNormalForm(spec(i,1).set);
+            phi = spec(i,1).set;
             [unsafeCell, from, to] = phiToUnsafeSet(disjunctiveNormalForm(~phi),0,-1);
             from = find(times==from);
             if to==-1; to = size(times,1); else to=find(times==to); end
-            plotUnsafeCell(unsafeCell, plot_vars);
+            plotUnsafeCell(unsafeCell, plotVars);
 
 
             if from ~= 1 %there exists trajectory before critical time period
-                plot(crit_x(1:from,plot_vars(1)),crit_x(1:from,plot_vars(2)), 'Color' , 'g','LineStyle','--','LineWidth',1,'DisplayName','trajectory before');
+                plot(critX(1:from,plotVars(1)),critX(1:from,plotVars(2)), 'Color' , 'g','LineStyle','--','LineWidth',1,'DisplayName','trajectory before');
             end
-            plot(crit_x(from:to,plot_vars(1)),crit_x(from:to,plot_vars(2)),'Color' ,'g','LineWidth',1,'DisplayName','falsifying trajectory');
-            if to ~= size(crit_x,1) %there exists trajectory after critical time period
-                plot(crit_x(to:end,plot_vars(1)),crit_x(to:end,plot_vars(2)), 'Color' , 'g','LineStyle','--','LineWidth',1,'DisplayName','trajectory after');
+            plot(critX(from:to,plotVars(1)),critX(from:to,plotVars(2)),'Color' ,'g','LineWidth',1,'DisplayName','falsifying trajectory');
+            if to ~= size(critX,1) %there exists trajectory after critical time period
+                plot(critX(to:end,plotVars(1)),critX(to:end,plotVars(2)), 'Color' , 'g','LineStyle','--','LineWidth',1,'DisplayName','trajectory after');
             end
         end
     end
@@ -98,21 +98,23 @@ if ~phi.temporal
 
     % convert to a union of unsafe sets
     unsafeCell= [unsafeCell,unsafeSet];
-elseif strcmp(phi.type,'&')
+elseif strcmp(phi.type,'|')
     % OR implies that unsafe set is BOTH rhs & lhs
     [lhsUnsafeCell, from, to] = phiToUnsafeSet(phi.lhs, phi.from, phi.to);
     [rhsUnsafeCell, from, to] = phiToUnsafeSet(phi.rhs, phi.from, phi.to);
     unsafeCell= [unsafeCell, lhsUnsafeCell, rhsUnsafeCell];
-elseif strcmp(phi.type,'|')
+elseif strcmp(phi.type,'&')
     % AND implies that unsafe set is intersection of rhs & lhs
     [lhsUnsafeCell,from, to] = phiToUnsafeSet(phi.lhs,phi.from, phi.to);
     [rhsUnsafeCell,from, to] = phiToUnsafeSet(phi.rhs,phi.from, phi.to);
     for kl=1:length(lhsUnsafeCell)
         for kr=1:length(rhsUnsafeCell)
-            unsafeIntersect = lhsUnsafeCell{kl} & rhsUnsafeCell{kr};
-            if ~isempty(unsafeIntersect)
-                unsafeCell{end+1} = unsafeIntersect;
-            end
+            %convert to mptPolytope to compute intersections of halfpaces
+            unsafeIntersect = mptPolytope(lhsUnsafeCell{kl}) & mptPolytope(rhsUnsafeCell{kr});
+            % if isempty(unsafeIntersect) %requires optimization toolbox
+            %     error('stl impossible to falsify, intersection of (negation) requirements with and is empty')
+            % end
+            unsafeCell{end+1} = unsafeIntersect;
         end
     end
 elseif any(strcmp(phi.type,{'finally','globally'}))
@@ -136,7 +138,7 @@ elseif strcmp(phi.type,'next')
     %             end
     %         end
 else
-    fprintf("support for stl of type %s is not added\n",phi.type);
+    error("support for stl of type %s is not added\n",phi.type);
 end
 end
 
@@ -174,12 +176,12 @@ for i = 1:length(poly.P.b)
 end
 end
 
-function plotUnsafeCell(unsafeCell,plot_vars)
+function plotUnsafeCell(unsafeCell,plotVars)
 for k=1:length(unsafeCell)
     try
-        plot(unsafeCell{k},plot_vars, 'FaceColor','red','FaceAlpha',.05,'DisplayName','spec')
+        plot(unsafeCell{k},plotVars, 'FaceColor','red','FaceAlpha',.05,'DisplayName','spec')
     catch
-%         disp("failed to plot spec")
+        disp("failed to plot spec")
     end
 end
 end

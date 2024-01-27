@@ -103,7 +103,7 @@ for b = 1:length(benches)
         kfModel.verb=1;
         kfModel.trainStrat=0;
         kfModel.nResets=5; %'auto'
-        kfModel.resetStrat=2;
+        kfModel.resetStrat=0;
         kfSolns = falsify(kfModel);
 
         %print info
