@@ -24,7 +24,8 @@ classdef KF
 
     %------------- BEGIN CODE --------------
     properties
-        % model: name of the simulink model or blackbox function.
+        % model: name of the simulink model, blackbox function, OdeFcn or
+        % ode (note: ode is a builtin class from matlab 2023b)
         % The blackbox model should be a function handle of the form
         % [tout, yout]=fcn(T,x0,u), where:
         % tout: array of time points for the simulation
@@ -32,7 +33,6 @@ classdef KF
         % T: time horizon of simulation
         % x0: initial set
         % u: array of inputs, where first column is time points
-        % TODO: step function handle
         model
         % R0: initial set (CORA class interval)
         R0
