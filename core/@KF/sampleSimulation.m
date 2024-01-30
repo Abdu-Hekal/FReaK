@@ -174,16 +174,19 @@ if ~isempty(obj.U)
 
     newU = sample(dim(obj.R0)+1:end);
     assert(numel(newU)==sum(obj.cp),'Number of inputs does not match with generated samples, check for errors')
+    
     for i=1:length(obj.cp)
-        cp=find(obj.cpBool(:,i))+allSteps*(i-1);
-        if numel(cp)==1 %only one control input, apply to beginning an end
-            timePoints=[0;obj.T-obj.ak.dt];
-            cpVal=[newU(cp);newU(cp)];
+        cp=obj.cp(:,i);
+        if cp==1 %only one control input, apply to beginning an end
+            timePoints=[0;obj.T];
+            cpVal=[newU(1);newU(1)];
         else
-            timePoints=linspace(0,obj.T-obj.ak.dt,numel(cp))';
-            cpVal=newU(cp);
+            timePoints=linspace(0,obj.T,cp+1)';
+            timePoints = timePoints(1:end-1); %remove last time point, inputs are up to step k-1
+            cpVal=newU(1:cp);
         end
         u(:,i) = interp1(timePoints, cpVal, allTimePoints,obj.inputInterpolation,"extrap");
+        newU = newU(cp+1:end); %skip to next input dimension
     end
     u= [(0:obj.ak.dt:obj.T)',u]; %append time
 else

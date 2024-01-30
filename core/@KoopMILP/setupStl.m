@@ -60,6 +60,7 @@ if hardcoded
     global vkmrCount %globl count to track wihch subpred to offset in milp
     vkmrCount=0;
 end
+
 [Fstl, Pstl, Ostl] = koopStl(phi,1,L,Sys.solverdt,var,M,normz,hardcoded,Sys.offsetMap);
 
 %assign stl optim variables and constraints
