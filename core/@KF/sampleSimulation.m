@@ -87,7 +87,7 @@ if obj.resetStrat>=1
             end
         end
     catch ME
-        vprintf(obj.verb,1,'Error in reset strategy %d, due to "%s", using random reset \n',obj.resetStrat,ME.message)
+        vprintf(obj.verb,2,'Error in reset strategy %d, due to "%s", using random reset \n',obj.resetStrat,ME.message)
     end
 end
 

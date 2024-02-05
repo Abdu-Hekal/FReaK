@@ -1,4 +1,4 @@
-function [solns,allData] = falsify(obj,varargin)
+function [solns,allDatas] = falsify(obj,varargin)
 
 % falsify - Given a model and a set of specs (safe/unsafe set/stl),
 %   perform the core falsification procedure to find a falsifying trajectory
@@ -22,7 +22,7 @@ function [solns,allData] = falsify(obj,varargin)
 %           containing the results of the falsification process, including
 %           the falsifying trajectory, simulation time, and other information.
 %
-%    allData - Structure containing all data, including the trajectories and
+%    allDatas - cell array of structs containing all data, including the trajectories and
 %               inputs used during the falsification process as well as all 
 %               koopman models.
 %
@@ -35,6 +35,7 @@ function [solns,allData] = falsify(obj,varargin)
 
 %------------- BEGIN CODE --------------
 solns={1,obj.runs};
+allDatas={1,obj.runs};
 %initialize progress bar
 if obj.verb==0
     msg = sprintf('KF runs completed: 0/%d',obj.runs);
@@ -83,7 +84,12 @@ for run=1:obj.runs
                     obj.solver.opts.usex0=0; %turn off warmstarting if repeated trajectory returned by solver
                     disp('Turned off warmstarting due to repeated solutions')
                 end
-                [t,x,u,simTime] = sampleSimulation(obj,allData,perturb);
+                try
+                    [t,x,u,simTime] = sampleSimulation(obj,allData,perturb);
+                catch ME
+                    vprintf(obj.verb,2,'Error in new sample simulation due to "%s", retrying with new sample... \n',ME.message)
+                    continue;
+                end
                 perturb=min(1,perturb+obj.sampPerturb); %increase perturbation
                 soln.sims = soln.sims+1;
                 soln.simTime = soln.simTime+simTime;
@@ -123,8 +129,8 @@ for run=1:obj.runs
             optimTime=tic;
             specSolns = critAlpha(obj,R,koopModel,specSolns);
             soln.optimTime=soln.optimTime+toc(optimTime);
-        catch
-            disp("error encountered whilst setup/solving, resetting training data")
+        catch ME
+            vprintf(obj.verb,2,'Error encountered whilst setup/solving optimization problem, due to $s, resetting training data... \n',ME.message)
             trainIter=0;
             continue;
         end
@@ -141,7 +147,13 @@ for run=1:obj.runs
                 [critX0, critU] = falsifyingTrajectory(obj,curSoln);
 
                 % run most critical inputs on the real system
-                [t, critX, simTime] = simulate(obj, critX0, critU);
+                try
+                    [t, critX, simTime] = simulate(obj, critX0, critU);
+                catch ME
+                    vprintf(obj.verb,2,'Error encountered whilst simulating critical trajectory, due to %s, resetting training data... \n',ME.message)
+                    trainIter=-1;
+                    break;
+                end
                 soln.sims = soln.sims+1;
                 soln.simTime = soln.simTime+simTime;
 
@@ -209,6 +221,7 @@ for run=1:obj.runs
     vprintf(obj.verb,1,"Time taken %.2f seconds\n",soln.runtime)
     %store soln struct for this run
     solns{run}=soln;
+    allDatas{run}=allData;
     %update progress bar
     if obj.verb==0
         % Display the progress

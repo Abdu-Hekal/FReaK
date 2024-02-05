@@ -76,6 +76,16 @@ elseif isa(obj.model,'ode') %object added to matlab R2023b
     sol = solve(F,0,obj.T);
     tout=sol.Time';
     yout=sol.Solution';
+elseif isa(obj.model,'hautomaton') %Staliro hybrid automaton
+    initLoc=obj.model.init.loc; %starting location
+    assert(isscalar(initLoc),'currently, only exact initial locations are supported');
+    assert(isnumeric(initLoc) && initLoc > 0 && mod(initLoc, 1) == 0, 'initial location must be a positive integer');
+    %skip first input of x0 which is loc.
+    ha_dat.h0=[initLoc 0 x0(2:end)'];
+    ha_dat.u=u;
+    ht = hasimulator(obj.model,ha_dat,obj.T,'ode45');
+    tout=ht(:,2);
+    yout=ht(:,[1,3:end]); %get first column representing locs and columns 3:end representing continous states
 else
     error('model not supported')
 end

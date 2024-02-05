@@ -38,7 +38,6 @@ yout = x0';
 curLoc = obj.locs(obj.init);
 
 while tstart < T   
-    invs=curLoc.inv;
     guards={};
     for j=1:length(obj.jumps)
         jump=obj.jumps{j};
@@ -49,7 +48,7 @@ while tstart < T
 end
 end
 
-function [value,isterminal,direction] = events(t,y,guards,invs)
+function [value,isterminal,direction] = events(t,y,guards)
 % Locate the time when height passes through zero in a decreasing direction
 % and stop integration.
 value = y(1);     % detect height = 0

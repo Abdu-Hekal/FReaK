@@ -143,6 +143,12 @@ classdef KF
         % Constructor
         function obj = KF(model)
             obj.model=model;
+            obj.R0=[];
+            obj.U=[];
+            obj.spec=specification([]); %empty spec
+            obj.T=1; %1s default sim time
+
+            %settings
             obj.runs=1;
             obj.dt=0.01;
             obj.maxSims=5000;

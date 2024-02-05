@@ -59,7 +59,8 @@ function [obj,trainset,soln,specSolns,allData] = initialize(obj)
 %Ensure that autokoopman is installed & imported in your python environment
 py.importlib.import_module('autokoopman');
 
-assert(isa(obj.model, 'string')||isa(obj.model,"char")||isa(obj.model,'function_handle')||isa(obj.model,'OdeFcn')||isa(obj.model,'ode'), 'obj.model must be a (1)string: name of simulink obj, (2)function handle, (3) OdeFnc or (4)ode')
+assert(isa(obj.model, 'string')||isa(obj.model,"char")||isa(obj.model,'function_handle')||isa(obj.model,'OdeFcn')||isa(obj.model,'ode')||isa(obj.model,'hautomaton'), ...
+    'obj.model must be a (1)string: name of simulink obj, (2)function handle, (3) OdeFnc, (4)ode or (5) hautomaton (staliro object)')
 assert(isa(obj.R0, 'interval'), 'Initial set (obj.R0) must be defined as a CORA interval')
 assert(isnumeric(obj.T) && isscalar(obj.T) && obj.T>0, 'Time horizon (obj.T) must be defined as a positive numeric')
 assert(isnumeric(obj.dt) && isscalar(obj.dt), 'Time step (obj.dt) must be defined as a numeric')
