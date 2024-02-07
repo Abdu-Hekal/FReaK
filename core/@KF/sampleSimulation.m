@@ -82,7 +82,9 @@ if obj.resetStrat>=1
                 rnd=false;
             end
             if obj.resetStrat==2
+                WarnState = warning('off', 'MATLAB:nearlySingularMatrix');
                 sample=getMopsoSampleXU(obj,allInputsSamples,allData.Rob);
+                warning(WarnState);
                 rnd=false;
             end
         end
@@ -119,27 +121,38 @@ function sample=getMopsoSampleXU(obj,allInputsSamples,allRob)
 nonExactDims=find(rad(obj.inputsInterval));
 allInputsSamples=allInputsSamples(:,nonExactDims);
 
+%remove repeated values of robustness which causes issue, due to
+% "covariance matrix is nearly singular"
+% [filteredRob,uniqueIndxs] = unique(allRob);
+% filteredInputSamples = allInputsSamples(uniqueIndxs,:);
+
+distanceThreshold = 0.01;
+[filteredRob, filteredInputSamples] = removeRedundantData(allRob, allInputsSamples, distanceThreshold);
+
+%take max 100 samples (save computation time, note that samples can still be different for iterations>50
+% as samples are ordered ascendingly w.r.t rob values)
+filteredRob=filteredRob(1:min(end, 100), :);
+filteredInputSamples=filteredInputSamples(1:min(end, 100), :);
 
 % Initialize MOPSO Parameters
-MOparams.Np = 200;        % Population size
-MOparams.Nr = 200;        % Repository size
-MOparams.maxgen = 500;    % Maximum number of generations
-MOparams.W = 0.4;         % Inertia weight
+MOparams.Np = 20;        % Population size: 200
+MOparams.Nr = 20;        % Repository size: 200
+MOparams.maxgen = 50;    % Maximum number of generations: 500
+MOparams.W = 0.4;         % Inertia weight: 0.4
 MOparams.C1 = 2;          % Individual confidence factor
 MOparams.C2 = 2;          % Swarm confidence factor
-MOparams.ngrid = 20;      % Number of grids in each dimension
+MOparams.ngrid = 20;      % Number of grids in each dimension: 20
 MOparams.maxvel = 5;      % Maxmium vel in percentage
 MOparams.u_mut = 0.5;     % Uniform mutation percentage
 MultiObj.nVar = size(nonExactDims,1);  % Set problem dimension
 MultiObj.var_min = obj.inputsInterval.inf(nonExactDims)';
 MultiObj.var_max = obj.inputsInterval.sup(nonExactDims)';
 
-
 %Fit Gaussian Process Meta Mod  el
-GPmod = OK_Rmodel_kd_nugget(allInputsSamples, allRob, 0, 2);
+GPmod = OK_Rmodel_kd_nugget(filteredInputSamples, filteredRob, 0, 2);
 
 % optimize EI and CD with MOPSO
-MultiObj.fun = @(x)[-EIcalc_kd(x,allInputsSamples,GPmod,allRob), -CrowdingDist_kd(x,allInputsSamples)];
+MultiObj.fun = @(x)[-EIcalc_kd(x,filteredInputSamples,GPmod,filteredRob), -CrowdingDist_kd(x,filteredInputSamples)];
 
 pf = MOPSO(MOparams,MultiObj);
 [minNegEI, index] = min(pf.pos_fit(:,1));
@@ -174,7 +187,7 @@ if ~isempty(obj.U)
 
     newU = sample(dim(obj.R0)+1:end);
     assert(numel(newU)==sum(obj.cp),'Number of inputs does not match with generated samples, check for errors')
-    
+
     for i=1:length(obj.cp)
         cp=obj.cp(:,i);
         if cp==1 %only one control input, apply to beginning an end
@@ -194,3 +207,37 @@ else
 end
 end
 
+function [filteredRob, filteredInputsSamples] = removeRedundantData(allRob, allInputsSamples, thresholdDistance)
+% Input:
+%   allRob: Matrix of robot data points (each row represents a data point)
+%   allInputsSamples: Matrix of input samples (each row represents a data point)
+%   thresholdDistance: Minimum distance between data points to be considered separate
+
+% Combine robot and input samples into a single matrix
+allData = [allRob, allInputsSamples];
+
+% Reverse the order of data points to prioritize later data (avoids passing repeated data to mopso)
+% allData = flipud(allData);
+%sore by robustness values to priorities values of least robustness
+allData= sortrows(allData,1);
+
+% Compute the linkage matrix for hierarchical clustering
+linkageMatrix = linkage(allData, 'complete', 'correlation');
+
+% Cut the dendrogram at a distance corresponding to the threshold distance
+clusters = cluster(linkageMatrix, 'cutoff', thresholdDistance, 'criterion', 'distance');
+
+% Identify one representative point from each cluster
+[~,reducedIndices,~]=unique(clusters);
+
+% Get the reduced data
+reducedData = allData(reducedIndices, :);
+
+%sort by robustness values, Interestingly sorting data passed to optimizer
+%by robustness values gives better results.
+reducedData= sortrows(reducedData,1);
+% Extract filtered robustness and input samples
+filteredRob = reducedData(:, 1);
+filteredInputsSamples = reducedData(:, 2:end);
+
+end

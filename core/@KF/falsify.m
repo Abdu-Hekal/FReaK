@@ -23,7 +23,7 @@ function [solns,allData] = falsify(obj,varargin)
 %           the falsifying trajectory, simulation time, and other information.
 %
 %    allData - Structure containing all data, including the trajectories and
-%               inputs used during the falsification process as well as all 
+%               inputs used during the falsification process as well as all
 %               koopman models.
 %
 % See also:
@@ -42,7 +42,6 @@ if obj.verb==0
     reverseStr = repmat(sprintf('\b'), 1, length(msg));
 end
 for run=1:obj.runs
-
     runtime=tic;
     %initialization and init assertions
     [obj,trainset,soln,specSolns,allData] = initialize(obj);
@@ -50,12 +49,19 @@ for run=1:obj.runs
     falsified=false;
     perturb=0; %perturbation percentage for neighborhood reset
     tak = (0:obj.ak.dt:obj.T)'; %define autokoopman time points
+    %initialize simulation progress bar
+    if obj.verb==1
+        msg = sprintf('simulations exhausted: 0/%d',obj.maxSims);
+        fprintf(msg);
+        reverseSimStr = repmat(sprintf('\b'), 1, length(msg));
+    end
 
     if nargin > 1
         trainset = varargin{1};
         validateTrainset(trainset,obj.U)
     end
     while soln.sims <= obj.maxSims && ~falsified
+
         if ~(soln.sims==0 && ~isempty(trainset.t)) %jump straight to learning if an initial trainset is provided
             %timeout
             if toc(runtime) > obj.timeout
@@ -109,7 +115,7 @@ for run=1:obj.runs
 
         %run autokoopman and learn linearized model
         [koopModel,koopTime] = learnKoopModel(obj, trainset);
-        soln.koopTime = soln.koopTime+koopTime; 
+        soln.koopTime = soln.koopTime+koopTime;
         % compute reachable set for Koopman linearized model (if reachability is used)
         if obj.reach.on
             reachTime=tic;
@@ -158,7 +164,7 @@ for run=1:obj.runs
                     end
                     %if first offset iteration (re-solve with offset if offsetStrat==1 or save offset for next iter if offsetStrat==-1),
                     % robustness is greater than gap termination criteria for milp solver and an offset mode selected by user.
-                    if offsetIter==0 && robustness > getMilpGap(obj.solver.opts) && abs(obj.offsetStrat) 
+                    if offsetIter==0 && robustness > getMilpGap(obj.solver.opts) && abs(obj.offsetStrat)
                         assert(strcmp(spec.type,'logic'),'offset is currently only implemented for stl spec, please turn off offset by setting offsetStrat=0')
                         offsetMap=bReachCulprit(Bdata,spec.set); %get predicates responsible for robustness value
                         if offsetMap.Count > 0 %if there there exists predicates that are culprit for (+ve) robustness
@@ -194,12 +200,21 @@ for run=1:obj.runs
             yalmip('clearsolution')
         end
         trainIter=trainIter+1;
+        %update simulations progress bar
+        if obj.verb==1
+            % Display the progress
+            msg = sprintf('simulations exhausted: %d/%d',soln.sims,obj.maxSims); %Don't forget this semicolon
+            fprintf([reverseSimStr, msg]);
+            reverseSimStr = repmat(sprintf('\b'), 1, length(msg));
+        end
     end
     %close simulink obj
     close_system('ErrorIfShadowed',0);
     %assign solution result
     soln.falsified=falsified;
     soln.runtime=toc(runtime); %record runtime
+    %remove simulations bar
+    if obj.verb==1; fprintf(reverseSimStr); end
 
     LogicalStr = {'No', 'Yes'};
     vprintf(obj.verb,1,'<-------------------------------------------------------> \n')

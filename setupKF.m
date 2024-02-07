@@ -161,11 +161,11 @@ function setupBreach()
 %remove conflicting breach files from path
 filePath = which('InitBreach');
 [breachFolder, ~, ~] = fileparts(filePath);
-warning('off', 'MATLAB:rmpath:DirNotFound');
+WarnState=warning('off', 'MATLAB:rmpath:DirNotFound');
 rmpath(genpath(fullfile(breachFolder, 'Ext')))
 rmpath(genpath(fullfile(breachFolder, 'Examples')))
 rmpath(genpath(fullfile(breachFolder, 'Online')))
-warning('on', 'MATLAB:rmpath:DirNotFound');
+warning(WarnState);
 end
 
 function setupCora()

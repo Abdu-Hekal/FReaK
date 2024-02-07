@@ -170,7 +170,7 @@ classdef KF
             obj.reach.tayOrder=6;
 
             %default optimizer options
-            solver = 'glpk';  % gurobi, cplex, glpk
+            solver = 'gurobi';  % gurobi, cplex, glpk
             timeLimit = 120; %2000;
             gapLimit = 10e-4; %0.1;
             gapAbsLimit = 10e-10; %0.1;
