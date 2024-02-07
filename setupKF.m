@@ -172,7 +172,8 @@ function setupCora()
 filePath = which('stl'); %cora stl filepath
 [coraStlFolder,~,~] = fileparts(filePath);
 
-%replace CORA stl files to add string representation and abs function
+%replace CORA stl files to add string representation and abs function, and
+%fix negationNormForm
 sourceFolder = fullfile('external','CORA');
 destinationFolder = coraStlFolder;
 files = '*.m';  % all m files

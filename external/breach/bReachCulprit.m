@@ -16,13 +16,12 @@ for ij=1:numel(clauses)
             return
         end
     end
-
     [offsetMap,idx] = recursiveOffset(offsetMap,idx,phi,Bdata);
+    idx = idx+numel(STL_ExtractPredicates(phi)); %increase idx to search for next mus
 end
 end
 
 function [offsetMap,idx] = recursiveOffset(offsetMap,idx,phi,Bdata)
-foundCulprit = false;
 %compute current robustness and extract all predicates
 Rphi = BreachRequirement(phi);
 rob=Rphi.Eval(Bdata);
@@ -58,19 +57,12 @@ for ii=1:numel(mus)
         newRob=Rphi.Eval(Bdata);
         if newRob<rob
             offsetMap(idx+ii) = signs(jj)*rob;
-            foundCulprit=true;
-            if newRob > 0 %not yet offset all responsible predicates
+            if newRob > 1e-13 %not yet offset all responsible predicates
                 [offsetMap,idx] = recursiveOffset(offsetMap,idx,modPhi,Bdata);
-            else
-                idx = idx+numel(mus);
+            else %found all responsible predicates
+                return
             end
         end
-        if foundCulprit
-            break;
-        end
-    end
-    if foundCulprit
-        break;
     end
 end
 end

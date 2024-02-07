@@ -64,10 +64,15 @@ assert(isa(obj.R0, 'interval'), 'Initial set (obj.R0) must be defined as a CORA 
 assert(isnumeric(obj.T) && isscalar(obj.T) && obj.T>0, 'Time horizon (obj.T) must be defined as a positive numeric')
 assert(isnumeric(obj.dt) && isscalar(obj.dt), 'Time step (obj.dt) must be defined as a numeric')
 assert(isa(obj.spec, 'specification'), 'Falsifying spec (obj.spec) must be defined as a CORA specification')
-%TODO: check that vars are only x and u and are equal to number of U and R0
 for ii=1:numel(obj.spec)
     spec=obj.spec(ii);
     if strcmp(spec.type,'logic')
+        %turn all stl spec to cnf, cnf first converts to negation normal
+        %form which is shown to require less binary variables, see
+        %literature. conjunctive form is then used for our offset algorithm
+        %to deal with conjunctions, see bReachCulprit.m
+%         obj.spec(ii).set=conjunctiveNormalForm(spec.set); 
+        %TODO: check that vars are only x and u and are equal to number of U and R0
         vars=spec.set.variables;     
     end
 end
