@@ -1,4 +1,4 @@
-function [solns,allData] = falsify(obj,varargin)
+function [solns,allDatas] = falsify(obj,varargin)
 
 % falsify - Given a model and a set of specs (safe/unsafe set/stl),
 %   perform the core falsification procedure to find a falsifying trajectory
@@ -35,6 +35,7 @@ function [solns,allData] = falsify(obj,varargin)
 
 %------------- BEGIN CODE --------------
 solns={1,obj.runs};
+allDatas={1,obj.runs};
 %initialize progress bar
 if obj.verb==0
     msg = sprintf('KF runs completed: 0/%d',obj.runs);
@@ -49,6 +50,7 @@ for run=1:obj.runs
     falsified=false;
     perturb=0; %perturbation percentage for neighborhood reset
     tak = (0:obj.ak.dt:obj.T)'; %define autokoopman time points
+    tsim = (0:obj.dt:obj.T)'; %time points for interpolating input
     %initialize simulation progress bar
     if obj.verb==1
         msg = sprintf('simulations exhausted: 0/%d',obj.maxSims);
@@ -145,9 +147,19 @@ for run=1:obj.runs
             offsetIter = 0;
             while offsetIter <= max(obj.offsetStrat,0) %offset once if offset in same iteration is selected (offsetStrat=1)
                 [critX0, critU] = falsifyingTrajectory(obj,curSoln);
-
+                %interpolate input in accordance with interpolation strategy defined
+                if ~isempty(critU)
+                    assert(size(critU,1)>=2,'Input must have at least two sample points')
+                    assert(size(critU,2)>=2,'Input must have at least two columns, where first column is time points')
+                    usim = interp1(critU(:,1),critU(:,2:end),tsim,obj.inputInterpolation,"extrap"); %interpolate and extrapolate input points
+                    usim =  max(obj.U.inf',min(obj.U.sup',usim)); %ensure that extrapolation is within input bounds
+                    usim = [tsim,usim];
+                else
+                    usim=u; %no input for the model
+                end
                 % run most critical inputs on the real system
-                [t, critX, simTime] = simulate(obj, critX0, critU);
+%                 [t, critX, simTime] = correctiveSim(obj, critX0, usim);
+                [t, critX, simTime] = simulate(obj, critX0, usim);
                 soln.sims = soln.sims+1;
                 soln.simTime = soln.simTime+simTime;
 
@@ -155,6 +167,8 @@ for run=1:obj.runs
                 allData.X{end+1}=critX; allData.XU{end+1}=critU; allData.t{end+1}=t; allData.Rob=[allData.Rob;robustness];
                 if nargout>1;allData.koopModels{end+1}=koopModel;end %store koop model if needed
                 if newBest_; perturb=0; end %reset pertrubation if new best soln found
+%                 visualizeTrain(allData,obj.ak.dt,[1,2])
+%                 drawnow
                 if falsified; break; end
 
                 if robustness~=inf %there exist a value for robustness for which we can neighborhood train or offset
@@ -224,6 +238,7 @@ for run=1:obj.runs
     vprintf(obj.verb,1,"Time taken %.2f seconds\n",soln.runtime)
     %store soln struct for this run
     solns{run}=soln;
+    allDatas{run}=allData;
     %update progress bar
     if obj.verb==0
         % Display the progress

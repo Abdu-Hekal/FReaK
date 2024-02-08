@@ -12,8 +12,9 @@ plotVars = [1,2];
 
 kfModel.verb=2;
 
-[kfSolns,allData] = falsify(kfModel);
+[kfSolns,allDatas] = falsify(kfModel);
 kfSoln=kfSolns{1};
+allData=allDatas{1};
 
 if kfSoln.falsified
     disp(['simulations required: ',num2str(kfSoln.sims)])

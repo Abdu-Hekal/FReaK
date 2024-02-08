@@ -10,9 +10,6 @@ plot_vars=varargin{3};
 n = size(data.X{end},1); %number of variables
 T = data.t{1}(end);
 
-% visualize the predictions for the identfied Koopman model
-load("autokoopman_model.mat", "A","B")
-
 figure; hold on; box on;
 
 % The standard values for colors saved in PLOT_STANDARDS() will be accessed from the variable PS
@@ -29,7 +26,6 @@ for r = 1:length(data.koopModels)
 
         else
             p1=plot(x(plot_vars(1),:),x(plot_vars(2),:));
-
             p2=plot(data.X{r}(:,plot_vars(1)),data.X{r}(:,plot_vars(2),:));
         end
         %style plots

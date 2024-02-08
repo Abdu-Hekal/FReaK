@@ -98,7 +98,18 @@ if rnd %default random simulations
 end
 if simd %simulate sample if needed
     [x0,u]=getInputs(obj,sample);
-    [tout, yout, simTime] = simulate(obj, x0, u);
+    %interpolate input in accordance with interpolation strategy defined
+    tsim = (0:obj.dt:obj.T)'; %time points for interpolating input
+    if ~isempty(u)
+        assert(size(u,1)>=2,'Input must have at least two sample points')
+        assert(size(u,2)>=2,'Input must have at least two columns, where first column is time points')
+        usim = interp1(u(:,1),u(:,2:end),tsim,obj.inputInterpolation,"extrap"); %interpolate and extrapolate input points
+        usim =  max(obj.U.inf',min(obj.U.sup',usim)); %ensure that extrapolation is within input bounds
+        usim = [tsim,usim];
+    else
+        usim=u; %no input for the model
+    end
+    [tout, yout, simTime] = simulate(obj, x0, usim);
 end
 end
 

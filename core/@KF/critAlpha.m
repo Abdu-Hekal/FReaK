@@ -67,13 +67,11 @@ function specSolns = critAlpha(obj,R,koopModel,specSolns)
 
 % loop over all specifications
 spec=obj.spec;
-rob = inf;
-uCrit = []; setCrit=[]; %initialise critical input and set.
-
 for i = 1:size(spec,1)
-
-    %struct for stored solution
-    specSoln = struct;
+    rob = inf; %initial robustness value
+    u=[]; %initialize empty list to store critical inputs
+    x=[]; %initialize empty array to store crit traj
+    specSoln = struct; %struct for stored solution
 
     % different types of specifications
     if strcmp(spec(i,1).type,'unsafeSet')
@@ -188,10 +186,9 @@ for i = 1:size(spec,1)
         rob = value(Sys.Pstl);
         alpha = value(Sys.alpha);
         u = value(Sys.u);
-
+        x=value(Sys.x);
 
         %TODO: how can we compare stl robustness and reachset robustness.
-        uCrit = u;
         if ~isempty(R)
             setCrit = R.set{end};
         end
@@ -200,7 +197,7 @@ for i = 1:size(spec,1)
     end
 
     %store solution for this iteration for each spec.
-    specSoln.rob=rob; specSoln.alpha=alpha; specSoln.u=uCrit;
+    specSoln.rob=rob; specSoln.alpha=alpha; specSoln.u=u; specSoln.x=x;
     specSoln.set=setCrit; 
     specSolns(spec(i,1)) = specSoln;
 end
