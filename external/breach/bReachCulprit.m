@@ -1,7 +1,41 @@
-function [offsetMap]=bReachCulprit(Bdata,set)
-%function that gets idx of predicate (subformula) that is responsible for robustness value
+function [critPreds, critTimes]=bReachCulprit(Bdata,set)
+% bReachCulprit - Finds indices of critical predicates and critical time
+% points
+%
+% Note that unlike typical critical pred computation where the goal is to
+% find the predicate responsible for the current robustness value, the
+% functions finds all predicates that are responsible for a +ve value for
+% this stl and trajectory, (i.e. not falsified)
+%
+% Syntax:
+%   [critPreds] = bReachCulprit(Bdata, set)
+%
+% Description:
+%   This function iterates through the clauses of the provided STL formula set
+%   and identifies predicates responsible for positive robustness values.
+%   It also can return corresponding critical time points, i.e. where the
+%   trajectory violates the STL the most
+%
+% Inputs:
+%   Bdata - Data for the Breach system trajectory.
+%   set - spec set containing STL formula.
+%
+% Outputs:
+%   critPreds - Map of indices of predicates responsible for positive
+%               robustness values. Key: predicate index, Value: offset.
+%
+% Example:
+%   [critPreds] = bReachCulprit(Bdata, set);
+%
+% See also: getClauses, coraBreachConvert, recursiveOffset
+%
+% Author: Abdelrahman Hekal
+% Written: [Date]
+% Last update: [Date]
+% Last revision: ---
 
-offsetMap = containers.Map('KeyType', 'double', 'ValueType', 'double');
+critPreds = containers.Map('KeyType', 'double', 'ValueType', 'double');
+critTimes = containers.Map('KeyType', 'double', 'ValueType', 'double');
 idx=0;
 clauses = getClauses(set);
 for ij=1:numel(clauses)
@@ -16,12 +50,12 @@ for ij=1:numel(clauses)
             return
         end
     end
-    [offsetMap,idx] = recursiveOffset(offsetMap,idx,phi,Bdata);
+    [critPreds, critTimes] = recursiveOffset(critPreds,critTimes,idx,phi,Bdata);
     idx = idx+numel(STL_ExtractPredicates(phi)); %increase idx to search for next mus
 end
 end
 
-function [offsetMap,idx] = recursiveOffset(offsetMap,idx,phi,Bdata)
+function [critPreds, critTimes] = recursiveOffset(critPreds,critTimes,idx,phi,Bdata)
 %compute current robustness and extract all predicates
 Rphi = BreachRequirement(phi);
 rob=Rphi.Eval(Bdata);
@@ -31,6 +65,9 @@ uniqueMus={};
 counts = {};
 signs=[1,-1];
 for ii=1:numel(mus)
+    if isKey(critPreds, idx+ii)
+        continue; % Skip if pred is already offset
+    end
     pred = mus(ii);
     predStl=regexprep(disp(pred), '\n', '');
     predStl = replace(predStl,'(','');
@@ -53,12 +90,21 @@ for ii=1:numel(mus)
         end
         modStl = regexprep(stl,pattern,strcat('$1',modPredStl,'$2'),count);
         modPhi = STL_Formula('phi',modStl);
-        Rphi = BreachRequirement(modPhi);
-        newRob=Rphi.Eval(Bdata);
+
+        %Rphi = BreachRequirement(modPhi);
+        %newRob=Rphi.Eval(Bdata);
+        traj=Bdata.P.traj{1};
+        val = STL_Eval(Bdata.Sys, modPhi, Sselect(Bdata.P,1), traj, traj.time, 'classic');
+        newRob=val(1);
+
         if newRob<rob
-            offsetMap(idx+ii) = signs(jj)*rob;
+            critPreds(idx+ii) = signs(jj)*rob;
+            %get critical time point
+            val = STL_Eval(Bdata.Sys, pred, Sselect(Bdata.P,1), traj, traj.time, 'classic');
+            timeIdx=find(val==rob);
+            critTimes(idx+ii) = traj.time(timeIdx);
             if newRob > 1e-13 %not yet offset all responsible predicates
-                [offsetMap,idx] = recursiveOffset(offsetMap,idx,modPhi,Bdata);
+                [critPreds] = recursiveOffset(critPreds,critTimes,idx,modPhi,Bdata);
             else %found all responsible predicates
                 return
             end

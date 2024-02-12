@@ -14,7 +14,13 @@ Bdata = BreachTraceSystem(vars');
 Bdata.AddTrace(trace);
 stl=coraBreachConvert(coraSpec.set);
 phi = STL_Formula('phi',stl);
-Rphi = BreachRequirement(phi);
-rob=Rphi.Eval(Bdata);
+
+%Rphi = BreachRequirement(phi);
+% rob=Rphi.Eval(Bdata);
+
+%faster robustness evaluation than Rphi.Eval
+traj=Bdata.P.traj{1};
+val = STL_Eval(Bdata.Sys, phi, Sselect(Bdata.P,1), traj, traj.time, 'classic');
+rob=val(1);
 
 end
