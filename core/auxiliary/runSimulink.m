@@ -1,4 +1,4 @@
-function [tout, yout] = runSimulink(model_name, T, x0, u)
+function [tout, yout,xFinal] = runSimulink(model_name, T, x0, u)
     % runSimulink - Run a simulation of a Simulink model
     %
     % Syntax:
@@ -35,7 +35,6 @@ function [tout, yout] = runSimulink(model_name, T, x0, u)
 
     % Open the Simulink model and set the simulation mode
     open_system(model_name, 'loadonly');
-
     % Create Simulink.SimulationInput object (avoids permanent changes to model)
     simIn = Simulink.SimulationInput(model_name);
     
@@ -56,6 +55,10 @@ function [tout, yout] = runSimulink(model_name, T, x0, u)
     simIn = simIn.setModelParameter('SaveTime', 'on', 'TimeSaveName', 'tout');
     simIn = simIn.setModelParameter('SaveOutput', 'on', 'OutputSaveName', 'yout');
     simIn = simIn.setModelParameter('SaveFormat', 'Array');
+    %save final state
+    simIn = setModelParameter(simIn,"SaveFinalState","on");
+    simIn = setModelParameter(simIn,"SaveOperatingPoint","on");
+
 
     % Run simulation
     simOut = sim(simIn);
@@ -63,4 +66,5 @@ function [tout, yout] = runSimulink(model_name, T, x0, u)
     % Access simulation results
     tout = simOut.tout;
     yout = simOut.yout;
+    xFinal=simOut.xFinal;
 end

@@ -69,6 +69,7 @@ function specSolns = critAlpha(obj,R,koopModel,specSolns)
 spec=obj.spec;
 for i = 1:size(spec,1)
     rob = inf; %initial robustness value
+    setCrit=[];
     u=[]; %initialize empty list to store critical inputs
     x=[]; %initialize empty array to store crit traj
     specSoln = struct; %struct for stored solution

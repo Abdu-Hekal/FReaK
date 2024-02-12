@@ -127,15 +127,15 @@ for run=1:obj.runs
             R=[];
         end
         % determine most critical reachable set and specification
-        try
+%         try
             optimTime=tic;
             specSolns = critAlpha(obj,R,koopModel,specSolns);
             soln.optimTime=soln.optimTime+toc(optimTime);
-        catch
-            disp("error encountered whilst setup/solving, resetting training data")
-            trainIter=0;
-            continue;
-        end
+%         catch
+%             disp("error encountered whilst setup/solving, resetting training data")
+%             trainIter=0;
+%             continue;
+%         end
 
         %get critical spec with minimum robustness and corresponding soln struct
         [~,minIndex]=min(specSolns.values.rob);
@@ -155,10 +155,9 @@ for run=1:obj.runs
                     usim =  max(obj.U.inf',min(obj.U.sup',usim)); %ensure that extrapolation is within input bounds
                     usim = [tsim,usim];
                 else
-                    usim=u; %no input for the model
+                    usim=[]; %no input for the model
                 end
                 % run most critical inputs on the real system
-%                 [t, critX, simTime] = correctiveSim(obj, critX0, usim);
                 [t, critX, simTime] = simulate(obj, critX0, usim);
                 soln.sims = soln.sims+1;
                 soln.simTime = soln.simTime+simTime;
@@ -167,8 +166,6 @@ for run=1:obj.runs
                 allData.X{end+1}=critX; allData.XU{end+1}=critU; allData.t{end+1}=t; allData.Rob=[allData.Rob;robustness];
                 if nargout>1;allData.koopModels{end+1}=koopModel;end %store koop model if needed
                 if newBest_; perturb=0; end %reset pertrubation if new best soln found
-%                 visualizeTrain(allData,obj.ak.dt,[1,2])
-%                 drawnow
                 if falsified; break; end
 
                 if robustness~=inf %there exist a value for robustness for which we can neighborhood train or offset
