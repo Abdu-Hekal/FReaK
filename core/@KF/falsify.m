@@ -34,8 +34,8 @@ function [solns,allDatas] = falsify(obj,varargin)
 % Last revision: ---
 
 %------------- BEGIN CODE --------------
-solns={1,obj.runs};
-allDatas={1,obj.runs};
+solns=cell(1,obj.runs);
+allDatas=cell(1,obj.runs);
 %initialize progress bar
 if obj.verb==0
     msg = sprintf('KF runs completed: 0/%d',obj.runs);

@@ -101,8 +101,10 @@ for ii=1:numel(mus)
             critPreds(idx+ii) = signs(jj)*rob;
             %get critical time point
             val = STL_Eval(Bdata.Sys, pred, Sselect(Bdata.P,1), traj, traj.time, 'classic');
-            timeIdx=find(val==rob);
-            critTimes(idx+ii) = traj.time(timeIdx);
+            timeIdx=find(abs(val-rob)<1e-13,1); %val==rob with tolerance of 1e-13
+            if ~isempty(timeIdx)
+                critTimes(idx+ii) = traj.time(timeIdx);
+            end
             if newRob > 1e-13 %not yet offset all responsible predicates
                 [critPreds] = recursiveOffset(critPreds,critTimes,idx,modPhi,Bdata);
             else %found all responsible predicates
