@@ -125,9 +125,9 @@ for i = 1:size(spec,1)
         %setup and run milp
         tic
         %if no prev soln for this spec, setup alpha & stl milp vars/constrs
-        try
+        if isfield(prevSpecSol, 'koopMilp')
             Sys=prevSpecSol.koopMilp; %get previously setup milp problem with stl
-        catch
+        else
             Sys=KoopMILP(obj.T,obj.ak.dt,obj.solver.dt,obj.R0,obj.U);
             Sys.normalize = obj.solver.normalize; %set normalization setting
             if ~obj.pulseInput %if not pulse input, set cpBool
@@ -144,20 +144,16 @@ for i = 1:size(spec,1)
         end
 
         %setup problem from scratch if number of generators is no longer
-        %the same. TODO: check and clean this section
+        %the same.
         if obj.reach.on
             if size(Sys.alpha,2) ~= size(generators(R.zono{end}),2)
                 Sys=KoopMILP(obj.T,obj.ak.dt,obj.solver.dt,obj.R0,obj.U);
+                Sys.normalize = obj.solver.normalize; %set normalization setting
                 if ~obj.pulseInput %if not pulse input, set cpBool
                     Sys.cpBool=obj.cpBool;
                 end
-                if obj.reach.on
-                    Sys.reachZonos=R.zono; %update reach zonos with new
-                    Sys = setupAlpha(Sys);
-                else
-                    Sys.nObs = obj.ak.nObs;
-                    Sys = setupInit(Sys);
-                end
+                Sys.reachZonos=R.zono; %update reach zonos with new
+                Sys = setupAlpha(Sys);
             end
         end
 

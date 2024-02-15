@@ -50,10 +50,6 @@ xFinal=x0(1:n);
 %loop over all time points in trajectory
 for ii=2:size(xTarget,2)
     x1 = xTarget(:,ii)+koopModel.g((error)');
-    error(1:3)
-    vpa(xTarget(1:3,ii)')
-    vpa(x1(1:3)')
-
 
     x1x0 =(x1 - koopModel.A* x0);
     u = pinv(koopModel.B(1:n,:)) * x1x0(1:n); 

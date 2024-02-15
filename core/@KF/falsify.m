@@ -121,21 +121,27 @@ for run=1:obj.runs
         % compute reachable set for Koopman linearized model (if reachability is used)
         if obj.reach.on
             reachTime=tic;
-            R = reachKoopman(obj,koopModel);
+            try
+                R = reachKoopman(obj,koopModel);
+            catch
+                vprintf(obj.verb,2,"error encountered whilst computing reachable set, resetting training data \n")
+                trainIter=0;
+                continue
+            end
             soln.reachTime=soln.reachTime+toc(reachTime); %time for reachability computation
         else
             R=[];
         end
         % determine most critical reachable set and specification
-%         try
+        try
             optimTime=tic;
             specSolns = critAlpha(obj,R,koopModel,specSolns);
             soln.optimTime=soln.optimTime+toc(optimTime);
-%         catch
-%             disp("error encountered whilst setup/solving, resetting training data")
-%             trainIter=0;
-%             continue;
-%         end
+        catch
+            vprintf(obj.verb,2,"error encountered whilst setup/solving, resetting training data \n")
+            trainIter=0;
+            continue;
+        end
 
         %get critical spec with minimum robustness and corresponding soln struct
         [~,minIndex]=min(specSolns.values.rob);
@@ -162,6 +168,7 @@ for run=1:obj.runs
                 soln.sims = soln.sims+1;
                 soln.simTime = soln.simTime+simTime;
 
+                %check if critical inputs falsify the system and store data
                 [soln,falsified,robustness,Bdata,newBest_]=checkFalsification(soln,critX,critU,t,obj.spec,obj.inputInterpolation,'kf optimization',obj.verb);
                 allData.X{end+1}=critX; allData.XU{end+1}=critU; allData.t{end+1}=t; allData.Rob=[allData.Rob;robustness];
                 if nargout>1;allData.koopModels{end+1}=koopModel;end %store koop model if needed
