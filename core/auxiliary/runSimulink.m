@@ -66,5 +66,10 @@ function [tout, yout,xFinal] = runSimulink(model_name, T, x0, u)
     % Access simulation results
     tout = simOut.tout;
     yout = simOut.yout;
-    xFinal=simOut.xFinal;
+    %store final simout state if exists
+    if isfield(simOut,'xFinal')
+        xFinal=simOut.xFinal;
+    else
+        xFinal=[];
+    end
 end

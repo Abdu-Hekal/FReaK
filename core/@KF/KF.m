@@ -72,10 +72,12 @@ classdef KF
 
         %solver/optimizer (struct)
         solver
-        %   .dt: solver time step for encoding stl robustness.
-        % default solver.dt=ak.dt Change to use coarser solver step
-        % when setting up stl constraints for quicker solving time.
-        % Must be a multiple of ak.dt
+        %   .timePoints: solver time points for encoding stl robustness.
+        % default solver.timePoints=0:ak.dt:T, i.e. time point every
+        % autokoopman step. Change to use coarser solver step when setting
+        % up stl constraints for quicker solving time. Use 'auto' to
+        % automatically select timePoints using iterative method.
+        % Must be no finer than ak.dt
         %   .opts: solver options (see sdpsettings)
         %   .normalize: bool, set to true to normalize optimization objective
         % in milp solver using reachable set bounds, (default=false)
