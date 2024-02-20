@@ -185,7 +185,7 @@ for run=1:obj.runs
                     % robustness is greater than gap termination criteria for milp solver and an offset mode selected by user.
                     if offsetIter==0 && robustness > getMilpGap(obj.solver.opts) && abs(obj.offsetStrat)
                         assert(strcmp(spec.type,'logic'),'offset is currently only implemented for stl spec, please turn off offset by setting offsetStrat=0')
-                        [critPreds,critTimes]=bReachCulprit(Bdata,spec.set); %get predicates responsible for robustness value
+                        [critPreds]=bReachCulprit(Bdata,spec.set); %get predicates responsible for robustness value
                         if critPreds.Count > 0 %if there there exists predicates that are culprit for (+ve) robustness
                             obj.solver.opts.usex0=0; %avoid warmstarting if offsetting
                             Sys=specSolns(spec).koopMilp;

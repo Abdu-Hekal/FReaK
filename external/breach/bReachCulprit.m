@@ -57,8 +57,11 @@ end
 
 function [critPreds, critTimes] = recursiveOffset(critPreds,critTimes,idx,phi,Bdata)
 %compute current robustness and extract all predicates
-Rphi = BreachRequirement(phi);
-rob=Rphi.Eval(Bdata);
+traj=Bdata.P.traj{1};
+P=Sselect(Bdata.P,1);
+val = STL_Eval(Bdata.Sys, phi, P, traj, traj.time);
+rob=val(1);
+
 mus = STL_ExtractPredicates(phi);
 % Obtain unique values and their counts
 uniqueMus={};
@@ -69,12 +72,16 @@ for ii=1:numel(mus)
         continue; % Skip if pred is already offset
     end
     pred = mus(ii);
+    %remove new line at end of pred if any
     predStl=regexprep(disp(pred), '\n', '');
-    predStl = replace(predStl,'(','');
-    predStl = replace(predStl,')','');
+    %remove enclosing brackets of pred
+    predStl = regexprep(predStl, '^(\()|\)$', '');
+    %iterate over signs. TODO: if in cnf, no need to iterate over signs,
+    %sign is +ve is pred>c or -ve if pred<c
     for jj=1:numel(signs)
+        %modify predicate with current value of rob
         modPredStl = strcat(predStl,'+',char(vpa(signs(jj)*rob)));
-        stl=regexprep(evalc('display(phi)'), '\n', '');
+        stl=regexprep(disp(phi), '\n', '');
         pattern = strcat('(.*?)',regexptranslate('escape', predStl),'(.*?)');
         %only count once for each pred
         if jj==1
@@ -91,16 +98,14 @@ for ii=1:numel(mus)
         modStl = regexprep(stl,pattern,strcat('$1',modPredStl,'$2'),count);
         modPhi = STL_Formula('phi',modStl);
 
-        %Rphi = BreachRequirement(modPhi);
-        %newRob=Rphi.Eval(Bdata);
-        traj=Bdata.P.traj{1};
-        val = STL_Eval(Bdata.Sys, modPhi, Sselect(Bdata.P,1), traj, traj.time, 'classic');
+        val = STL_Eval(Bdata.Sys, modPhi, P, traj, traj.time);
         newRob=val(1);
 
         if newRob<rob
             critPreds(idx+ii) = signs(jj)*rob;
-            %get critical time point
-            val = STL_Eval(Bdata.Sys, pred, Sselect(Bdata.P,1), traj, traj.time, 'classic');
+            %get critical time point by computing robustness of predicate
+            %at each time point
+            val = STL_Eval(Bdata.Sys, pred, P, traj, traj.time);
             timeIdx=find(abs(val-rob)<1e-13,1); %val==rob with tolerance of 1e-13
             if ~isempty(timeIdx)
                 critTimes(idx+ii) = traj.time(timeIdx);
