@@ -3,12 +3,12 @@ classdef KoopMILP
 %   solving MILP which minimizes robustness of koopman model w.r.t stl.
 %
 % Syntax:
-%    obj = KoopMILP(T,koopdt,solverdt,X0,U)
+%    obj = KoopMILP(T,koopdt,solverTimePoints,X0,U)
 %
 % Inputs:
 %    T - time horizon for koopman model.
 %    koopdt - time step for koopman model
-%    solverdt - time step for stl analysis (multiple of koopdt)
+%    solverTimePoints - time points for stl analysis (multiple of koopdt)
 %    X0 - initial set (class:interval or Zonotope)
 %    U - set of admissible control inputs (class:interval or Zonotope)
 %
@@ -34,7 +34,7 @@ properties
     X0 %initial set (not that it should be a point if reachability is not used)
     U %set of admissible control inputs (class:interval or Zonotope)
     koopdt %koopman time_step
-    solverdt %solver time step for setting up stl, i.e. points where to evaluate stl
+    solverTimePoints %solver time points for setting up stl, i.e. points where to evaluate stl
     nx %number of state variables
     nu %number of inputs
     nObs %number of observables
@@ -68,10 +68,10 @@ end
 
 methods
     % Constructor
-    function Sys = KoopMILP(T,koopdt,solverdt,X0,U)
+    function Sys = KoopMILP(T,koopdt,solverTimePoints,X0,U)
         Sys.L=ceil(T/koopdt);
         Sys.koopdt=koopdt;
-        Sys.solverdt=solverdt;
+        Sys.solverTimePoints=solverTimePoints;
 
         Sys.X0 = X0;
         Sys.U = U;

@@ -71,9 +71,9 @@ for ii=1:numel(obj.spec)
         %form which is shown to require less binary variables, see
         %literature. conjunctive form is then used for our offset algorithm
         %to deal with conjunctions, see bReachCulprit.m
-        obj.spec(ii).set=conjunctiveNormalForm(spec.set); 
+        obj.spec(ii).set=conjunctiveNormalForm(spec.set);
         %TODO: check that vars are only x and u and are equal to number of U and R0
-        vars=spec.set.variables;     
+        vars=spec.set.variables;
     end
 end
 all_steps = obj.T/obj.dt;
@@ -84,6 +84,7 @@ assert(islogical(obj.reach.on) || isnumeric(obj.reach.on) && isscalar(obj.reach.
 assert(isnumeric(obj.reach.tayOrder) && isscalar(obj.reach.tayOrder) && obj.reach.tayOrder > 0 && round(obj.reach.tayOrder) == obj.reach.tayOrder, 'Taylor order (obj.reach.tayOrder) must be a positive, integer, scalar number');
 
 assert(isstruct(obj.solver.opts), 'solver options (obj.solver.opts) must be a struct, see sdpsettings')
+assert(islogical(obj.solver.autoAddTimePoints) || isnumeric(obj.solver.autoAddTimePoints) && isscalar(obj.solver.autoAddTimePoints) && ismember(obj.solver.autoAddTimePoints, [0, 1]), 'solver autoAddTimePoints option (obj.solver.autoAddTimePoints) must be a boolean');
 assert(islogical(obj.solver.normalize) || isnumeric(obj.solver.normalize) && isscalar(obj.solver.normalize) && ismember(obj.solver.normalize, [0, 1]), 'solver normalization option (obj.solver.normalize) must be a boolean');
 assert(islogical(obj.solver.useOptimizer) || isnumeric(obj.solver.useOptimizer) && isscalar(obj.solver.useOptimizer) && ismember(obj.solver.useOptimizer, [0, 1]), 'solver use optimizer option (obj.solver.useOptimizer) must be a boolean');
 assert(isnumeric(obj.maxSims) && isscalar(obj.maxSims) && obj.maxSims > 0 && round(obj.maxSims) == obj.maxSims, 'Maximum simulations (obj.maxSims) must be a positive, integer, scalar number');
@@ -106,18 +107,23 @@ assert(isnumeric(obj.verb) && isscalar(obj.verb) && obj.verb >= 0 && obj.verb <=
 if ~isfield(obj.ak,'dt')
     obj.ak.dt=obj.dt;
 else
+    assert(isnumeric(obj.dt) && isscalar(obj.dt), 'Autokoopman Time step (obj.ak.dt) must be defined as a numeric')
     allAbstrSteps = obj.T/obj.ak.dt;
     assert(floor(allAbstrSteps)==allAbstrSteps,'Time step of koopman (ak.dt) must be a factor of Time horizon (T)')
 end
 
-%set solver timestep if it is not set, else check it is compliant.
-if ~isfield(obj.solver,'dt')
-    obj.solver.dt=obj.ak.dt;
+%set solver timestep to every step of ak.dt if it is not set, else check it is compliant.
+if ~isfield(obj.solver,'timePoints')
+    obj.solver.timePoints=0:obj.ak.dt:obj.T;
 else
-    abstr = obj.solver.dt/obj.ak.dt; %define abstraction ratio
-    assert(floor(abstr)==abstr,'Time step of solver (solver.dt) must be a multiple of koopman time step (ak.dt)')
-    allAbstrSteps = obj.T/obj.solver.dt;
-    assert(floor(allAbstrSteps)==allAbstrSteps,'Time step of solver (solver.dt) must be a factor of Time horizon (T)')
+    % Check that obj.solver.timePoints is a vector or numeric values
+    assert(isnumeric(obj.solver.timePoints), 'obj.solver.timePoints must be a numeric list of timepoints');
+    % Check that all solver time points are multiples of obj.ak.dt
+    assert(all(mod(obj.solver.timePoints, obj.ak.dt) == 0), 'All solver time points must be multiples of obj.ak.dt');
+    % Check that all time points are less than problem time horizon
+    assert(all(obj.solver.timePoints <= obj.T), 'All solver time points must be less than time horizon: obj.T');
+    %sort list of timePoints in ascending order
+    obj.solver.timePoints=sort(obj.solver.timePoints);
 end
 
 % ensure that autokoopman rank is an integer
@@ -165,7 +171,7 @@ for k=1:length(obj.cp)
     obj.cp(k) = min(obj.cp(k),all_steps); %set control points to a max of number of ak discrete timesteps
     assert(isnumeric(obj.cp(k)) && isscalar(obj.cp(k)) && obj.cp(k)>0 && round(obj.cp(k)) == obj.cp(k), 'number of control points must be an integer greater than zero')
     if obj.cp(k) == 1
-       assert(strcmp(obj.inputInterpolation,'previous'), 'if number of control points is 1, previous interpolation must be used')
+        assert(strcmp(obj.inputInterpolation,'previous'), 'if number of control points is 1, previous interpolation must be used')
     end
     step = (obj.T/obj.ak.dt)/obj.cp(k);
     assert(floor(step)==step,'number of control points (cp) must be a factor of T/ak.dt')

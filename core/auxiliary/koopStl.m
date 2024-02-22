@@ -1,15 +1,15 @@
-function [F,P,O] = koopStl(phi,kList,kMax,ts,var,M,normz,hardcoded,offsetMap)
+function [F,P,O] = koopStl(phi,kList,kMax,timePoints,var,M,normz,hardcoded,offsetMap)
 % koopStl - constructs constraints in YALMIP that compute
 %             the robustness of satisfaction for stl specification phi
 %
 % Syntax:
-%   [F,P,O] = koopStl(phi,kList,kMax,ts,var,M,normz,hardcoded,offsetMap)
+%   [F,P,O] = koopStl(phi,kList,kMax,timePoints,var,M,normz,hardcoded,offsetMap)
 %
 % Input:
 %       phi:    an STLformula
 %       kList:  a list of time steps at which the formula is to be enforced
 %       kMAx:   the length of the trajectory
-%       ts:     the interval (in seconds) used for discretizing time
+%       timePoints:  time points for analyzing robustness
 %       var:    a dictionary mapping strings to variables
 %       M:   	a large positive constant used for big-M constraints
 %       normz:  normalization values based on boundaries of reachable sets
@@ -43,12 +43,22 @@ b = phi.to;
 if isempty(a)
     a=0;
 else
-    a = max([0 floor(a/ts)]);
+    % find idx of time point closest to a (rounded down, i.e. overapprox time horizon)
+    a=find(timePoints <= a, 1, 'last')-1;
+    %if all timePoints larger than a, then a is first timePoint
+    if isempty(a)
+        a=0;
+    end
 end
 if isempty(b)
     b = kMax;
 else
-    b = ceil(b/ts);
+    % find idx of time point closest to b (rounded up, i.e. overapprox time horizon)
+    b=find(timePoints >= b, 1, 'first')-1;
+    %if all timePoints smaller than b, then b is last timePoint
+    if isempty(b)
+        b=numel(timePoints)-1;
+    end
 end
 
 switch (phi.type)
@@ -57,23 +67,23 @@ switch (phi.type)
         [F,P,O] = pred(phi,kList,var,normz,hardcoded,offsetMap);
 
     case '~'
-        [Frest,Prest,Orest] = koopStl(phi.lhs,kList,kMax,ts, var,M,normz,hardcoded,offsetMap);
+        [Frest,Prest,Orest] = koopStl(phi.lhs,kList,kMax,timePoints, var,M,normz,hardcoded,offsetMap);
         [Fnot, Pnot] = not(Prest);
         F = [F, Fnot, Frest];
         P = Pnot;
         O = [O, Orest];
 
     case '|'
-        [Fdis1,Pdis1,O1] = koopStl(phi.lhs,kList,kMax,ts, var,M,normz,hardcoded,offsetMap);
-        [Fdis2,Pdis2,O2] = koopStl(phi.rhs,kList,kMax,ts, var,M,normz,hardcoded,offsetMap);
+        [Fdis1,Pdis1,O1] = koopStl(phi.lhs,kList,kMax,timePoints, var,M,normz,hardcoded,offsetMap);
+        [Fdis2,Pdis2,O2] = koopStl(phi.rhs,kList,kMax,timePoints, var,M,normz,hardcoded,offsetMap);
         [For, Por] = or([Pdis1;Pdis2],M);
         F = [F, For, Fdis1, Fdis2];
         P = Por;
         O = [O, O1, O2];
 
     case '&'
-        [Fcon1,Pcon1,O1] = koopStl(phi.lhs,kList,kMax,ts, var,M,normz,hardcoded,offsetMap);
-        [Fcon2,Pcon2,O2] = koopStl(phi.rhs,kList,kMax,ts, var,M,normz,hardcoded,offsetMap);
+        [Fcon1,Pcon1,O1] = koopStl(phi.lhs,kList,kMax,timePoints, var,M,normz,hardcoded,offsetMap);
+        [Fcon2,Pcon2,O2] = koopStl(phi.rhs,kList,kMax,timePoints, var,M,normz,hardcoded,offsetMap);
         [Fand, Pand] = and([Pcon1;Pcon2],M);
         F = [F, Fand, Fcon1, Fcon2];
         P = Pand;
@@ -81,7 +91,7 @@ switch (phi.type)
 
     case 'globally'
         kListAlw = unique(cell2mat(arrayfun(@(k) {min(kMax,k + a): min(kMax,k + b)}, kList)));
-        [Frest,Prest,Orest] = koopStl(phi.lhs,kListAlw,kMax,ts, var,M,normz,hardcoded,offsetMap);
+        [Frest,Prest,Orest] = koopStl(phi.lhs,kListAlw,kMax,timePoints, var,M,normz,hardcoded,offsetMap);
         [Falw, Palw] = always(Prest,a,b,kList,kMax,M);
         F = [F, Falw];
         P = [Palw, P];
@@ -90,7 +100,7 @@ switch (phi.type)
 
     case 'finally'
         kListEv = unique(cell2mat(arrayfun(@(k) {min(kMax,k + a): min(kMax,k + b)}, kList)));
-        [Frest,Prest,Orest] = koopStl(phi.lhs,kListEv,kMax,ts, var,M,normz,hardcoded,offsetMap);
+        [Frest,Prest,Orest] = koopStl(phi.lhs,kListEv,kMax,timePoints, var,M,normz,hardcoded,offsetMap);
         [Fev, Pev] = eventually(Prest,a,b,kList,kMax,M);
         F = [F, Fev];
         P = [Pev, P];
@@ -98,8 +108,8 @@ switch (phi.type)
         O = [O, Orest];
 
     case 'until'
-        [Fp,Pp,O1] = koopStl(phi.lhs,kList,kMax,ts, var,M,normz,hardcoded,offsetMap);
-        [Fq,Pq,O2] = koopStl(phi.rhs,kList,kMax,ts, var,M,normz,hardcoded,offsetMap);
+        [Fp,Pp,O1] = koopStl(phi.lhs,kList,kMax,timePoints, var,M,normz,hardcoded,offsetMap);
+        [Fq,Pq,O2] = koopStl(phi.rhs,kList,kMax,timePoints, var,M,normz,hardcoded,offsetMap);
         [Funtil, Puntil] = until(Pp,Pq,a,b,kList,kMax,M);
         F = [F, Funtil, Fp, Fq];
         P = Puntil;

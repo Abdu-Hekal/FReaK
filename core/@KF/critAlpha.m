@@ -128,7 +128,7 @@ for i = 1:size(spec,1)
         if isfield(prevSpecSol, 'koopMilp')
             Sys=prevSpecSol.koopMilp; %get previously setup milp problem with stl
         else
-            Sys=KoopMILP(obj.T,obj.ak.dt,obj.solver.dt,obj.R0,obj.U);
+            Sys=KoopMILP(obj.T,obj.ak.dt,obj.solver.timePoints,obj.R0,obj.U);
             Sys.normalize = obj.solver.normalize; %set normalization setting
             if ~obj.pulseInput %if not pulse input, set cpBool
                 Sys.cpBool=obj.cpBool;
@@ -147,7 +147,7 @@ for i = 1:size(spec,1)
         %the same.
         if obj.reach.on
             if size(Sys.alpha,2) ~= size(generators(R.zono{end}),2)
-                Sys=KoopMILP(obj.T,obj.ak.dt,obj.solver.dt,obj.R0,obj.U);
+                Sys=KoopMILP(obj.T,obj.ak.dt,obj.solver.timePoints,obj.R0,obj.U);
                 Sys.normalize = obj.solver.normalize; %set normalization setting
                 if ~obj.pulseInput %if not pulse input, set cpBool
                     Sys.cpBool=obj.cpBool;
@@ -157,12 +157,17 @@ for i = 1:size(spec,1)
             end
         end
 
+        %setup stl constraints from scratch if: (1) stl has changed or first tie encoding stl, 
+        % (2) offset strategy is used and optimizer object is not used, i.e. offset is hardcode
+        % every time, (3) time points for evaluating stl changes, typically for 'auto' solver step
         set=spec(i,1).set;
-        if ~isequal(set,Sys.stl) || (~obj.solver.useOptimizer && Sys.offsetMap.Count>0)
+        if ~isequal(set,Sys.stl) || (~obj.solver.useOptimizer && Sys.offsetMap.Count>0) || ~isequal(obj.solver.timePoints,Sys.solverTimePoints)
+            Sys.solverTimePoints=obj.solver.timePoints;
             Sys.stl = set;
             Sys=setupStl(Sys,~obj.solver.useOptimizer); %encode stl using milp
         end
 
+        %setup evolution of system using reachable sets or direct encoding 
         if obj.reach.on
             Sys.reachZonos=R.zono; %update reach zonos with new
             Sys = setupReach(Sys);
@@ -173,6 +178,7 @@ for i = 1:size(spec,1)
             Sys=setupDynamics(Sys);
         end
 
+        %setup optimizer object
         if obj.solver.useOptimizer
             Sys = setupOptimizer(Sys,obj.solver.opts);
         end
@@ -185,7 +191,6 @@ for i = 1:size(spec,1)
         u = value(Sys.u);
         x=value(Sys.x);
 
-        %TODO: how can we compare stl robustness and reachset robustness.
         if ~isempty(R)
             setCrit = R.set{end};
         end
@@ -193,6 +198,7 @@ for i = 1:size(spec,1)
         error('This type of specification is not supported!');
     end
 
+    %TODO: how can we compare stl robustness and reachset robustness.
     %store solution for this iteration for each spec.
     specSoln.rob=rob; specSoln.alpha=alpha; specSoln.u=u; specSoln.x=x;
     specSoln.set=setCrit; 

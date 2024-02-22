@@ -31,15 +31,15 @@ function Sys = setupReach(Sys)
 % Last revision: ---
 
 
-alpha=Sys.alpha; x=Sys.x; L=Sys.L;
+alpha=Sys.alpha; x=Sys.x;
 %% Reachset constraints
 Freach = [];
 %set constraint on x every n koopman time steps. Note, no need for other
 %constraints on x, because stl is evaluated on x every n steps, subject to
 %solver dt
-n = Sys.solverdt/Sys.koopdt; 
+timeIdxs = floor(Sys.solverTimePoints/Sys.koopdt)+1; 
 % Constraints for reachable set
-for k=1:n:L+1
+for k=timeIdxs
     % x = c + G * \alpha, 
     c = Sys.reachZonos{k}.center;
     G = Sys.reachZonos{k}.generators;

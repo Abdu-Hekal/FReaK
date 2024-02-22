@@ -43,15 +43,17 @@ for ij=1:numel(clauses)
     stl=coraBreachConvert(clause);
     phi = STL_Formula('phi',stl);
 
-    % no point of offset if only one clause with one predicate
-    if numel(clauses) <= 1
-        mus = STL_ExtractPredicates(phi);
-        if numel(mus) <= 1
-            return
-        end
-    end
     [critPreds, critTimes] = recursiveOffset(critPreds,critTimes,idx,phi,Bdata);
-    idx = idx+numel(STL_ExtractPredicates(phi)); %increase idx to search for next mus
+    mus = STL_ExtractPredicates(phi);
+    idx = idx+numel(mus); %increase idx to search for next mus
+end
+% no point of offset if only one clause with one predicate, return empty
+% critPreds
+if numel(clauses) <= 1
+    if numel(mus) <= 1
+        critPreds = containers.Map('KeyType', 'double', 'ValueType', 'double');
+        return
+    end
 end
 end
 

@@ -37,13 +37,20 @@ function Sys = setupStl(Sys,hardcoded)
 % Written:     19-November-2023
 % Last update: ---
 % Last revision: ---
-
+%if solverTimePoints is empty, then no objective fcn of stl robustness, and prob is solver
+%only input/dynamics constraints
+if isempty(Sys.solverTimePoints)
+    Sys.Pstl=sdpvar(1,1); %dummy empty sdpvar for returned soln
+    return
+end
 
 
 %% STL formula
-n = Sys.solverdt/Sys.koopdt; %evaluate stl formula on x every n koopman time steps
-x = Sys.x(:,1:n:end);
-u = Sys.u(:,1:n:end);
+%evaluate stl formula at specified time indices, note +1 is used to start
+%from 1 instead of 0
+timeIdxs = floor(Sys.solverTimePoints/Sys.koopdt)+1;
+x = Sys.x(:,timeIdxs);
+u = Sys.u(:,timeIdxs);
 var = struct('x',x,'u',u);
 L=size(x,2);
 
@@ -61,7 +68,7 @@ if hardcoded
     vkmrCount=0;
 end
 
-[Fstl, Pstl, Ostl] = koopStl(phi,1,L,Sys.solverdt,var,M,normz,hardcoded,Sys.offsetMap);
+[Fstl, Pstl, Ostl] = koopStl(phi,1,L,Sys.solverTimePoints,var,M,normz,hardcoded,Sys.offsetMap);
 
 %assign stl optim variables and constraints
 Sys.Fstl=Fstl; Sys.Pstl=Pstl; Sys.Ostl=Ostl;

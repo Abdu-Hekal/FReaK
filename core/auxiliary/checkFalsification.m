@@ -1,4 +1,40 @@
 function [soln,falsified,robustness,Bdata,newBest]=checkFalsification(soln,x,u,t,specs,inputInterpolation,method,verb)
+% CHECKFALSIFICATION Checks if a given trajectory falsifies a set of specifications.
+%
+%   [soln, falsified, robustness, Bdata, newBest] = checkFalsification(soln, x, u, t, specs, inputInterpolation, method, verb)
+%
+% Inputs:
+%   soln - Struct containing information about the current falsification process.
+%   x - State trajectory.
+%   u - Input trajectory.
+%   t - Time points corresponding to the trajectories.
+%   specs - CORA specification object.
+%   inputInterpolation - Interpolation method for input trajectories.
+%   method - String indicating the method used for falsification.
+%   verb - Verbosity level for printing messages.
+%
+% Outputs:
+%   soln - Updated struct with information about the current falsification process.
+%   falsified - Logical indicating if the trajectory falsifies any specification.
+%   robustness - Robustness value associated with the falsification.
+%   Bdata - Data associated with the falsification, e.g., predicates and times.
+%   newBest - Logical indicating if a new best solution has been found.
+%
+% Description:
+%   This function checks if a given trajectory falsifies a set of specifications.
+%   The specifications can be of different types, including unsafe sets, safe sets,
+%   and logical formulas. The function evaluates the trajectory against each
+%   specification and updates the falsification status, robustness value,
+%   and relevant data. Additionally, it checks if the current solution is better
+%   than the best solution found so far and updates the soln struct accordingly.
+%
+% See also:
+%   bReachRob, interp1, vprintf
+%
+% Author: Abdelrahman Hekal
+% Written: 28-February-2023
+% Last update: ---
+
 falsified=false; robustness=inf;
 Bdata=NaN; newBest=false;
 for ii=1:numel(specs)

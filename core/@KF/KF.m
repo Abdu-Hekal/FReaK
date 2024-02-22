@@ -75,9 +75,11 @@ classdef KF
         %   .timePoints: solver time points for encoding stl robustness.
         % default solver.timePoints=0:ak.dt:T, i.e. time point every
         % autokoopman step. Change to use coarser solver step when setting
-        % up stl constraints for quicker solving time. Use 'auto' to
-        % automatically select timePoints using iterative method.
-        % Must be no finer than ak.dt
+        % up stl constraints for quicker solving time. 
+        % All solver points must be multiple of ak.dt
+        %    .autoAddTimePoints: set to true to automatically add
+        % timePoints using iterative method. If false, only user defined
+        % timePoints are used (default=false)
         %   .opts: solver options (see sdpsettings)
         %   .normalize: bool, set to true to normalize optimization objective
         % in milp solver using reachable set bounds, (default=false)
@@ -192,6 +194,7 @@ classdef KF
                 );
             obj.solver.normalize=false;
             obj.solver.useOptimizer=true;
+            obj.solver.autoAddTimePoints=false;
         end
     end
 end

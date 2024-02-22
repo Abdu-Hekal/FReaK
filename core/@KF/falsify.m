@@ -46,6 +46,9 @@ for run=1:obj.runs
     runtime=tic;
     %initialization and init assertions
     [obj,trainset,soln,specSolns,allData] = initialize(obj);
+    %store original solver time points as it might change if 'autoAddPoints' is set to true
+    origSolverTimePoints=obj.solver.timePoints;
+    %initalize training iterations and falsification result
     trainIter = 0;
     falsified=false;
     perturb=0; %perturbation percentage for neighborhood reset
@@ -133,15 +136,15 @@ for run=1:obj.runs
             R=[];
         end
         % determine most critical reachable set and specification
-        try
+%         try
             optimTime=tic;
             specSolns = critAlpha(obj,R,koopModel,specSolns);
             soln.optimTime=soln.optimTime+toc(optimTime);
-        catch
-            vprintf(obj.verb,2,"error encountered whilst setup/solving, resetting training data \n")
-            trainIter=0;
-            continue;
-        end
+%         catch
+%             vprintf(obj.verb,2,"error encountered whilst setup/solving, resetting training data \n")
+%             trainIter=0;
+%             continue;
+%         end
 
         %get critical spec with minimum robustness and corresponding soln struct
         [~,minIndex]=min(specSolns.values.rob);
@@ -154,6 +157,10 @@ for run=1:obj.runs
             offsetIter = 0;
             while offsetIter <= max(obj.offsetStrat,0) %repeat this loop only if offset in same iteration is selected (offsetStrat=1)
                 [critX0, critU] = falsifyingTrajectory(obj,curSoln);
+                critU2 = linearOptimalControl(obj, koopModel, curSoln.x);
+                disp([critU,critU2])
+                error('stop')
+
                 %interpolate input in accordance with interpolation strategy defined
                 if ~isempty(critU)
                     assert(size(critU,1)>=2,'Input must have at least two sample points')
@@ -164,6 +171,7 @@ for run=1:obj.runs
                 else
                     usim=[]; %no input for the model
                 end
+    
                 % run most critical inputs on the real system
                 [t, critX, simTime] = simulate(obj, critX0, usim);
                 soln.sims = soln.sims+1;
@@ -183,18 +191,31 @@ for run=1:obj.runs
                     end
                     %if first offset iteration (re-solve with offset if offsetStrat==1 or save offset for next iter if offsetStrat==-1),
                     % robustness is greater than gap termination criteria for milp solver and an offset mode selected by user.
-                    if offsetIter==0 && robustness > getMilpGap(obj.solver.opts) && abs(obj.offsetStrat)
+                    % OR if auto add  time points (find critical times)
+                    if (offsetIter==0 && robustness > getMilpGap(obj.solver.opts) && abs(obj.offsetStrat)) || kfModel.solver.autoAddTimePoints
                         assert(strcmp(spec.type,'logic'),'offset is currently only implemented for stl spec, please turn off offset by setting offsetStrat=0')
-                        [critPreds]=bReachCulprit(Bdata,spec.set); %get predicates responsible for robustness value
-                        if critPreds.Count > 0 %if there there exists predicates that are culprit for (+ve) robustness
+                        [critPreds,critTimes]=bReachCulprit(Bdata,spec.set); %get predicates responsible for robustness value
+                        %add new critical time points if auto add is selected by user
+                        if obj.solver.autoAddTimePoints
+                            critTimesList = round(cell2mat(critTimes.values)/obj.ak.dt)*obj.ak.dt; %get nearest critical time point for autokoopman time points
+                            obj.solver.timePoints=sort(unique([obj.solver.timePoints,critTimesList])); %add 'unique' critical time points and sort
+                        end
+                        %if there there exists predicates that are culprit for (+ve) robustness and we want to offset
+                        if offsetIter==0 && robustness > getMilpGap(obj.solver.opts) && abs(obj.offsetStrat) && critPreds.Count > 0 
                             obj.solver.opts.usex0=0; %avoid warmstarting if offsetting
                             Sys=specSolns(spec).koopMilp;
                             Sys.offsetMap = critPreds;
                             if obj.offsetStrat == 1 %if offset strategy in this iteration selected
                                 set = spec.set;
-                                if ~isequal(set,Sys.stl) || ~obj.solver.useOptimizer
+                                if ~isequal(set,Sys.stl) || ~obj.solver.useOptimizer || ~isequal(obj.solver.timePoints,Sys.solverTimePoints)
+                                    Sys.solverTimePoints=obj.solver.timePoints;
                                     Sys.stl = set;
                                     Sys=setupStl(Sys,~obj.solver.useOptimizer); %encode stl using milp
+                                end
+                                %if reachability is used, and new time points, setup is needed to account 
+                                % for additional constraints for further timePoints 
+                                if obj.reach.on && ~isequal(obj.solver.timePoints,Sys.solverTimePoints)
+                                    Sys = setupReach(Sys);
                                 end
                                 Sys=optimize(Sys,obj.solver.opts);
                                 curSoln.alpha = value(Sys.alpha); %new alpha value after offset
@@ -205,6 +226,7 @@ for run=1:obj.runs
                                 specSolns(spec).koopMilp=Sys;
                             end
                         else
+                            %break out of offset loop if no critical pred is found or offset is not selected
                             break
                         end
                     else
@@ -232,6 +254,8 @@ for run=1:obj.runs
     %assign solution result
     soln.falsified=falsified;
     soln.runtime=toc(runtime); %record runtime
+    %restore orignal solver time points
+    obj.solver.timePoints=origSolverTimePoints;
     %remove simulations bar
     if obj.verb==1; fprintf(reverseSimStr); end
 
