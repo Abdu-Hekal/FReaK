@@ -136,15 +136,15 @@ for run=1:obj.runs
             R=[];
         end
         % determine most critical reachable set and specification
-%         try
+        try
             optimTime=tic;
             specSolns = critAlpha(obj,R,koopModel,specSolns);
             soln.optimTime=soln.optimTime+toc(optimTime);
-%         catch
-%             vprintf(obj.verb,2,"error encountered whilst setup/solving, resetting training data \n")
-%             trainIter=0;
-%             continue;
-%         end
+        catch
+            vprintf(obj.verb,2,"error encountered whilst setup/solving, resetting training data \n")
+            trainIter=0;
+            continue;
+        end
 
         %get critical spec with minimum robustness and corresponding soln struct
         [~,minIndex]=min(specSolns.values.rob);
@@ -157,9 +157,6 @@ for run=1:obj.runs
             offsetIter = 0;
             while offsetIter <= max(obj.offsetStrat,0) %repeat this loop only if offset in same iteration is selected (offsetStrat=1)
                 [critX0, critU] = falsifyingTrajectory(obj,curSoln);
-                critU2 = linearOptimalControl(obj, koopModel, curSoln.x);
-                disp([critU,critU2])
-                error('stop')
 
                 %interpolate input in accordance with interpolation strategy defined
                 if ~isempty(critU)
@@ -192,7 +189,7 @@ for run=1:obj.runs
                     %if first offset iteration (re-solve with offset if offsetStrat==1 or save offset for next iter if offsetStrat==-1),
                     % robustness is greater than gap termination criteria for milp solver and an offset mode selected by user.
                     % OR if auto add  time points (find critical times)
-                    if (offsetIter==0 && robustness > getMilpGap(obj.solver.opts) && abs(obj.offsetStrat)) || kfModel.solver.autoAddTimePoints
+                    if (offsetIter==0 && robustness > getMilpGap(obj.solver.opts) && abs(obj.offsetStrat)) || obj.solver.autoAddTimePoints
                         assert(strcmp(spec.type,'logic'),'offset is currently only implemented for stl spec, please turn off offset by setting offsetStrat=0')
                         [critPreds,critTimes]=bReachCulprit(Bdata,spec.set); %get predicates responsible for robustness value
                         %add new critical time points if auto add is selected by user
@@ -314,7 +311,8 @@ for r = 1:length(trainset.X)
         b=reshape(b./(range(nonzero)),[],1);
         B=[B;b];
     end
-    ND = norm(A - B)/numel(A);
+%     ND = norm(A - B)/numel(A);
+    ND = mean(abs(A-B)); %compute average distance between critical traj and training trajs
     if ND < minND
         minND=ND;
     end

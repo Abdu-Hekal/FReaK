@@ -56,10 +56,10 @@ classdef KF
         %  Change to use coarser koopman step for quicker solution.
         %  Must be a factor of time horizon T.
         %  .obsType: type of observables (default="rff")
-        %  .nObs: number of observables (default=100)
+        %  .nObs: number of observables (default=20)
         %  .gridSlices: number of slices for grid parameter search (default=5)
         %  .opt: tuner of type "grid", "bopt", or "monte-carlo" (default=grid)
-        %  .rank: set of ranks to try of DMD rank parameter (default=[1,200,20])
+        %  .rank: set of ranks to try of DMD rank parameter (default=[1,20,4])
 
         % Reachability settings (struct)
         reach

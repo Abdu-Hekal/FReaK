@@ -50,7 +50,12 @@ end
 %from 1 instead of 0
 timeIdxs = floor(Sys.solverTimePoints/Sys.koopdt)+1;
 x = Sys.x(:,timeIdxs);
-u = Sys.u(:,timeIdxs);
+%check if there exists input
+if ~isempty(Sys.u)
+    u = Sys.u(:,timeIdxs);
+else
+    u=[];
+end
 var = struct('x',x,'u',u);
 L=size(x,2);
 

@@ -71,4 +71,5 @@ tp = linspace(0,obj.T,all_steps+1);
 critU = interp1(tp_',critU',tp',obj.inputInterpolation,"extrap"); %interpolate and extrapolate input points
 critU =  max(obj.U.inf',min(obj.U.sup',critU)); %ensure that extrapolation is within input bounds
 critU = [tp',critU];
+
 end

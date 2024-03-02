@@ -19,10 +19,9 @@ for i = 1:size(req, 1)
     name = req{i, 1};
     eq = req{i, 2};
 
-    kfModel.model=OdeFcn(@aircraftODE);
     kfModel.spec = specification(eq,'logic');
     kfModel.runs=10;
-    kfModel.verb=2;
+    kfModel.verb=1;
     kfSolns = falsify(kfModel);
 
     %print info
