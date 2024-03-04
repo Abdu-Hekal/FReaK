@@ -155,7 +155,7 @@ classdef KF
             obj.trainStrat=0;
             obj.resetStrat=0;
             obj.rmRand=true; %true
-            obj.sampPerturb=0.05;
+            obj.sampPerturb=0.1;
             obj.offsetStrat=-1; %-1
             obj.inputInterpolation='previous';
             obj.trajInterpolation='linear';

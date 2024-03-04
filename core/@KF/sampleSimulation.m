@@ -118,12 +118,10 @@ function newSample=getDispSampleXU(obj,bestSample,perturb)
 lowerBound = obj.inputsInterval.inf;
 upperBound = obj.inputsInterval.sup;
 
-maxPerturb = perturb * (upperBound-lowerBound);
+randomDirection = 2 * randi([0, 1], size(bestSample)) - 1;
+maxPerturb = perturb*(upperBound-lowerBound).*randomDirection;
 
-lowerBound = max(bestSample-maxPerturb,lowerBound); %maximum of perturbation and bounds on inputs
-upperBound = min(bestSample+maxPerturb,upperBound); %minimum of perturbation and bounds on inputs
-
-newSample = (upperBound - lowerBound) .* rand(size(bestSample)) + lowerBound;
+newSample = min(max(bestSample+maxPerturb,lowerBound),upperBound);
 end
 
 function sample=getMopsoSampleXU(obj,allInputsSamples,allRob)
