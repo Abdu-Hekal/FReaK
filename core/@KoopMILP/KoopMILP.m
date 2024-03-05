@@ -40,6 +40,7 @@ properties
     nObs %number of observables
     L %number of control points
     normalize %bool set to true to normalize optimization objective using reachable set bounds
+    relVars %variables that are relevant (exist in stl or have uncertain initial state)
 
     stl %stl to falsify
     cpBool %boolean array representing cp points
@@ -68,21 +69,23 @@ end
 
 methods
     % Constructor
-    function Sys = KoopMILP(T,koopdt,solverTimePoints,X0,U)
+    function Sys = KoopMILP(T,koopdt,solverTimePoints,X0,U,relVars)
         Sys.L=ceil(T/koopdt);
         Sys.koopdt=koopdt;
         Sys.solverTimePoints=solverTimePoints;
 
-        Sys.X0 = X0;
+        Sys.X0 = X0(relVars);
         Sys.U = U;
 
-        Sys.nx=size(X0,1);
-        Sys.nu=size(U,1);
+        Sys.nx=size(Sys.X0,1);
+        Sys.nu=size(Sys.U,1);
 
         %intitalise offset map to empty
         Sys.offsetMap = containers.Map('KeyType', 'double', 'ValueType', 'double');
         % default not to use normalization
         Sys.normalize=false;
+        %set relevant variables
+        Sys.relVars=relVars;
     end
 
     %getters for dependent properties
@@ -106,6 +109,8 @@ methods
         else
             bigM = 10e6;
         end
+        %sanity check, make sure bigM is not too large
+        bigM = min(bigM,10e6);
     end
     function normz = get.normz(Sys)
         minBound=inf(Sys.nx,1);

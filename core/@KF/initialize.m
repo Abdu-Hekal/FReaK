@@ -26,7 +26,7 @@ function [obj,trainset,soln,specSolns,allData] = initialize(obj)
 %
 % Author:      Abdelrahman Hekal
 % Written:     19-November-2023
-% Last update: ---
+% Last update: 04-March-2024
 % Last revision: ---
 % -------------------------- Auxiliary Functions --------------------------
 % SETCPBOOL Set control point boolean array for the Koopman Falsification (KF) object.
@@ -64,6 +64,10 @@ assert(isa(obj.R0, 'interval'), 'Initial set (obj.R0) must be defined as a CORA 
 assert(isnumeric(obj.T) && isscalar(obj.T) && obj.T>0, 'Time horizon (obj.T) must be defined as a positive numeric')
 assert(isnumeric(obj.dt) && isscalar(obj.dt), 'Time step (obj.dt) must be defined as a numeric')
 assert(isa(obj.spec, 'specification'), 'Falsifying spec (obj.spec) must be defined as a CORA specification')
+
+%store relevant variables, these are defined as variables with noncertain
+%initial state or are defined in the stl. other variables are irrelevant
+relVars = rad(obj.R0);
 for ii=1:numel(obj.spec)
     spec=obj.spec(ii);
     if strcmp(spec.type,'logic')
@@ -72,9 +76,24 @@ for ii=1:numel(obj.spec)
         %literature. conjunctive form is then used for our offset algorithm
         %to deal with conjunctions, see bReachCulprit.m
         obj.spec(ii).set=conjunctiveNormalForm(spec.set);
-        %TODO: check that vars are only x and u and are equal to number of U and R0
-        vars=spec.set.variables;
+        %TODO: b4 this section check that vars are only x and u and are equal to number of U and R0
+        allVars=getVariables(spec.set);
+        %make sure we only consider state variables and not input
+        %variables, allVars is in alphabetical order so state variables 'x'
+        %are after input variables 'u'
+        allVars=allVars(end-numel(relVars)+1:end);
+        for jj=1:numel(allVars)
+            %var is relevant if in stl or if uncertain initial state
+            relVars(jj)=relVars(jj)|contains(spec.set.str,allVars{jj});
+        end
     end
+end
+%only use relevant vars (weighted koop model) if selected by user, else set
+%all vars to relevant
+if obj.ak.useRelVars
+    obj.relVars=find(relVars);
+else
+    obj.relVars=(1:dim(obj.R0))';
 end
 all_steps = obj.T/obj.dt;
 assert(floor(all_steps)==all_steps,'Time step (dt) must be a factor of Time horizon (T)')
@@ -163,7 +182,6 @@ allData.koopModels={};
 end
 
 % -------------------------- Auxiliary Functions --------------------------
-
 function obj=setCpBool(obj)
 all_steps = obj.T/obj.ak.dt;
 obj.cpBool = zeros(all_steps,length(obj.U));

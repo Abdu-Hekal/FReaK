@@ -128,7 +128,7 @@ for i = 1:size(spec,1)
         if isfield(prevSpecSol, 'koopMilp')
             Sys=prevSpecSol.koopMilp; %get previously setup milp problem with stl
         else
-            Sys=KoopMILP(obj.T,obj.ak.dt,obj.solver.timePoints,obj.R0,obj.U);
+            Sys=KoopMILP(obj.T,obj.ak.dt,obj.solver.timePoints,obj.R0,obj.U,obj.relVars);
             Sys.normalize = obj.solver.normalize; %set normalization setting
             if ~obj.pulseInput %if not pulse input, set cpBool
                 Sys.cpBool=obj.cpBool;
@@ -147,7 +147,7 @@ for i = 1:size(spec,1)
         %the same.
         if obj.reach.on
             if size(Sys.alpha,2) ~= size(generators(R.zono{end}),2)
-                Sys=KoopMILP(obj.T,obj.ak.dt,obj.solver.timePoints,obj.R0,obj.U);
+                Sys=KoopMILP(obj.T,obj.ak.dt,obj.solver.timePoints,obj.R0(obj.relVars),obj.U,obj.relVars);
                 Sys.normalize = obj.solver.normalize; %set normalization setting
                 if ~obj.pulseInput %if not pulse input, set cpBool
                     Sys.cpBool=obj.cpBool;

@@ -44,10 +44,10 @@ if obj.verb==0
 end
 for run=1:obj.runs
     runtime=tic;
+    %store initial object passed by user before anything changes
+    origObj=obj;
     %initialization and init assertions
     [obj,trainset,soln,specSolns,allData] = initialize(obj);
-    %store original solver time points as it might change if 'autoAddPoints' is set to true
-    origSolverTimePoints=obj.solver.timePoints;
     %initalize training iterations and falsification result
     trainIter = 0;
     falsified=false;
@@ -83,14 +83,14 @@ for run=1:obj.runs
                 vprintf(obj.verb,2,2,'Reset applied to training set of size %d\n',size(trainset.t,2))
             end
             % empty trainset at reset, or empty trainset after first iter because it is random trajectory, if rmRand is selected by user.
-            if  trainIter ==0 || (trainIter == 1 && obj.rmRand)
+            if  trainIter==0 || (trainIter == 1 && obj.rmRand)
                 trainset.X = {}; trainset.XU={}; trainset.t = {};
             end
 
             %if first iter, random or neighborhood training selected, or critical trajectory is
             %repeated, retrain with new xu else retrain with prev traj
-            if trainIter==0 || obj.trainStrat>=1 || checkRepeatedTraj(critX,critU,trainset,obj.verb)
-                if trainIter>0 && obj.solver.opts.usex0==1 && checkRepeatedTraj(critX,critU,trainset,obj.verb)
+            if trainIter==0 || obj.trainStrat>=1 || checkRepeatedTraj(critX(:,obj.relVars),critU,trainset,obj.verb)
+                if trainIter>0 && obj.solver.opts.usex0==1 && checkRepeatedTraj(critX(:,obj.relVars),critU,trainset,obj.verb)
                     obj.solver.opts.usex0=0; %turn off warmstarting if repeated trajectory returned by solver
                     disp('Turned off warmstarting due to repeated solutions')
                 end
@@ -113,9 +113,8 @@ for run=1:obj.runs
 
             %add trajectory to koopman trainset
             trainset.t{end+1} = tak;
-            trainset.X{end+1} = xak';
+            trainset.X{end+1} = xak(:,obj.relVars)';
             trainset.XU{end+1} = u(:,2:end)';
-
         end
 
         %run autokoopman and learn linearized model
@@ -136,15 +135,15 @@ for run=1:obj.runs
             R=[];
         end
         % determine most critical reachable set and specification
-        try
+%         try
             optimTime=tic;
             specSolns = critAlpha(obj,R,koopModel,specSolns);
             soln.optimTime=soln.optimTime+toc(optimTime);
-        catch
-            vprintf(obj.verb,2,"error encountered whilst setup/solving, resetting training data \n")
-            trainIter=0;
-            continue;
-        end
+%         catch
+%             vprintf(obj.verb,2,"error encountered whilst setup/solving, resetting training data \n")
+%             trainIter=0;
+%             continue;
+%         end
 
         %get critical spec with minimum robustness and corresponding soln struct
         [~,minIndex]=min(specSolns.values.rob);
@@ -251,8 +250,8 @@ for run=1:obj.runs
     %assign solution result
     soln.falsified=falsified;
     soln.runtime=toc(runtime); %record runtime
-    %restore orignal solver time points
-    obj.solver.timePoints=origSolverTimePoints;
+    %restore orignal KF object
+    obj=origObj;
     %remove simulations bar
     if obj.verb==1; fprintf(reverseSimStr); end
 

@@ -51,7 +51,7 @@ function [koopModel,koopTime] = learnKoopModel(obj, trainset)
     load("autokoopman_model.mat", "A","B","u","w")
 
     % create observables function
-    n = size(obj.R0,1); %number of variables
+    n = numel(obj.relVars); %number of variables
     g_ = @(x) sqrt(2/obj.ak.nObs)*cos(w*x + u');
     g = @(x) [x; g_(x)];
     xSym = sym('x',[n,1]);

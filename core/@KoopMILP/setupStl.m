@@ -46,10 +46,16 @@ end
 
 
 %% STL formula
+phi= Sys.stl;
+M = Sys.bigM;
 %evaluate stl formula at specified time indices, note +1 is used to start
 %from 1 instead of 0
 timeIdxs = floor(Sys.solverTimePoints/Sys.koopdt)+1;
-x = Sys.x(:,timeIdxs);
+
+%x is list of all variables in stl formula
+x=sdpvar(numel(getVariables(phi)),numel(timeIdxs));
+%assign relevant variables to coresponding variable in formula
+x(Sys.relVars,:) = Sys.x(:,timeIdxs);
 %check if there exists input
 if ~isempty(Sys.u)
     u = Sys.u(:,timeIdxs);
@@ -58,9 +64,6 @@ else
 end
 var = struct('x',x,'u',u);
 L=size(x,2);
-
-phi= Sys.stl;
-M = Sys.bigM;
 
 if Sys.normalize
     normz = Sys.normz;
@@ -72,6 +75,7 @@ if hardcoded
     global vkmrCount %globl count to track wihch subpred to offset in milp
     vkmrCount=0;
 end
+
 
 [Fstl, Pstl, Ostl] = koopStl(phi,1,L,Sys.solverTimePoints,var,M,normz,hardcoded,Sys.offsetMap);
 

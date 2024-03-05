@@ -60,6 +60,8 @@ classdef KF
         %  .gridSlices: number of slices for grid parameter search (default=5)
         %  .opt: tuner of type "grid", "bopt", or "monte-carlo" (default=grid)
         %  .rank: set of ranks to try of DMD rank parameter (default=[1,20,4])
+        %  .useRelVars: learn (weighted) koopman model only for relevant
+        %  variables (default=false)
 
         % Reachability settings (struct)
         reach
@@ -140,6 +142,7 @@ classdef KF
         %internal properties (DO NOT CHANGE)
         cpBool %used to set control inputs for pulse inputs
         inputsInterval %1d interval of all applicable inputs (x0 and/or u)
+        relVars %relevant variables only in case of weighted koopman model.
 
 
     end
@@ -168,6 +171,7 @@ classdef KF
             obj.ak.gridSlices=5;
             obj.ak.opt="grid"; %grid
             obj.ak.rank=[1,20,4];
+            obj.ak.useRelVars=false;
 
             %reachability settings
             obj.reach.on=true; %true

@@ -33,7 +33,7 @@ function [x0,u] = falsifyingTrajectory(obj,soln)
 %------------- BEGIN CODE --------------
 
 %setup
-R0=obj.R0;
+R0=obj.R0(obj.relVars);
 U=obj.U;
 cpBool=obj.cpBool;
 set=soln.set;
