@@ -1,9 +1,9 @@
-classdef KoopMILP
-% KoopMILP - class representing a koopman milp object for setting up and
-%   solving MILP which minimizes robustness of koopman model w.r.t stl.
+classdef KoopSolver
+% KoopSolver - class representing a koopman solver object for setting up and
+%   solving optimization problem which minimizes robustness of koopman model w.r.t stl.
 %
 % Syntax:
-%    obj = KoopMILP(T,koopdt,solverTimePoints,X0,U)
+%    obj = KoopSolver(T,koopdt,solverTimePoints,X0,U)
 %
 % Inputs:
 %    T - time horizon for koopman model.
@@ -40,12 +40,11 @@ properties
     nObs %number of observables
     L %number of control points
     normalize %bool set to true to normalize optimization objective using reachable set bounds
-    relVars %variables that are relevant (exist in stl or have uncertain initial state)
 
     stl %stl to falsify
     cpBool %boolean array representing cp points
 
-    %milp sdpvars and constraints
+    %sdpvars and constraints
     Finit %constraints on alpha or inputs
     Fstl %constraints for stl
     Fdyn %constraints on states
@@ -69,12 +68,12 @@ end
 
 methods
     % Constructor
-    function Sys = KoopMILP(T,koopdt,solverTimePoints,X0,U,relVars)
+    function Sys = KoopSolver(T,koopdt,solverTimePoints,X0,U)
         Sys.L=ceil(T/koopdt);
         Sys.koopdt=koopdt;
         Sys.solverTimePoints=solverTimePoints;
 
-        Sys.X0 = X0(relVars);
+        Sys.X0 = X0;
         Sys.U = U;
 
         Sys.nx=size(Sys.X0,1);
@@ -84,8 +83,6 @@ methods
         Sys.offsetMap = containers.Map('KeyType', 'double', 'ValueType', 'double');
         % default not to use normalization
         Sys.normalize=false;
-        %set relevant variables
-        Sys.relVars=relVars;
     end
 
     %getters for dependent properties

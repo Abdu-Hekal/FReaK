@@ -1,25 +1,25 @@
-function Sys = setupStl(Sys,hardcoded)
-% setupStl - Set up the optimization constraints for the robustness of
-%   the STL formula in the Koopman MILP formulation.
+function Sys = setupMilpStl(Sys,hardcoded)
+% setupMilpStl - Set up the optimization constraints for the robustness of
+%   the STL formula in the Koopman Solver formulation.
 %
 % Syntax:
-%    Sys = setupStl(Sys, hardcoded)
+%    Sys = setupMilpStl(Sys, hardcoded)
 %
 % Description:
 %    This function sets up the optimization constraints for the Signal
-%    Temporal Logic (STL) formula in the Koopman MILP formulation. The
+%    Temporal Logic (STL) formula in the Koopman Solver formulation. The
 %    constraints ensure that the robustness of the STL formula is
 %    minimized during the falsification process. The function is part of
-%    the KoopMILP class and is called during the setup process.
+%    the KoopSolver class and is called during the setup process.
 %
 % Inputs:
-%    Sys - KoopMILP object
+%    Sys - KoopSolver object
 %    hardcoded - Boolean flag indicating whether the STL formula is
 %                hardcoded (true) or not (false). if false, an optimizer
 %                object is used.
 %
 % Outputs:
-%    Sys - KoopMILP object with updated properties related to the STL
+%    Sys - KoopSolver object with updated properties related to the STL
 %          formula optimization constraints, Namely:
 %     Fstl: Yalmip constraints to compute recusrive robustness of stl
 %     Pstl:  a struct containing YALMIP decision variables representing
@@ -29,9 +29,9 @@ function Sys = setupStl(Sys,hardcoded)
 %       offset for each inequality.
 %
 % Example:
-%    Sys = setupStl(Sys, true);
+%    Sys = setupMilpStl(Sys, true);
 %
-% See also: KoopMILP
+% See also: KoopSolver
 %
 % Author:      Abdelrahman Hekal
 % Written:     19-November-2023
@@ -51,11 +51,7 @@ M = Sys.bigM;
 %evaluate stl formula at specified time indices, note +1 is used to start
 %from 1 instead of 0
 timeIdxs = floor(Sys.solverTimePoints/Sys.koopdt)+1;
-
-%x is list of all variables in stl formula
-x=sdpvar(numel(getVariables(phi)),numel(timeIdxs));
-%assign relevant variables to coresponding variable in formula
-x(Sys.relVars,:) = Sys.x(:,timeIdxs);
+x = Sys.x(:,timeIdxs);
 %check if there exists input
 if ~isempty(Sys.u)
     u = Sys.u(:,timeIdxs);

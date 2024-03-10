@@ -15,7 +15,7 @@ classdef KF
     %    .... %add model properties (see below)
     %    obj.falsify() %falsify model for a given stl
     %
-    % See also: KoopMILP
+    % See also: KoopSolver
 
     % Author:      Abdelrahman Hekal
     % Written:      19-November-2023
@@ -60,12 +60,11 @@ classdef KF
         %  .gridSlices: number of slices for grid parameter search (default=5)
         %  .opt: tuner of type "grid", "bopt", or "monte-carlo" (default=grid)
         %  .rank: set of ranks to try of DMD rank parameter (default=[1,20,4])
-        %  .useRelVars: learn (weighted) koopman model only for relevant
         %  variables (default=false)
 
         % Reachability settings (struct)
         reach
-        %   .on: : bool, set to true to use reachability for encoding of MILP.
+        %   .on: : bool, set to true to use reachability for encoding of problem.
         % if set to false then direct encoding of the evolution of the
         % koopman linear system as x_{t+1} = A*x_t+B*u_t (default=true).
         % Note that for system's with uncertain initial state, reachability
@@ -82,11 +81,16 @@ classdef KF
         %    .autoAddTimePoints: set to true to automatically add
         % timePoints using iterative method. If false, only user defined
         % timePoints are used (default=false)
-        %   .opts: solver options (see sdpsettings)
+        %    .autoAddConstraints: set to true to autimacally add
+        % (soft) constraints on predicates at automatically generated time
+        % points, instead of solving milp robustness. Note to set
+        % autoAddConstraints to true, autoAddTimePoints must also be set to
+        % true. (default=false). This setting is inspired by: https://arxiv.org/pdf/1603.02650.pdf
+        %   .opts: solver sdp options (see sdpsettings)
         %   .normalize: bool, set to true to normalize optimization objective
-        % in milp solver using reachable set bounds, (default=false)
+        % in solver using reachable set bounds, (default=false)
         %   .useOptimizer: bool set to true to use optimizer object. Not
-        % using optimizer means stl needs to be setup for milp everytime
+        % using optimizer means stl needs to be setup for solver everytime
         % for offset. setting up optimizer object also takes time.
         % Time trade off? (default=true)
 
@@ -99,7 +103,7 @@ classdef KF
         %timeout: maximum time before algorithm terminates, (default=inf)
         timeout
         % nResets: reset training set after n trajectories (default=5),
-        % note that we also reset if milp fails to solve (model is bad)
+        % note that we also reset if solver fails to solve (model is bad)
         nResets
         % trainStrat: int, set to 2 to train with new trajectory, 1 to
         % train with strategy where samples are only addeded to
@@ -142,8 +146,6 @@ classdef KF
         %internal properties (DO NOT CHANGE)
         cpBool %used to set control inputs for pulse inputs
         inputsInterval %1d interval of all applicable inputs (x0 and/or u)
-        relVars %relevant variables only in case of weighted koopman model.
-
 
     end
     methods
@@ -171,7 +173,6 @@ classdef KF
             obj.ak.gridSlices=5;
             obj.ak.opt="grid"; %grid
             obj.ak.rank=[1,20,4];
-            obj.ak.useRelVars=false;
 
             %reachability settings
             obj.reach.on=true; %true
@@ -199,6 +200,7 @@ classdef KF
             obj.solver.normalize=false;
             obj.solver.useOptimizer=true;
             obj.solver.autoAddTimePoints=false;
+            obj.solver.autoAddConstraints=false;
         end
     end
 end

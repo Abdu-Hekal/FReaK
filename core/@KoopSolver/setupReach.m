@@ -7,23 +7,23 @@ function Sys = setupReach(Sys)
 %
 % Description:
 %    This function sets up the optimization constraints for the reachable
-%    set in the Koopman MILP formulation. The constraints enforce that the
+%    set in the Koopman solver formulation. The constraints enforce that the
 %    system states follow the reachable set dynamics computed during the
-%    falsification process. The function is part of the KoopMILP class and
+%    falsification process. The function is part of the KoopSolver class and
 %    is called during the setup process. Note that evolution is either described
 %    directly using the setupReach function or using reachable sets (this function)
-%
+%mi
 % Inputs:
-%    Sys - KoopMILP object
+%    Sys - KoopSolver object
 %
 % Outputs:
-%    Sys - KoopMILP object with updated properties related to reachable
+%    Sys - KoopSolver object with updated properties related to reachable
 %          set optimization constraints.
 %
 % Example:
 %    Sys = setupReach(Sys);
 %
-% See also: KoopMILP, koopSetupDynamics
+% See also: KoopSolver, koopSetupDynamics
 %
 % Author:      Abdelrahman Hekal
 % Written:     19-November-2023

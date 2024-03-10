@@ -1,21 +1,21 @@
 function Sys = setupOptimizer(Sys,options)
-% setupOptimizer - Set up the optimizer for the Koopman MILP (KoopMilp) object.
+% setupOptimizer - Set up the optimizer for the Koopman solver (KoopSolver) object.
 %
 % Syntax:
 %    Sys = setupOptimizer(Sys, options)
 %
 % Description:
-%    This function sets up the optimizer for the Koopman MILP (KoopMilp) object.
+%    This function sets up the optimizer for the Koopman solver (KoopSolver) object.
 %    It defines the optimization problem, including constraints, objective,
 %    and output variables. The optimizer object is stored in the Sys object
 %    for later use in the optimization process.
 %
 % Inputs:
-%    Sys - Koopman MILP (KoopMilp) object
+%    Sys - Koopman solver (KoopSolver) object
 %    options - Options for the optimization process
 %
 % Outputs:
-%    Sys - Updated Koopman MILP (KoopMilp) object with the optimizer set up
+%    Sys - Updated Koopman solver (KoopSolver) object with the optimizer set up
 %
 % Example:
 %    Sys = setupOptimizer(Sys, options);

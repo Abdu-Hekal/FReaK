@@ -65,35 +65,16 @@ assert(isnumeric(obj.T) && isscalar(obj.T) && obj.T>0, 'Time horizon (obj.T) mus
 assert(isnumeric(obj.dt) && isscalar(obj.dt), 'Time step (obj.dt) must be defined as a numeric')
 assert(isa(obj.spec, 'specification'), 'Falsifying spec (obj.spec) must be defined as a CORA specification')
 
-%store relevant variables, these are defined as variables with noncertain
-%initial state or are defined in the stl. other variables are irrelevant
-relVars = rad(obj.R0);
 for ii=1:numel(obj.spec)
     spec=obj.spec(ii);
+    %TODO: check that vars are only x and u and are equal to number of U and R0
     if strcmp(spec.type,'logic')
         %turn all stl spec to cnf, cnf first converts to negation normal
         %form which is shown to require less binary variables, see
         %literature. conjunctive form is then used for our offset algorithm
         %to deal with conjunctions, see bReachCulprit.m
         obj.spec(ii).set=conjunctiveNormalForm(spec.set);
-        %TODO: b4 this section check that vars are only x and u and are equal to number of U and R0
-        allVars=getVariables(spec.set);
-        %make sure we only consider state variables and not input
-        %variables, allVars is in alphabetical order so state variables 'x'
-        %are after input variables 'u'
-        allVars=allVars(end-numel(relVars)+1:end);
-        for jj=1:numel(allVars)
-            %var is relevant if in stl or if uncertain initial state
-            relVars(jj)=relVars(jj)|contains(spec.set.str,allVars{jj});
-        end
     end
-end
-%only use relevant vars (weighted koop model) if selected by user, else set
-%all vars to relevant
-if obj.ak.useRelVars
-    obj.relVars=find(relVars);
-else
-    obj.relVars=(1:dim(obj.R0))';
 end
 all_steps = obj.T/obj.dt;
 assert(floor(all_steps)==all_steps,'Time step (dt) must be a factor of Time horizon (T)')
@@ -104,11 +85,14 @@ assert(isnumeric(obj.reach.tayOrder) && isscalar(obj.reach.tayOrder) && obj.reac
 
 assert(isstruct(obj.solver.opts), 'solver options (obj.solver.opts) must be a struct, see sdpsettings')
 assert(islogical(obj.solver.autoAddTimePoints) || isnumeric(obj.solver.autoAddTimePoints) && isscalar(obj.solver.autoAddTimePoints) && ismember(obj.solver.autoAddTimePoints, [0, 1]), 'solver autoAddTimePoints option (obj.solver.autoAddTimePoints) must be a boolean');
+assert(islogical(obj.solver.autoAddConstraints) || isnumeric(obj.solver.autoAddConstraints) && isscalar(obj.solver.autoAddConstraints) && ismember(obj.solver.autoAddConstraints, [0, 1]), 'solver autoAddConstraints option (obj.solver.autoAddConstraints) must be a boolean');
+if obj.solver.autoAddConstraints %cannot use autoAddConstraints without autoAddTimePoints
+    assert(obj.solver.autoAddTimePoints, 'If autoAddConstraints is true, autoAddTimePoints must also be set to true.')
+end
 assert(islogical(obj.solver.normalize) || isnumeric(obj.solver.normalize) && isscalar(obj.solver.normalize) && ismember(obj.solver.normalize, [0, 1]), 'solver normalization option (obj.solver.normalize) must be a boolean');
 assert(islogical(obj.solver.useOptimizer) || isnumeric(obj.solver.useOptimizer) && isscalar(obj.solver.useOptimizer) && ismember(obj.solver.useOptimizer, [0, 1]), 'solver use optimizer option (obj.solver.useOptimizer) must be a boolean');
 assert(isnumeric(obj.maxSims) && isscalar(obj.maxSims) && obj.maxSims > 0 && round(obj.maxSims) == obj.maxSims, 'Maximum simulations (obj.maxSims) must be a positive, integer, scalar number');
 assert(isnumeric(obj.timeout) && isscalar(obj.timeout) && obj.timeout > 0, 'Timeout (obj.timeout) must be a positive, scalar number');
-
 assert((isnumeric(obj.nResets) && isscalar(obj.nResets) && obj.nResets > 0 && round(obj.nResets) == obj.nResets) || strcmp('auto',obj.nResets), 'Reset number (obj.maxSims) must be a positive, integer, scalar number OR a string (auto)');
 assert(isnumeric(obj.trainStrat) && isscalar(obj.trainStrat) && obj.trainStrat >= 0 && obj.trainStrat <= 2 && round(obj.trainStrat) == obj.trainStrat,'Training option (obj.trainStrat) must be an integer between 0 and 2')
 assert(islogical(obj.rmRand) || isnumeric(obj.rmRand) && isscalar(obj.rmRand) && ismember(obj.rmRand, [0, 1]), 'Remove random training trajectory (obj.rmRand) must be a boolean');

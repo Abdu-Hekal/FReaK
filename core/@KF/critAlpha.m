@@ -122,13 +122,13 @@ for i = 1:size(spec,1)
     elseif strcmp(spec(i,1).type,'logic')
         %get prev solns
         prevSpecSol = specSolns(obj.spec(i,1));
-        %setup and run milp
+        %setup and run solver
         tic
-        %if no prev soln for this spec, setup alpha & stl milp vars/constrs
-        if isfield(prevSpecSol, 'koopMilp')
-            Sys=prevSpecSol.koopMilp; %get previously setup milp problem with stl
+        %if no prev soln for this spec, setup alpha & stl vars/constrs
+        if isfield(prevSpecSol, 'KoopSolver')
+            Sys=prevSpecSol.KoopSolver; %get previously setup solver with stl
         else
-            Sys=KoopMILP(obj.T,obj.ak.dt,obj.solver.timePoints,obj.R0,obj.U,obj.relVars);
+            Sys=KoopSolver(obj.T,obj.ak.dt,obj.solver.timePoints,obj.R0,obj.U);
             Sys.normalize = obj.solver.normalize; %set normalization setting
             if ~obj.pulseInput %if not pulse input, set cpBool
                 Sys.cpBool=obj.cpBool;
@@ -147,7 +147,7 @@ for i = 1:size(spec,1)
         %the same.
         if obj.reach.on
             if size(Sys.alpha,2) ~= size(generators(R.zono{end}),2)
-                Sys=KoopMILP(obj.T,obj.ak.dt,obj.solver.timePoints,obj.R0(obj.relVars),obj.U,obj.relVars);
+                Sys=KoopSolver(obj.T,obj.ak.dt,obj.solver.timePoints,obj.R0,obj.U);
                 Sys.normalize = obj.solver.normalize; %set normalization setting
                 if ~obj.pulseInput %if not pulse input, set cpBool
                     Sys.cpBool=obj.cpBool;
@@ -164,7 +164,7 @@ for i = 1:size(spec,1)
         if ~isequal(set,Sys.stl) || (~obj.solver.useOptimizer && Sys.offsetMap.Count>0) || ~isequal(obj.solver.timePoints,Sys.solverTimePoints)
             Sys.solverTimePoints=obj.solver.timePoints;
             Sys.stl = set;
-            Sys=setupStl(Sys,~obj.solver.useOptimizer); %encode stl using milp
+            Sys=setupMilpStl(Sys,~obj.solver.useOptimizer); %encode stl using milp
         end
 
         %setup evolution of system using reachable sets or direct encoding 
@@ -182,7 +182,7 @@ for i = 1:size(spec,1)
         if obj.solver.useOptimizer
             Sys = setupOptimizer(Sys,obj.solver.opts);
         end
-        specSoln.koopMilp=Sys; %store koopMilp object with setup optimizer
+        specSoln.KoopSolver=Sys; %store KoopSolver object with setup optimizer
         Sys=optimize(Sys,obj.solver.opts);
 
         %get results

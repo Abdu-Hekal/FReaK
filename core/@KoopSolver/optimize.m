@@ -1,21 +1,21 @@
 function Sys = optimize(Sys,options)
-% OPTIMIZE Optimize the Koopman MILP (KoopMilp) object.
+% OPTIMIZE Optimize the Koopman Solver (KoopSolver) object.
 %
 % Syntax:
 %    Sys = optimize(Sys, options)
 %
 % Description:
-%    This function optimizes the Koopman MILP (KoopMilp) object to find 
+%    This function optimizes the Koopman solver (KoopSolver) object to find 
 %    falsifying trajectories. The optimization is done either directly or 
 %    using an optimizer object. If no optimizer object is available, it
 %    optimizes the system directly; otherwise, it uses the optimizer object.
 %
 % Inputs:
-%    Sys - Koopman MILP (KoopMilp) object
+%    Sys - Koopman solver (KoopSolver) object
 %    options - Options for the optimization process
 %
 % Outputs:
-%    Sys - Updated Koopman MILP (KoopMilp) object after optimization
+%    Sys - Updated Koopman solver (KoopSolver) object after optimization
 %
 % Example:
 %    Sys = optimize(Sys, options);

@@ -1,22 +1,22 @@
 function Sys = setupCP(Sys)
-% setupCP - Set up constraints on control points for the Koopman MILP (KoopMilp) object.
+% setupCP - Set up constraints on control points for the Koopman solver (KoopSolver) object.
 %
 % Syntax:
 %    Sys = setupCP(Sys)
 %
 % Description:
 %    This function sets up constraints on control points for the Koopman
-%    MILP (KoopMilp) object. The constraints enforce that the input is
+%    solver (KoopSolver) object. The constraints enforce that the input is
 %    activated only at the control points specified by the boolean array
 %    Sys.cpBool. The remaining input points (if exist) are set to be equal 
 %    to previous control point (piecewise-constant-interpolation). If
 %    Sys.cpBool is empty or all true, no additional constraints are added.
 %
 % Inputs:
-%    Sys - Koopman MILP (KoopMilp) object
+%    Sys - Koopman solver (KoopSolver) object
 %
 % Outputs:
-%    Sys - Updated Koopman MILP (KoopMilp) object with control point constraints set up
+%    Sys - Updated Koopman solver (KoopSolver) object with control point constraints set up
 %
 % Example:
 %    Sys = setupCP(Sys);

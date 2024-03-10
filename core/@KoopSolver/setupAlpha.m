@@ -1,24 +1,24 @@
 function Sys = setupAlpha(Sys)
 % setupAlpha - Set up the optimization variables and constraints for the
-% alpha parameters in the Koopman MILP formulation.
+% alpha parameters in the Koopman solver formulation.
 %
 % Syntax:
 %    Sys = setupAlpha(Sys)
 %
 % Description:
 %    This function sets up the optimization variables and constraints for
-%    the alpha parameters in the Koopman MILP formulation. The function is
-%    part of the KoopMILP class and is called during the setup process.
+%    the alpha parameters in the Koopman solver formulation. The function is
+%    part of the KoopSolver class and is called during the setup process.
 %
 % Inputs:
-%    Sys - KoopMILP object
+%    Sys - KoopSolver object
 %
 % Outputs:
-%    Sys - KoopMILP object with updated properties related to alpha
+%    Sys - KoopSolver object with updated properties related to alpha
 %          optimization variables and constraints.
 %
 %
-% See also: KoopMILP
+% See also: KoopSolver
 %
 % Author:      Abdelrahman Hekal
 % Written:     19-November-2023

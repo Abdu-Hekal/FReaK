@@ -78,7 +78,7 @@ for run=1:obj.runs
                 %reset offsets
                 for ii=1:numel(obj.spec)
                     spec=obj.spec(ii);
-                    specSolns(spec).koopMilp.offsetMap=containers.Map('KeyType', 'double', 'ValueType', 'double');
+                    specSolns(spec).KoopSolver.offsetMap=containers.Map('KeyType', 'double', 'ValueType', 'double');
                 end
                 vprintf(obj.verb,2,2,'Reset applied to training set of size %d\n',size(trainset.t,2))
             end
@@ -89,8 +89,8 @@ for run=1:obj.runs
 
             %if first iter, random or neighborhood training selected, or critical trajectory is
             %repeated, retrain with new xu else retrain with prev traj
-            if trainIter==0 || obj.trainStrat>=1 || checkRepeatedTraj(critX(:,obj.relVars),critU,trainset,obj.verb)
-                if trainIter>0 && obj.solver.opts.usex0==1 && checkRepeatedTraj(critX(:,obj.relVars),critU,trainset,obj.verb)
+            if trainIter==0 || obj.trainStrat>=1 || checkRepeatedTraj(critX,critU,trainset,obj.verb)
+                if trainIter>0 && obj.solver.opts.usex0==1 && checkRepeatedTraj(critX,critU,trainset,obj.verb)
                     obj.solver.opts.usex0=0; %turn off warmstarting if repeated trajectory returned by solver
                     disp('Turned off warmstarting due to repeated solutions')
                 end
@@ -113,7 +113,7 @@ for run=1:obj.runs
 
             %add trajectory to koopman trainset
             trainset.t{end+1} = tak;
-            trainset.X{end+1} = xak(:,obj.relVars)';
+            trainset.X{end+1} = xak';
             trainset.XU{end+1} = u(:,2:end)';
         end
 
@@ -186,9 +186,9 @@ for run=1:obj.runs
                         trainset.X(end) = []; trainset.XU(end)=[]; trainset.t(end) = [];
                     end
                     %if first offset iteration (re-solve with offset if offsetStrat==1 or save offset for next iter if offsetStrat==-1),
-                    % robustness is greater than gap termination criteria for milp solver and an offset mode selected by user.
+                    % robustness is greater than gap termination criteria for solver and an offset mode selected by user.
                     % OR if auto add  time points (find critical times)
-                    if (offsetIter==0 && robustness > getMilpGap(obj.solver.opts) && abs(obj.offsetStrat)) || obj.solver.autoAddTimePoints
+                    if (offsetIter==0 && robustness > getSolverGap(obj.solver.opts) && abs(obj.offsetStrat)) || obj.solver.autoAddTimePoints
                         assert(strcmp(spec.type,'logic'),'offset is currently only implemented for stl spec, please turn off offset by setting offsetStrat=0')
                         [critPreds,critTimes]=bReachCulprit(Bdata,spec.set); %get predicates responsible for robustness value
                         %add new critical time points if auto add is selected by user
@@ -197,16 +197,18 @@ for run=1:obj.runs
                             obj.solver.timePoints=sort(unique([obj.solver.timePoints,critTimesList])); %add 'unique' critical time points and sort
                         end
                         %if there there exists predicates that are culprit for (+ve) robustness and we want to offset
-                        if offsetIter==0 && robustness > getMilpGap(obj.solver.opts) && abs(obj.offsetStrat) && critPreds.Count > 0 
+                        if offsetIter==0 && robustness > getSolverGap(obj.solver.opts) && abs(obj.offsetStrat) && critPreds.Count > 0 
                             obj.solver.opts.usex0=0; %avoid warmstarting if offsetting
-                            Sys=specSolns(spec).koopMilp;
+                            Sys=specSolns(spec).KoopSolver;
                             Sys.offsetMap = critPreds;
                             if obj.offsetStrat == 1 %if offset strategy in this iteration selected
                                 set = spec.set;
-                                if ~isequal(set,Sys.stl) || ~obj.solver.useOptimizer || ~isequal(obj.solver.timePoints,Sys.solverTimePoints)
+                                %if stl has changed OR there is offset and optimizer object is not used (offset needs
+                                %to be hardcoded) OR there are new solver time points to be added to milp
+                                if ~isequal(set,Sys.stl) || (~obj.solver.useOptimizer && Sys.offsetMap.Count>0) || ~isequal(obj.solver.timePoints,Sys.solverTimePoints)
                                     Sys.solverTimePoints=obj.solver.timePoints;
                                     Sys.stl = set;
-                                    Sys=setupStl(Sys,~obj.solver.useOptimizer); %encode stl using milp
+                                    Sys=setupMilpStl(Sys,~obj.solver.useOptimizer); %encode stl using milp
                                 end
                                 %if reachability is used, and new time points, setup is needed to account 
                                 % for additional constraints for further timePoints 
@@ -219,7 +221,7 @@ for run=1:obj.runs
                                 % TODO: if offset gives better val of robustness, should we pass
                                 %                     % it as training data instead? should we pass both?
                             else %obj.offsetStrat == -1: offset next iteration
-                                specSolns(spec).koopMilp=Sys;
+                                specSolns(spec).KoopSolver=Sys;
                             end
                         else
                             %break out of offset loop if no critical pred is found or offset is not selected
@@ -319,7 +321,7 @@ end
 vprintf(verb,3,"min normalize distance with trainset is %f \n",minND)
 end
 
-function gap=getMilpGap(opts)
+function gap=getSolverGap(opts)
 % Note that if robustness is less than gap, offset most likely is not benefecial.
 if opts.solver == "gurobi"
     gap=opts.gurobi.MIPGapAbs;
