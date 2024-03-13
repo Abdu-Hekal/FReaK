@@ -88,6 +88,7 @@ assert(islogical(obj.solver.autoAddTimePoints) || isnumeric(obj.solver.autoAddTi
 assert(islogical(obj.solver.autoAddConstraints) || isnumeric(obj.solver.autoAddConstraints) && isscalar(obj.solver.autoAddConstraints) && ismember(obj.solver.autoAddConstraints, [0, 1]), 'solver autoAddConstraints option (obj.solver.autoAddConstraints) must be a boolean');
 if obj.solver.autoAddConstraints %cannot use autoAddConstraints without autoAddTimePoints
     assert(obj.solver.autoAddTimePoints, 'If autoAddConstraints is true, autoAddTimePoints must also be set to true.')
+    obj.solver.timePoints = []; %if auto add constraints, then we start with no time points.
 end
 assert(islogical(obj.solver.normalize) || isnumeric(obj.solver.normalize) && isscalar(obj.solver.normalize) && ismember(obj.solver.normalize, [0, 1]), 'solver normalization option (obj.solver.normalize) must be a boolean');
 assert(islogical(obj.solver.useOptimizer) || isnumeric(obj.solver.useOptimizer) && isscalar(obj.solver.useOptimizer) && ismember(obj.solver.useOptimizer, [0, 1]), 'solver use optimizer option (obj.solver.useOptimizer) must be a boolean');
@@ -158,6 +159,13 @@ soln.best.rob=inf;
 soln.best.x=NaN; soln.best.u=NaN; soln.best.t=NaN;
 %reset dict to store prev soln for each spec
 specSolns = dictionary(obj.spec,struct);
+%if we auto add constraints, store critical times
+if obj.solver.autoAddConstraints
+    for ii=1:numel(obj.spec)
+        %set empty cell to store critTimes
+        specSolns(obj.spec(ii)).critTimes={};
+    end
+end
 %empty struct to store training data
 trainset.X = {}; trainset.XU={}; trainset.t = {};
 %empty struct to store all data

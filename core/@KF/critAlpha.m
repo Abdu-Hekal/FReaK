@@ -1,7 +1,7 @@
 function specSolns = critAlpha(obj,R,koopModel,specSolns)
-% critAlpha - Determine the most critical alpha values (or inputs u) based 
+% critAlpha - Determine the most critical alpha values (or inputs u) based
 % on robustness. This is usually achieved by solving an optimization unless
-% the unsafe/safe set is a halfspace. 
+% the unsafe/safe set is a halfspace.
 %
 % Syntax:
 %    specSolns = critAlpha(obj,R, koopModel)
@@ -157,17 +157,24 @@ for i = 1:size(spec,1)
             end
         end
 
-        %setup stl constraints from scratch if: (1) stl has changed or first tie encoding stl, 
-        % (2) offset strategy is used and optimizer object is not used, i.e. offset is hardcode
-        % every time, (3) time points for evaluating stl changes, typically for 'auto' solver step
-        set=spec(i,1).set;
-        if ~isequal(set,Sys.stl) || (~obj.solver.useOptimizer && Sys.offsetMap.Count>0) || ~isequal(obj.solver.timePoints,Sys.solverTimePoints)
+        %if auto contraints, add constraints for critical times and
+        %corresponding predicates
+        if obj.solver.autoAddConstraints
             Sys.solverTimePoints=obj.solver.timePoints;
-            Sys.stl = set;
-            Sys=setupMilpStl(Sys,~obj.solver.useOptimizer); %encode stl using milp
+            Sys=addPredConstr(Sys,prevSpecSol.critTimes,prevSpecSol.preds,~obj.solver.useOptimizer,obj.offsetStrat);
+        else
+            %setup stl from scratch: if we are using milp encoding AND (1) first time encoding stl OR
+            % (2) offset strategy is used and optimizer object is not used, i.e. offset is hardcoded
+            % every time OR (3) time points for evaluating stl changes, typically for 'auto' solver step
+            set=spec(i,1).set;
+            if ~isequal(set,Sys.stl) || (~obj.solver.useOptimizer && numEntries(Sys.offsetMap)>0) || ~isequal(obj.solver.timePoints,Sys.solverTimePoints)
+                Sys.solverTimePoints=obj.solver.timePoints;
+                Sys.stl = set;
+                Sys=setupMilpStl(Sys,~obj.solver.useOptimizer); %encode stl using milp
+            end
         end
 
-        %setup evolution of system using reachable sets or direct encoding 
+        %setup evolution of system using reachable sets or direct encoding
         if obj.reach.on
             Sys.reachZonos=R.zono; %update reach zonos with new
             Sys = setupReach(Sys);
@@ -201,7 +208,8 @@ for i = 1:size(spec,1)
     %TODO: how can we compare stl robustness and reachset robustness.
     %store solution for this iteration for each spec.
     specSoln.rob=rob; specSoln.alpha=alpha; specSoln.u=u; specSoln.x=x;
-    specSoln.set=setCrit; 
+    specSoln.set=setCrit; specSoln.critTimes=specSolns(spec(i,1)).critTimes;
+    specSoln.preds=specSolns(spec(i,1)).preds;
     specSolns(spec(i,1)) = specSoln;
 end
 end

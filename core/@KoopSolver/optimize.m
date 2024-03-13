@@ -35,12 +35,9 @@ if isempty(Sys.optimizer) %no optimizer object, optimize directly
     optimize(constraints,objective,options);
 else
     param = zeros(1,length(Sys.Ostl));
-    if Sys.offsetMap.Count > 0 %we have an offset
+    if numEntries(Sys.offsetMap) > 0 %we have an offset
         keys = Sys.offsetMap.keys;
-        for ii=1:Sys.offsetMap.Count
-            key = keys{ii};
-            param(key) = Sys.offsetMap(key);
-        end
+        param(keys)=Sys.offsetMap.values;
     end
     [sol_control, errorflag1,~,~,P] = Sys.optimizer{{param}}; %% call solver
     assign(Sys.x,double(sol_control{1}));

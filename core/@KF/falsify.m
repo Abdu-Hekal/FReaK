@@ -78,7 +78,7 @@ for run=1:obj.runs
                 %reset offsets
                 for ii=1:numel(obj.spec)
                     spec=obj.spec(ii);
-                    specSolns(spec).KoopSolver.offsetMap=containers.Map('KeyType', 'double', 'ValueType', 'double');
+                    specSolns(spec).KoopSolver.offsetMap=dictionary();
                 end
                 vprintf(obj.verb,2,2,'Reset applied to training set of size %d\n',size(trainset.t,2))
             end
@@ -99,11 +99,31 @@ for run=1:obj.runs
                 soln.sims = soln.sims+1;
                 soln.simTime = soln.simTime+simTime;
                 %check if random input falsifies system, and break if it does
-                [soln,falsified,robustness,~,newBest_]=checkFalsification(soln,x,u,t,obj.spec,obj.inputInterpolation,'reset simulation',obj.verb);
+                [soln,falsified,robustness,Bdata,newBest_,~]=checkFalsification(soln,x,u,t,obj.spec,obj.inputInterpolation,'reset simulation',obj.verb);
                 allData.X{end+1}=x; allData.XU{end+1}=u; allData.t{end+1}=t; allData.Rob=[allData.Rob;robustness];
                 if nargout>1;allData.koopModels{end+1}=[];end %store empty model as we are in reset
                 if newBest_; perturb=obj.sampPerturb; end %reset pertrubation if new best soln found
                 if falsified; break; end
+
+                %if first iteration and auto mode, add critical time point
+                %for sample trajectory
+                if soln.sims==1 && obj.solver.autoAddTimePoints
+                    for ii=1:numel(obj.spec)
+                        spec=obj.spec(ii);
+                        if strcmp(spec.type,'logic')
+                            [~,critTimes,preds]=bReachCulprit(Bdata,spec.set); %get critical times and corresponding predicates
+                            %transform critical time values to nearest autokoopman step
+                            critTimes = cellfun(@(x) setfield(x, 'time', round(x.time/obj.ak.dt)),critTimes, 'UniformOutput', false);
+                            critTimesList = cell2mat(cellfun(@(x) x.time*obj.ak.dt, critTimes, 'UniformOutput', false)); %get list of critical times
+                            obj.solver.timePoints=sort(unique([obj.solver.timePoints,critTimesList])); %add 'unique' critical time points and sort
+                            if obj.solver.autoAddConstraints  %if we auto add predicate constraints
+                                %append new critical times and predicates
+                                specSolns(spec).critTimes=[specSolns(spec).critTimes,critTimes];
+                                specSolns(spec).preds=preds;
+                            end
+                        end
+                    end
+                end
 
                 xak = interp1(t,x,tak,obj.trajInterpolation); %define autokoopman trajectory points
             else
@@ -135,21 +155,21 @@ for run=1:obj.runs
             R=[];
         end
         % determine most critical reachable set and specification
-%         try
-            optimTime=tic;
-            specSolns = critAlpha(obj,R,koopModel,specSolns);
-            soln.optimTime=soln.optimTime+toc(optimTime);
-%         catch
-%             vprintf(obj.verb,2,"error encountered whilst setup/solving, resetting training data \n")
-%             trainIter=0;
-%             continue;
-%         end
+        %         try
+        optimTime=tic;
+        specSolns = critAlpha(obj,R,koopModel,specSolns);
+        soln.optimTime=soln.optimTime+toc(optimTime);
+        %         catch
+        %             vprintf(obj.verb,2,"error encountered whilst setup/solving, resetting training data \n")
+        %             trainIter=0;
+        %             continue;
+        %         end
 
         %get critical spec with minimum robustness and corresponding soln struct
         [~,minIndex]=min(specSolns.values.rob);
         keys = specSolns.keys('cell');
-        spec=keys{minIndex};
-        curSoln=specSolns(spec);
+        critSpec=keys{minIndex};
+        curSoln=specSolns(critSpec);
 
         % this section check if critical trajectory is falsifying. If not, it also offsets if neccassary
         if curSoln.rob<inf %found a viable solution
@@ -167,14 +187,15 @@ for run=1:obj.runs
                 else
                     usim=[]; %no input for the model
                 end
-    
+
                 % run most critical inputs on the real system
                 [t, critX, simTime] = simulate(obj, critX0, usim);
+
                 soln.sims = soln.sims+1;
                 soln.simTime = soln.simTime+simTime;
 
                 %check if critical inputs falsify the system and store data
-                [soln,falsified,robustness,Bdata,newBest_]=checkFalsification(soln,critX,critU,t,obj.spec,obj.inputInterpolation,'kf optimization',obj.verb);
+                [soln,falsified,robustness,Bdata,newBest_,critSpec]=checkFalsification(soln,critX,critU,t,obj.spec,obj.inputInterpolation,'kf optimization',obj.verb);
                 allData.X{end+1}=critX; allData.XU{end+1}=critU; allData.t{end+1}=t; allData.Rob=[allData.Rob;robustness];
                 if nargout>1;allData.koopModels{end+1}=koopModel;end %store koop model if needed
                 if newBest_; perturb=0; end %reset pertrubation if new best soln found
@@ -186,34 +207,37 @@ for run=1:obj.runs
                         trainset.X(end) = []; trainset.XU(end)=[]; trainset.t(end) = [];
                     end
                     %if first offset iteration (re-solve with offset if offsetStrat==1 or save offset for next iter if offsetStrat==-1),
-                    % robustness is greater than gap termination criteria for solver and an offset mode selected by user.
-                    % OR if auto add  time points (find critical times)
-                    if (offsetIter==0 && robustness > getSolverGap(obj.solver.opts) && abs(obj.offsetStrat)) || obj.solver.autoAddTimePoints
-                        assert(strcmp(spec.type,'logic'),'offset is currently only implemented for stl spec, please turn off offset by setting offsetStrat=0')
-                        [critPreds,critTimes]=bReachCulprit(Bdata,spec.set); %get predicates responsible for robustness value
+                    % if spec is stl AND [robustness is greater than gap termination criteria for solver and an offset mode selected by user.
+                    % OR if auto add  time points (find critical times)]
+                    if strcmp(critSpec.type,'logic') && ((offsetIter==0 && robustness > getSolverGap(obj.solver.opts) && abs(obj.offsetStrat)) || obj.solver.autoAddTimePoints)
+                        [critPreds,critTimes]=bReachCulprit(Bdata,critSpec.set); %get predicates responsible for robustness value
                         %add new critical time points if auto add is selected by user
                         if obj.solver.autoAddTimePoints
-                            critTimesList = round(cell2mat(critTimes.values)/obj.ak.dt)*obj.ak.dt; %get nearest critical time point for autokoopman time points
+                            %transform critical time values to nearest autokoopman step
+                            critTimes = cellfun(@(x) setfield(x, 'time', round(x.time/obj.ak.dt)),critTimes, 'UniformOutput', false);
+                            critTimesList = cell2mat(cellfun(@(x) x.time*obj.ak.dt, critTimes, 'UniformOutput', false)); %get list of critical times
                             obj.solver.timePoints=sort(unique([obj.solver.timePoints,critTimesList])); %add 'unique' critical time points and sort
+                            if obj.solver.autoAddConstraints  %if we auto add predicate constraints
+                                %append new critical times and predicates
+                                specSolns(spec).critTimes=[specSolns(spec).critTimes,critTimes];
+                                %The following 3 lines ensure only unique constraints are stored,
+                                % i.e. only new predicate constraints are added
+                                % Use cellfun with anonymous functions to convert structs to strings
+                                strCell = cellfun(@(s) jsonencode(s), specSolns(spec).critTimes, 'UniformOutput', false);
+                                uniqueStrCell = unique(strCell, 'stable');
+                                % Convert the unique cell array of strings back to a cell array of structs
+                                specSolns(spec).critTimes = cellfun(@jsondecode, uniqueStrCell, 'UniformOutput', false);
+                            end
                         end
                         %if there there exists predicates that are culprit for (+ve) robustness and we want to offset
-                        if offsetIter==0 && robustness > getSolverGap(obj.solver.opts) && abs(obj.offsetStrat) && critPreds.Count > 0 
-                            obj.solver.opts.usex0=0; %avoid warmstarting if offsetting
-                            Sys=specSolns(spec).KoopSolver;
+                        if offsetIter==0 && robustness > getSolverGap(obj.solver.opts) && abs(obj.offsetStrat) && numEntries(critPreds) > 0
+                            Sys=specSolns(critSpec).KoopSolver;
                             Sys.offsetMap = critPreds;
                             if obj.offsetStrat == 1 %if offset strategy in this iteration selected
-                                set = spec.set;
-                                %if stl has changed OR there is offset and optimizer object is not used (offset needs
-                                %to be hardcoded) OR there are new solver time points to be added to milp
-                                if ~isequal(set,Sys.stl) || (~obj.solver.useOptimizer && Sys.offsetMap.Count>0) || ~isequal(obj.solver.timePoints,Sys.solverTimePoints)
-                                    Sys.solverTimePoints=obj.solver.timePoints;
-                                    Sys.stl = set;
+                                % setup stl from scratch: if we are using milp encoding AND
+                                % offset strategy is used and optimizer object is not used, i.e. offset is hardcode every time
+                                if ~obj.solver.autoAddConstraints && (~obj.solver.useOptimizer && numEntries(Sys.offsetMap)>0)
                                     Sys=setupMilpStl(Sys,~obj.solver.useOptimizer); %encode stl using milp
-                                end
-                                %if reachability is used, and new time points, setup is needed to account 
-                                % for additional constraints for further timePoints 
-                                if obj.reach.on && ~isequal(obj.solver.timePoints,Sys.solverTimePoints)
-                                    Sys = setupReach(Sys);
                                 end
                                 Sys=optimize(Sys,obj.solver.opts);
                                 curSoln.alpha = value(Sys.alpha); %new alpha value after offset
@@ -221,7 +245,7 @@ for run=1:obj.runs
                                 % TODO: if offset gives better val of robustness, should we pass
                                 %                     % it as training data instead? should we pass both?
                             else %obj.offsetStrat == -1: offset next iteration
-                                specSolns(spec).KoopSolver=Sys;
+                                specSolns(critSpec).KoopSolver=Sys;
                             end
                         else
                             %break out of offset loop if no critical pred is found or offset is not selected
@@ -312,7 +336,7 @@ for r = 1:length(trainset.X)
         b=reshape(b./(range(nonzero)),[],1);
         B=[B;b];
     end
-%     ND = norm(A - B)/numel(A);
+    %     ND = norm(A - B)/numel(A);
     ND = mean(abs(A-B)); %compute average distance between critical traj and training trajs
     if ND < minND
         minND=ND;

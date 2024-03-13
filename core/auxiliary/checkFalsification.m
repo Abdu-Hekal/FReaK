@@ -1,7 +1,7 @@
-function [soln,falsified,robustness,Bdata,newBest]=checkFalsification(soln,x,u,t,specs,inputInterpolation,method,verb)
+function [soln,falsified,robustness,Bdata,newGlobalBest,bestSpec]=checkFalsification(soln,x,u,t,specs,inputInterpolation,method,verb)
 % CHECKFALSIFICATION Checks if a given trajectory falsifies a set of specifications.
 %
-%   [soln, falsified, robustness, Bdata, newBest] = checkFalsification(soln, x, u, t, specs, inputInterpolation, method, verb)
+%   [soln, falsified, robustness, Bdata, newGlobalBest] = checkFalsification(soln, x, u, t, specs, inputInterpolation, method, verb)
 %
 % Inputs:
 %   soln - Struct containing information about the current falsification process.
@@ -18,7 +18,7 @@ function [soln,falsified,robustness,Bdata,newBest]=checkFalsification(soln,x,u,t
 %   falsified - Logical indicating if the trajectory falsifies any specification.
 %   robustness - Robustness value associated with the falsification.
 %   Bdata - Data associated with the falsification, e.g., predicates and times.
-%   newBest - Logical indicating if a new best solution has been found.
+%   newGlobalBest - Logical indicating if a new best solution  has been found.
 %
 % Description:
 %   This function checks if a given trajectory falsifies a set of specifications.
@@ -35,15 +35,18 @@ function [soln,falsified,robustness,Bdata,newBest]=checkFalsification(soln,x,u,t
 % Written: 28-February-2023
 % Last update: ---
 
-falsified=false; robustness=inf;
-Bdata=NaN; newBest=false;
+falsified=false; bestRob=inf; bestSpec=[];
+Bdata=NaN; newGlobalBest=false;
 for ii=1:numel(specs)
     spec=specs(ii);
     % different types of specifications
+    %TODO, compute robustness for sets
     if strcmp(spec.type,'unsafeSet')
         falsified = any(spec.set.contains(x'));
+        robustness=inf;
     elseif strcmp(spec.type,'safeSet')
-        falsified = ~all(spec.set.contains(x')); %check this
+        falsified = ~all(spec.set.contains(x'));
+        robustness=inf;
     elseif strcmp(spec.type,'logic')
         if ~isempty(u)
             interpU = interp1(u(:,1),u(:,2:end),t,inputInterpolation); %interpolate input at same time points as trajectory
@@ -56,11 +59,15 @@ for ii=1:numel(specs)
             falsified=true;
         end
     end
+    if robustness<=bestRob
+        bestRob=robustness;
+        bestSpec=spec;
+    end
     if robustness < soln.best.rob
         vprintf(verb,2,"new best robustness!: %.3f after %d simulations due to: %s \n",robustness,soln.sims,method)
         soln.best.rob=robustness;
         soln.best.x=x; soln.best.u=u; soln.best.t=t; soln.best.spec=spec;
-        newBest=true; %found a new best soln
+        newGlobalBest=true; %found a new best soln
     end
     if falsified
         break;

@@ -1,4 +1,4 @@
-function Sys = addPredConstr(Sys,predTimeConstrs,nPreds,hardcoded)
+function Sys = addPredConstr(Sys,predTimeConstrs,preds,hardcoded,offsetStrat)
 % addPredConstr - add constraints on predicates of an STL formula at
 % desired times.
 %
@@ -20,7 +20,7 @@ function Sys = addPredConstr(Sys,predTimeConstrs,nPreds,hardcoded)
 %    predTimeConstrs - a dictionary where keys are indices of predicate to
 %                      add constraint to and values are time points where 
 %                      predicates should be constrained.
-%    nPreds - number of predicates in the stl formula
+%    preds - list of all predicates
 %    hardcoded - Boolean flag indicating whether the STL formula is
 %                hardcoded (true) or not (false). if false, an optimizer
 %                object is used.
@@ -45,16 +45,78 @@ function Sys = addPredConstr(Sys,predTimeConstrs,nPreds,hardcoded)
 % Last revision: ---
 
 %if first time adding constraints, setup robustness param and offset params
-if isempty(Sys.Ostl)
+if isempty(Sys.Pstl)
     Sys.Pstl=sdpvar(1,1);
     if ~hardcoded
-        Sys.Ostl = sdpvar(1,nPreds);
+        Sys.Ostl = sdpvar(1,numel(preds));
     end
 end
 
-%assign stl optim variables and constraints
-Sys.Fstl=Fstl; Sys.Pstl=Pstl; 
+%setup variables
+x=Sys.x; u=Sys.u;
+pstl=Sys.Pstl; ostl=Sys.Ostl;
 
+%if hardcoded (no optimizer object) and we use offset, then we need to encode all constrs from scratch
+if hardcoded && abs(offsetStrat)
+    constrs=predTimeConstrs;
+    Sys.Fstl=[]; %empty current constraints
+else %only add new constrs
+    constrs=predTimeConstrs(length(Sys.Fstl)+1:end);
+end
+
+for p=1:numel(preds)
+    pred=preds{p};
+    %for each predicate, find all times where constraint must hold
+    matchingIndices = cellfun(@(x) strcmp(x.pred,pred), constrs);
+    %we add 1, as time indices start from 1 instead of 0
+    allTimes = cellfun(@(x) x.time+1, constrs(matchingIndices));
+    if ~isempty(allTimes)
+        %remove new line at end of pred if any
+        pred=regexprep(pred, '\n', '');
+        %remove enclosing brackets of pred
+        pred = regexprep(pred, '^(\()|\)$', '');
+
+        pred = regexprep(pred, '\[t\]', ''); %remove [t]
+        pred = regexprep(pred,'x(\w*)','x($1,t)'); %add time to state variables
+        pred = regexprep(pred,'u(\w*)','u($1,t)'); %add time to inputs
+        pred = regexprep(pred, '\<t\>', sprintf('[%s]', strjoin(arrayfun(@num2str, unique(allTimes), 'UniformOutput', false), ', ')));
+
+        %replace all with strict inequality, hack to later remove all
+        pred = replace(pred,'<=','<');
+        pred = replace(pred,'>=','>');
+
+        %flip signs, as we constrain satisfaction not falsification
+        pred = regexprep(pred, '>', 'TEMP_STRING');
+        pred = regexprep(pred, '<', '>');
+        pred = regexprep(pred, 'TEMP_STRING', '<');
+
+        if hardcoded
+            if numEntries(Sys.offsetMap)>0 && isKey(Sys.offsetMap,p)
+                offset=Sys.offsetMap(p);
+            else
+                offset=0;
+            end
+            if contains(pred, '<')
+                pred=strcat(pred,' + pstl - offset');
+            elseif contains(pred, '>')
+                pred=strcat(pred,' - pstl - offset');                          
+            end
+        else
+            if contains(pred, '<')
+                pred=strcat(pred,' + pstl - ostl(p)');
+            elseif contains(pred, '>')
+                pred=strcat(pred,' - pstl - ostl(p)');
+            end
+        end
+
+        %remove any strict inequalities
+        pred = replace(pred,'<','<=');
+        pred = replace(pred,'>','>=');
+
+        z_eval = eval(pred);
+        Sys.Fstl=[Sys.Fstl,z_eval];
+    end
+end
 end
 
 

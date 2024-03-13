@@ -1,4 +1,4 @@
-function [critPreds, critTimes]=bReachCulprit(Bdata,set)
+function [critPreds, critTimes, preds]=bReachCulprit(Bdata,set)
 % bReachCulprit - Finds indices of critical predicates and critical time
 % points
 %
@@ -23,6 +23,9 @@ function [critPreds, critTimes]=bReachCulprit(Bdata,set)
 % Outputs:
 %   critPreds - Map of indices of predicates responsible for positive
 %               robustness values. Key: predicate index, Value: offset.
+%   critTimes - Map of of indices of critical predicates and their
+%               corresponding critical times
+%   preds -     list of predicates as strings
 %
 % Example:
 %   [critPreds] = bReachCulprit(Bdata, set);
@@ -34,8 +37,10 @@ function [critPreds, critTimes]=bReachCulprit(Bdata,set)
 % Last update: [Date]
 % Last revision: ---
 
-critPreds = containers.Map('KeyType', 'double', 'ValueType', 'double');
-critTimes = containers.Map('KeyType', 'double', 'ValueType', 'double');
+critPreds = dictionary();
+critTimes = {};
+preds = {};
+
 idx=0;
 clauses = getClauses(set);
 for ij=1:numel(clauses)
@@ -45,13 +50,17 @@ for ij=1:numel(clauses)
 
     [critPreds, critTimes] = recursiveOffset(critPreds,critTimes,idx,phi,Bdata);
     mus = STL_ExtractPredicates(phi);
-    idx = idx+numel(mus); %increase idx to search for next mus
+    for ix=1:numel(mus)
+        idx = idx+1; %increase idx, i.e. one more predicate
+        % add predicates to map of predicates
+        preds{idx} = get_st(mus(ix));
+    end
 end
 % no point of offset if only one clause with one predicate, return empty
 % critPreds
 if numel(clauses) <= 1
     if numel(mus) <= 1
-        critPreds = containers.Map('KeyType', 'double', 'ValueType', 'double');
+        critPreds = dictionary();
         return
     end
 end
@@ -70,12 +79,12 @@ uniqueMus={};
 counts = {};
 signs=[1,-1];
 for ii=1:numel(mus)
-    if isKey(critPreds, idx+ii)
+    if numEntries(critPreds)>0 && isKey(critPreds, idx+ii)
         continue; % Skip if pred is already offset
     end
     pred = mus(ii);
     %remove new line at end of pred if any
-    predStl=regexprep(disp(pred), '\n', '');
+    predStl=regexprep(get_st(pred), '\n', '');
     %remove enclosing brackets of pred
     predStl = regexprep(predStl, '^(\()|\)$', '');
     %iterate over signs. TODO: if in cnf, no need to iterate over signs,
@@ -110,7 +119,10 @@ for ii=1:numel(mus)
             val = STL_Eval(Bdata.Sys, pred, P, traj, traj.time);
             timeIdx=find(abs(val-rob)<1e-13,1); %val==rob with tolerance of 1e-13
             if ~isempty(timeIdx)
-                critTimes(idx+ii) = traj.time(timeIdx);
+                critTime=struct;
+                critTime.time=traj.time(timeIdx);
+                critTime.pred=get_st(pred);
+                critTimes{end+1}=critTime;
             end
             if newRob > 1e-13 %not yet offset all responsible predicates
                 [critPreds] = recursiveOffset(critPreds,critTimes,idx,modPhi,Bdata);

@@ -28,5 +28,4 @@ for k=1:size(cora_stl.variables)
 end
 
 stl = strtrim(stl);
-
 end

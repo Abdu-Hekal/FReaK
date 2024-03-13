@@ -80,7 +80,7 @@ methods
         Sys.nu=size(Sys.U,1);
 
         %intitalise offset map to empty
-        Sys.offsetMap = containers.Map('KeyType', 'double', 'ValueType', 'double');
+        Sys.offsetMap = dictionary();
         % default not to use normalization
         Sys.normalize=false;
     end
