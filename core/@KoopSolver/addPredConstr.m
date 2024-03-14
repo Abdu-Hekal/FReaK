@@ -47,9 +47,9 @@ function Sys = addPredConstr(Sys,predTimeConstrs,preds,hardcoded,offsetStrat)
 %if first time adding constraints, setup robustness param and offset params
 if isempty(Sys.Pstl)
     Sys.Pstl=sdpvar(1,1);
-    if ~hardcoded
-        Sys.Ostl = sdpvar(1,numel(preds));
-    end
+end
+if isempty(Sys.Ostl) && ~hardcoded
+    Sys.Ostl = sdpvar(1,numel(preds));
 end
 
 %setup variables

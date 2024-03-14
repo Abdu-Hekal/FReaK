@@ -158,8 +158,9 @@ for i = 1:size(spec,1)
         end
 
         %if auto contraints, add constraints for critical times and
-        %corresponding predicates
-        if obj.solver.autoAddConstraints
+        %corresponding predicates, also check if critTimes have been
+        %defined
+        if obj.solver.autoAddConstraints && ~isempty(prevSpecSol.critTimes)
             Sys.solverTimePoints=obj.solver.timePoints;
             Sys=addPredConstr(Sys,prevSpecSol.critTimes,prevSpecSol.preds,~obj.solver.useOptimizer,obj.offsetStrat);
         else

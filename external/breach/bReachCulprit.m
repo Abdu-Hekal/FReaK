@@ -8,7 +8,7 @@ function [critPreds, critTimes, preds]=bReachCulprit(Bdata,set)
 % this stl and trajectory, (i.e. not falsified)
 %
 % Syntax:
-%   [critPreds] = bReachCulprit(Bdata, set)
+%   [critPreds, critTimes, preds] = bReachCulprit(Bdata, set)
 %
 % Description:
 %   This function iterates through the clauses of the provided STL formula set
@@ -27,14 +27,12 @@ function [critPreds, critTimes, preds]=bReachCulprit(Bdata,set)
 %               corresponding critical times
 %   preds -     list of predicates as strings
 %
-% Example:
-%   [critPreds] = bReachCulprit(Bdata, set);
 %
 % See also: getClauses, coraBreachConvert, recursiveOffset
 %
 % Author: Abdelrahman Hekal
-% Written: [Date]
-% Last update: [Date]
+% Written: November 2023
+% Last update: 13-March-2024
 % Last revision: ---
 
 critPreds = dictionary();

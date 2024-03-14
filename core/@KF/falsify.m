@@ -191,6 +191,10 @@ for run=1:obj.runs
                 % run most critical inputs on the real system
                 [t, critX, simTime] = simulate(obj, critX0, usim);
 
+                plot(critX(:,1),critX(:,2))
+                drawnow;
+                pause(2);
+
                 soln.sims = soln.sims+1;
                 soln.simTime = soln.simTime+simTime;
 
@@ -210,7 +214,7 @@ for run=1:obj.runs
                     % if spec is stl AND [robustness is greater than gap termination criteria for solver and an offset mode selected by user.
                     % OR if auto add  time points (find critical times)]
                     if strcmp(critSpec.type,'logic') && ((offsetIter==0 && robustness > getSolverGap(obj.solver.opts) && abs(obj.offsetStrat)) || obj.solver.autoAddTimePoints)
-                        [critPreds,critTimes]=bReachCulprit(Bdata,critSpec.set); %get predicates responsible for robustness value
+                        [critPreds,critTimes,preds]=bReachCulprit(Bdata,critSpec.set); %get predicates responsible for robustness value
                         %add new critical time points if auto add is selected by user
                         if obj.solver.autoAddTimePoints
                             %transform critical time values to nearest autokoopman step
@@ -219,14 +223,15 @@ for run=1:obj.runs
                             obj.solver.timePoints=sort(unique([obj.solver.timePoints,critTimesList])); %add 'unique' critical time points and sort
                             if obj.solver.autoAddConstraints  %if we auto add predicate constraints
                                 %append new critical times and predicates
-                                specSolns(spec).critTimes=[specSolns(spec).critTimes,critTimes];
+                                specSolns(critSpec).critTimes=[specSolns(critSpec).critTimes,critTimes];
                                 %The following 3 lines ensure only unique constraints are stored,
                                 % i.e. only new predicate constraints are added
                                 % Use cellfun with anonymous functions to convert structs to strings
-                                strCell = cellfun(@(s) jsonencode(s), specSolns(spec).critTimes, 'UniformOutput', false);
+                                strCell = cellfun(@(s) jsonencode(s), specSolns(critSpec).critTimes, 'UniformOutput', false);
                                 uniqueStrCell = unique(strCell, 'stable');
                                 % Convert the unique cell array of strings back to a cell array of structs
-                                specSolns(spec).critTimes = cellfun(@jsondecode, uniqueStrCell, 'UniformOutput', false);
+                                specSolns(critSpec).critTimes = cellfun(@jsondecode, uniqueStrCell, 'UniformOutput', false);
+                                specSolns(critSpec).preds=preds;
                             end
                         end
                         %if there there exists predicates that are culprit for (+ve) robustness and we want to offset

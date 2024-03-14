@@ -164,6 +164,7 @@ if obj.solver.autoAddConstraints
     for ii=1:numel(obj.spec)
         %set empty cell to store critTimes
         specSolns(obj.spec(ii)).critTimes={};
+        specSolns(obj.spec(ii)).preds={};
     end
 end
 %empty struct to store training data
