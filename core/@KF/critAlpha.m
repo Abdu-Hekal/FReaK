@@ -160,18 +160,20 @@ for i = 1:size(spec,1)
         %if auto contraints, add constraints for critical times and
         %corresponding predicates, also check if critTimes have been
         %defined
-        if obj.solver.autoAddConstraints && ~isempty(prevSpecSol.critTimes)
-            Sys.solverTimePoints=obj.solver.timePoints;
+        Sys.solverTimePoints=obj.solver.timePoints;
+        set=spec(i,1).set;
+        if obj.solver.autoAddConstraints==2
+            Sys.stl = set;
+            Sys=setupStl(Sys,~obj.solver.useOptimizer,prevSpecSol.critTimes,prevSpecSol.preds); %encode stl using weighted pred constraints
+        elseif obj.solver.autoAddConstraints==1 && ~isempty(prevSpecSol.critTimes)
             Sys=addPredConstr(Sys,prevSpecSol.critTimes,prevSpecSol.preds,~obj.solver.useOptimizer,obj.offsetStrat);
-        else
+        elseif obj.solver.autoAddConstraints==0 
             %setup stl from scratch: if we are using milp encoding AND (1) first time encoding stl OR
             % (2) offset strategy is used and optimizer object is not used, i.e. offset is hardcoded
             % every time OR (3) time points for evaluating stl changes, typically for 'auto' solver step
-            set=spec(i,1).set;
             if ~isequal(set,Sys.stl) || (~obj.solver.useOptimizer && numEntries(Sys.offsetMap)>0) || ~isequal(obj.solver.timePoints,Sys.solverTimePoints)
-                Sys.solverTimePoints=obj.solver.timePoints;
                 Sys.stl = set;
-                Sys=setupMilpStl(Sys,~obj.solver.useOptimizer); %encode stl using milp
+                Sys=setupStl(Sys,~obj.solver.useOptimizer); %encode stl using milp
             end
         end
 
@@ -209,8 +211,11 @@ for i = 1:size(spec,1)
     %TODO: how can we compare stl robustness and reachset robustness.
     %store solution for this iteration for each spec.
     specSoln.rob=rob; specSoln.alpha=alpha; specSoln.u=u; specSoln.x=x;
-    specSoln.set=setCrit; specSoln.critTimes=specSolns(spec(i,1)).critTimes;
-    specSoln.preds=specSolns(spec(i,1)).preds;
+    specSoln.set=setCrit; 
+    if obj.solver.autoAddConstraints
+        specSoln.critTimes=specSolns(spec(i,1)).critTimes;
+        specSoln.preds=specSolns(spec(i,1)).preds;
+    end
     specSolns(spec(i,1)) = specSoln;
 end
 end

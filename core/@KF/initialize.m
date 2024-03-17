@@ -85,10 +85,12 @@ assert(isnumeric(obj.reach.tayOrder) && isscalar(obj.reach.tayOrder) && obj.reac
 
 assert(isstruct(obj.solver.opts), 'solver options (obj.solver.opts) must be a struct, see sdpsettings')
 assert(islogical(obj.solver.autoAddTimePoints) || isnumeric(obj.solver.autoAddTimePoints) && isscalar(obj.solver.autoAddTimePoints) && ismember(obj.solver.autoAddTimePoints, [0, 1]), 'solver autoAddTimePoints option (obj.solver.autoAddTimePoints) must be a boolean');
-assert(islogical(obj.solver.autoAddConstraints) || isnumeric(obj.solver.autoAddConstraints) && isscalar(obj.solver.autoAddConstraints) && ismember(obj.solver.autoAddConstraints, [0, 1]), 'solver autoAddConstraints option (obj.solver.autoAddConstraints) must be a boolean');
+assert(isnumeric(obj.solver.autoAddConstraints) && isscalar(obj.solver.autoAddConstraints) && obj.solver.autoAddConstraints >= 0 && obj.solver.autoAddConstraints <= 2 && round(obj.solver.autoAddConstraints) == obj.solver.autoAddConstraints,'auto add constraints option (obj.solver.autoAddConstraints) must be an integer between 0 and 2')
 if obj.solver.autoAddConstraints %cannot use autoAddConstraints without autoAddTimePoints
-    assert(obj.solver.autoAddTimePoints, 'If autoAddConstraints is true, autoAddTimePoints must also be set to true.')
-    obj.solver.timePoints = []; %if auto add constraints, then we start with no time points.
+    assert(obj.solver.autoAddTimePoints, 'If autoAddConstraints is true (1 or 2), autoAddTimePoints must also be set to true.')
+    if obj.solver.autoAddConstraints==1
+        obj.solver.timePoints = []; %if auto add constraints, then we start with no time points.
+    end
 end
 assert(islogical(obj.solver.normalize) || isnumeric(obj.solver.normalize) && isscalar(obj.solver.normalize) && ismember(obj.solver.normalize, [0, 1]), 'solver normalization option (obj.solver.normalize) must be a boolean');
 assert(islogical(obj.solver.useOptimizer) || isnumeric(obj.solver.useOptimizer) && isscalar(obj.solver.useOptimizer) && ismember(obj.solver.useOptimizer, [0, 1]), 'solver use optimizer option (obj.solver.useOptimizer) must be a boolean');

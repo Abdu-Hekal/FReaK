@@ -81,11 +81,13 @@ classdef KF
         %    .autoAddTimePoints: set to true to automatically add
         % timePoints using iterative method. If false, only user defined
         % timePoints are used (default=false)
-        %    .autoAddConstraints: set to true to autimacally add
+        %    .autoAddConstraints: set to 1 to automatically add
         % (soft) constraints on predicates at automatically generated time
-        % points, instead of solving milp robustness. Note to set
-        % autoAddConstraints to true, autoAddTimePoints must also be set to
-        % true. (default=false). This setting is inspired by: https://arxiv.org/pdf/1603.02650.pdf
+        % points, instead of solving milp robustness. set to 2 to add
+        % weighted constraints, where the weights change according to the
+        % critical predicates and times points
+        % Note to set autoAddConstraints to 1 or 2, autoAddTimePoints must be set to
+        % true. (default=0). This setting is inspired by: https://arxiv.org/pdf/1603.02650.pdf
         %   .opts: solver sdp options (see sdpsettings)
         %   .normalize: bool, set to true to normalize optimization objective
         % in solver using reachable set bounds, (default=false)
@@ -200,7 +202,7 @@ classdef KF
             obj.solver.normalize=false;
             obj.solver.useOptimizer=true;
             obj.solver.autoAddTimePoints=false;
-            obj.solver.autoAddConstraints=false;
+            obj.solver.autoAddConstraints=0;
         end
     end
 end

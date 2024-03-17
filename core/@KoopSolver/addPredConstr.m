@@ -44,10 +44,7 @@ function Sys = addPredConstr(Sys,predTimeConstrs,preds,hardcoded,offsetStrat)
 % Last update: ---
 % Last revision: ---
 
-%if first time adding constraints, setup robustness param and offset params
-if isempty(Sys.Pstl)
-    Sys.Pstl=sdpvar(1,1);
-end
+%if first time adding constraints, setup offset params
 if isempty(Sys.Ostl) && ~hardcoded
     Sys.Ostl = sdpvar(1,numel(preds));
 end
@@ -112,6 +109,8 @@ for p=1:numel(preds)
         %remove any strict inequalities
         pred = replace(pred,'<','<=');
         pred = replace(pred,'>','>=');
+        
+        pred
 
         z_eval = eval(pred);
         Sys.Fstl=[Sys.Fstl,z_eval];

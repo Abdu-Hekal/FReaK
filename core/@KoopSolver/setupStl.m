@@ -1,22 +1,30 @@
-function Sys = setupMilpStl(Sys,hardcoded)
-% setupMilpStl - Set up the optimization constraints for the robustness of
+function Sys = setupStl(Sys,hardcoded,predTimeConstrs,preds)
+% setupStl - Set up the optimization constraints for the robustness of
 %   the STL formula in the Koopman Solver formulation.
 %
 % Syntax:
-%    Sys = setupMilpStl(Sys, hardcoded)
+%    Sys = setupStl(Sys, hardcoded)
 %
 % Description:
 %    This function sets up the optimization constraints for the Signal
 %    Temporal Logic (STL) formula in the Koopman Solver formulation. The
-%    constraints ensure that the robustness of the STL formula is
-%    minimized during the falsification process. The function is part of
-%    the KoopSolver class and is called during the setup process.
+%    constraints are either milp constraints that minimize robustness of 
+%    stl formula or weighted predicate constraints (LP), where the weights
+%    are iteratively modified in the falsificaiton framework to favour the
+%    satisfaction of critical preds at crit times moments. If predTimeConstrs
+%    and preds are passed, then the latter approach is used, else milp
+%    approach is used. This function is part of the KoopSolver class and is 
+%    called during the setup process.
 %
 % Inputs:
 %    Sys - KoopSolver object
 %    hardcoded - Boolean flag indicating whether the STL formula is
 %                hardcoded (true) or not (false). if false, an optimizer
 %                object is used.
+%    predTimeConstrs (optional) - a dictionary where keys are indices of predicate to
+%                      add constraint to and values are time points where 
+%                      predicates should be constrained.
+%    preds (optional) - list of all predicates
 %
 % Outputs:
 %    Sys - KoopSolver object with updated properties related to the STL
@@ -29,7 +37,7 @@ function Sys = setupMilpStl(Sys,hardcoded)
 %       offset for each inequality.
 %
 % Example:
-%    Sys = setupMilpStl(Sys, true);
+%    Sys = setupStl(Sys, true);
 %
 % See also: KoopSolver
 %
@@ -72,8 +80,11 @@ if hardcoded
     vkmrCount=0;
 end
 
-
-[Fstl, Pstl, Ostl] = koopStl(phi,1,L,Sys.solverTimePoints,var,M,normz,hardcoded,Sys.offsetMap);
+if nargin<=2
+    [Fstl, Pstl, Ostl] = koopMilpStl(phi,1,L,Sys.solverTimePoints,var,M,normz,hardcoded,Sys.offsetMap);
+else
+    error('stop')
+end
 
 %assign stl optim variables and constraints
 Sys.Fstl=Fstl; Sys.Pstl=Pstl; Sys.Ostl=Ostl;

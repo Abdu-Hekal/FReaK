@@ -105,25 +105,25 @@ for run=1:obj.runs
                 if newBest_; perturb=obj.sampPerturb; end %reset pertrubation if new best soln found
                 if falsified; break; end
 
-                %if first iteration and auto mode, add critical time point
-                %for sample trajectory
-                if soln.sims==1 && obj.solver.autoAddTimePoints
-                    for ii=1:numel(obj.spec)
-                        spec=obj.spec(ii);
-                        if strcmp(spec.type,'logic')
-                            [~,critTimes,preds]=bReachCulprit(Bdata,spec.set); %get critical times and corresponding predicates
-                            %transform critical time values to nearest autokoopman step
-                            critTimes = cellfun(@(x) setfield(x, 'time', round(x.time/obj.ak.dt)),critTimes, 'UniformOutput', false);
-                            critTimesList = cell2mat(cellfun(@(x) x.time*obj.ak.dt, critTimes, 'UniformOutput', false)); %get list of critical times
-                            obj.solver.timePoints=sort(unique([obj.solver.timePoints,critTimesList])); %add 'unique' critical time points and sort
-                            if obj.solver.autoAddConstraints  %if we auto add predicate constraints
-                                %append new critical times and predicates
-                                specSolns(spec).critTimes=[specSolns(spec).critTimes,critTimes];
-                                specSolns(spec).preds=preds;
-                            end
-                        end
-                    end
-                end
+%                 %if first iteration and auto mode, add critical time point
+%                 %for sample trajectory
+%                 if soln.sims==1 && obj.solver.autoAddTimePoints
+%                     for ii=1:numel(obj.spec)
+%                         spec=obj.spec(ii);
+%                         if strcmp(spec.type,'logic')
+%                             [~,critTimes,preds]=bReachCulprit(Bdata,spec.set); %get critical times and corresponding predicates
+%                             %transform critical time values to nearest autokoopman step
+%                             critTimes = cellfun(@(x) setfield(x, 'time', round(x.time/obj.ak.dt)),critTimes, 'UniformOutput', false);
+%                             critTimesList = cell2mat(cellfun(@(x) x.time*obj.ak.dt, critTimes, 'UniformOutput', false)); %get list of critical times
+%                             obj.solver.timePoints=sort(unique([obj.solver.timePoints,critTimesList])); %add 'unique' critical time points and sort
+%                             if obj.solver.autoAddConstraints  %if we auto add predicate constraints
+%                                 %append new critical times and predicates
+%                                 specSolns(spec).critTimes=[specSolns(spec).critTimes,critTimes];
+%                                 specSolns(spec).preds=preds;
+%                             end
+%                         end
+%                     end
+%                 end
 
                 xak = interp1(t,x,tak,obj.trajInterpolation); %define autokoopman trajectory points
             else
@@ -191,9 +191,9 @@ for run=1:obj.runs
                 % run most critical inputs on the real system
                 [t, critX, simTime] = simulate(obj, critX0, usim);
 
-                plot(critX(:,1),critX(:,2))
-                drawnow;
-                pause(2);
+%                 plot(critX(:,1),critX(:,2))
+%                 drawnow;
+%                 pause(2);
 
                 soln.sims = soln.sims+1;
                 soln.simTime = soln.simTime+simTime;
@@ -242,7 +242,7 @@ for run=1:obj.runs
                                 % setup stl from scratch: if we are using milp encoding AND
                                 % offset strategy is used and optimizer object is not used, i.e. offset is hardcode every time
                                 if ~obj.solver.autoAddConstraints && (~obj.solver.useOptimizer && numEntries(Sys.offsetMap)>0)
-                                    Sys=setupMilpStl(Sys,~obj.solver.useOptimizer); %encode stl using milp
+                                    Sys=setupStl(Sys,~obj.solver.useOptimizer); %encode stl using milp
                                 end
                                 Sys=optimize(Sys,obj.solver.opts);
                                 curSoln.alpha = value(Sys.alpha); %new alpha value after offset

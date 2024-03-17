@@ -83,6 +83,8 @@ methods
         Sys.offsetMap = dictionary();
         % default not to use normalization
         Sys.normalize=false;
+        %setup (unconstrained) objective fcn
+        Sys.Pstl=sdpvar(1,1);
     end
 
     %getters for dependent properties

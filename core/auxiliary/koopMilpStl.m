@@ -1,9 +1,9 @@
-function [F,P,O] = koopStl(phi,kList,kMax,timePoints,var,M,normz,hardcoded,offsetMap)
-% koopStl - constructs constraints in YALMIP that compute
+function [F,P,O] = koopMilpStl(phi,kList,kMax,timePoints,var,M,normz,hardcoded,offsetMap)
+% koopMilpStl - constructs constraints in YALMIP that compute
 %             the robustness of satisfaction for stl specification phi
 %
 % Syntax:
-%   [F,P,O] = koopStl(phi,kList,kMax,timePoints,var,M,normz,hardcoded,offsetMap)
+%   [F,P,O] = koopMilpStl(phi,kList,kMax,timePoints,var,M,normz,hardcoded,offsetMap)
 %
 % Input:
 %       phi:    an STLformula
@@ -67,23 +67,23 @@ switch (phi.type)
         [F,P,O] = pred(phi,kList,var,normz,hardcoded,offsetMap);
 
     case '~'
-        [Frest,Prest,Orest] = koopStl(phi.lhs,kList,kMax,timePoints, var,M,normz,hardcoded,offsetMap);
+        [Frest,Prest,Orest] = koopMilpStl(phi.lhs,kList,kMax,timePoints, var,M,normz,hardcoded,offsetMap);
         [Fnot, Pnot] = not(Prest);
         F = [F, Fnot, Frest];
         P = Pnot;
         O = [O, Orest];
 
     case '|'
-        [Fdis1,Pdis1,O1] = koopStl(phi.lhs,kList,kMax,timePoints, var,M,normz,hardcoded,offsetMap);
-        [Fdis2,Pdis2,O2] = koopStl(phi.rhs,kList,kMax,timePoints, var,M,normz,hardcoded,offsetMap);
+        [Fdis1,Pdis1,O1] = koopMilpStl(phi.lhs,kList,kMax,timePoints, var,M,normz,hardcoded,offsetMap);
+        [Fdis2,Pdis2,O2] = koopMilpStl(phi.rhs,kList,kMax,timePoints, var,M,normz,hardcoded,offsetMap);
         [For, Por] = or([Pdis1;Pdis2],M);
         F = [F, For, Fdis1, Fdis2];
         P = Por;
         O = [O, O1, O2];
 
     case '&'
-        [Fcon1,Pcon1,O1] = koopStl(phi.lhs,kList,kMax,timePoints, var,M,normz,hardcoded,offsetMap);
-        [Fcon2,Pcon2,O2] = koopStl(phi.rhs,kList,kMax,timePoints, var,M,normz,hardcoded,offsetMap);
+        [Fcon1,Pcon1,O1] = koopMilpStl(phi.lhs,kList,kMax,timePoints, var,M,normz,hardcoded,offsetMap);
+        [Fcon2,Pcon2,O2] = koopMilpStl(phi.rhs,kList,kMax,timePoints, var,M,normz,hardcoded,offsetMap);
         [Fand, Pand] = and([Pcon1;Pcon2],M);
         F = [F, Fand, Fcon1, Fcon2];
         P = Pand;
@@ -91,7 +91,7 @@ switch (phi.type)
 
     case 'globally'
         kListAlw = unique(cell2mat(arrayfun(@(k) {min(kMax,k + a): min(kMax,k + b)}, kList)));
-        [Frest,Prest,Orest] = koopStl(phi.lhs,kListAlw,kMax,timePoints, var,M,normz,hardcoded,offsetMap);
+        [Frest,Prest,Orest] = koopMilpStl(phi.lhs,kListAlw,kMax,timePoints, var,M,normz,hardcoded,offsetMap);
         [Falw, Palw] = always(Prest,a,b,kList,kMax,M);
         F = [F, Falw];
         P = [Palw, P];
@@ -100,7 +100,7 @@ switch (phi.type)
 
     case 'finally'
         kListEv = unique(cell2mat(arrayfun(@(k) {min(kMax,k + a): min(kMax,k + b)}, kList)));
-        [Frest,Prest,Orest] = koopStl(phi.lhs,kListEv,kMax,timePoints, var,M,normz,hardcoded,offsetMap);
+        [Frest,Prest,Orest] = koopMilpStl(phi.lhs,kListEv,kMax,timePoints, var,M,normz,hardcoded,offsetMap);
         [Fev, Pev] = eventually(Prest,a,b,kList,kMax,M);
         F = [F, Fev];
         P = [Pev, P];
@@ -108,8 +108,8 @@ switch (phi.type)
         O = [O, Orest];
 
     case 'until'
-        [Fp,Pp,O1] = koopStl(phi.lhs,kList,kMax,timePoints, var,M,normz,hardcoded,offsetMap);
-        [Fq,Pq,O2] = koopStl(phi.rhs,kList,kMax,timePoints, var,M,normz,hardcoded,offsetMap);
+        [Fp,Pp,O1] = koopMilpStl(phi.lhs,kList,kMax,timePoints, var,M,normz,hardcoded,offsetMap);
+        [Fq,Pq,O2] = koopMilpStl(phi.rhs,kList,kMax,timePoints, var,M,normz,hardcoded,offsetMap);
         [Funtil, Puntil] = until(Pp,Pq,a,b,kList,kMax,M);
         F = [F, Funtil, Fp, Fq];
         P = Puntil;
@@ -289,6 +289,8 @@ z = binvar(m,k);
 F = [sum(z,1) == ones(1,k)];
 for i=1:m
     F = [F, P >= p_list(i,:)];
+    %TODO: Our objective fcn is always to minimize robustness, thus binary
+    %constraints here are not needed (remove following line)
     F = [F, p_list(i,:) - (1-z(i,:))*M <= P <= p_list(i,:) + (1-z(i,:))*M];
 end
 
