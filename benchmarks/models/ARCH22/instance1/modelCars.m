@@ -19,7 +19,7 @@ function model = modelCars()
 
     model.T=100; 
     model.ak.dt=10;
-    model.cp=[100 100];
+    model.cp=[1000 1000];
     model.inputInterpolation='pchip';
 
     x = stl('x',5); 

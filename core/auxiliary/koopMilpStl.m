@@ -133,7 +133,7 @@ st = replace(st,'>=','>');
 if hardcoded
     global vkmrCount %globl count to track wihch subpred to offset in milp
     vkmrCount=vkmrCount+1; %increase count as pred found
-    if isKey(offsetMap,vkmrCount)
+    if isConfigured(offsetMap) && isKey(offsetMap,vkmrCount)
         robOffset=offsetMap(vkmrCount);
     else
         robOffset=0;
@@ -290,7 +290,7 @@ F = [sum(z,1) == ones(1,k)];
 for i=1:m
     F = [F, P >= p_list(i,:)];
     %TODO: Our objective fcn is always to minimize robustness, thus binary
-    %constraints here are not needed (remove following line)
+    %constraints here may not be needed (remove following line)
     F = [F, p_list(i,:) - (1-z(i,:))*M <= P <= p_list(i,:) + (1-z(i,:))*M];
 end
 

@@ -155,15 +155,15 @@ for run=1:obj.runs
             R=[];
         end
         % determine most critical reachable set and specification
-        %         try
-        optimTime=tic;
-        specSolns = critAlpha(obj,R,koopModel,specSolns);
-        soln.optimTime=soln.optimTime+toc(optimTime);
-        %         catch
-        %             vprintf(obj.verb,2,"error encountered whilst setup/solving, resetting training data \n")
-        %             trainIter=0;
-        %             continue;
-        %         end
+        try
+            optimTime=tic;
+            specSolns = critAlpha(obj,R,koopModel,specSolns);
+            soln.optimTime=soln.optimTime+toc(optimTime);
+        catch
+            vprintf(obj.verb,2,"error encountered whilst setup/solving, resetting training data \n")
+            trainIter=0;
+            continue;
+        end
 
         %get critical spec with minimum robustness and corresponding soln struct
         [~,minIndex]=min(specSolns.values.rob);
@@ -193,7 +193,7 @@ for run=1:obj.runs
 
 %                 plot(critX(:,1),critX(:,2))
 %                 drawnow;
-%                 pause(2);
+%                 pause(1);
 
                 soln.sims = soln.sims+1;
                 soln.simTime = soln.simTime+simTime;

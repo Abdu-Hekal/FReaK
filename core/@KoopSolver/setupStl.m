@@ -1,4 +1,4 @@
-function Sys = setupStl(Sys,hardcoded,predTimeConstrs,preds)
+function Sys = setupStl(Sys,hardcoded,weighted)
 % setupStl - Set up the optimization constraints for the robustness of
 %   the STL formula in the Koopman Solver formulation.
 %
@@ -80,10 +80,11 @@ if hardcoded
     vkmrCount=0;
 end
 
-if nargin<=2
+if nargin<=2 || ~weighted
     [Fstl, Pstl, Ostl] = koopMilpStl(phi,1,L,Sys.solverTimePoints,var,M,normz,hardcoded,Sys.offsetMap);
 else
-    error('stop')
+    [Fstl, Pstl, Ostl, Wstl] = koopWeightStl(phi,1,L,Sys.solverTimePoints,var,M,normz,hardcoded,Sys.offsetMap,Sys.weights);
+    Sys.Wstl=Wstl; %set weights paramaters for optimizer object
 end
 
 %assign stl optim variables and constraints

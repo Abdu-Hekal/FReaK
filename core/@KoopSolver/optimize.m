@@ -39,7 +39,13 @@ else
         keys = Sys.offsetMap.keys;
         param(keys)=Sys.offsetMap.values;
     end
-    [sol_control, errorflag1,~,~,P] = Sys.optimizer{{param}}; %% call solver
+    if isempty(Sys.Wstl)
+        param={param};
+    else
+        %weighted stl is used, so pass weights also as param
+        param={param,Sys.weights};
+    end
+    [sol_control, errorflag1,~,~,P] = Sys.optimizer{param}; %% call solver
     assign(Sys.x,double(sol_control{1}));
     assign(Sys.Pstl,double(sol_control{2}));
     if ~isempty(Sys.reachZonos)

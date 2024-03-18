@@ -99,14 +99,15 @@ for b = 1:length(benches)
         end
 
         kfModel.spec = specification(eq,'logic');
-        kfModel.runs=50;
-        kfModel.verb=0;
+        kfModel.runs=10;
+        kfModel.verb=1;
         kfModel.nResets=5; %'auto'
         kfModel.resetStrat=0;
 
 %         kfModel.solver.timePoints=[];
-%         kfModel.solver.autoAddTimePoints=true;
-%         kfModel.solver.autoAddConstraints=2;
+        kfModel.solver.autoAddTimePoints=true;
+        kfModel.solver.autoAddConstraints=2;
+%         kfModel.solver.normalize=true;
 
 %         kfModel.solver.useOptimizer=false;
 %         kfModel.reach.on=false;

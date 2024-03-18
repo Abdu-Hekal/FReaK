@@ -39,6 +39,11 @@ if ~isempty(Sys.reachZonos)
 else
     output = {Sys.x,Sys.Pstl,Sys.u};
 end
+if isempty(Sys.Wstl)
+    params=Sys.Ostl;
+else
+   params={Sys.Ostl,Sys.Wstl};
+end
 % setup optimizer
-Sys.optimizer = optimizer(constraints,objective,options,Sys.Ostl, output);
+Sys.optimizer = optimizer(constraints,objective,options,params,output);
 end

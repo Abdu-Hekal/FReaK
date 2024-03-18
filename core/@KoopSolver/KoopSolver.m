@@ -52,13 +52,16 @@ properties
     alpha %alpha optim var
     u %inputs optim var
     Pstl %spdvar storing robustness of stl
-    Ostl %spdvar parameters for offset of inequalities in stl
+    Ostl %spdvar parameters for offset of inequalities in stl (when using optimizer object)
+    Wstl %spdvar parameters for weights in weighted stl (when using optimizer object)
 
     %optimizer object
     optimizer
 
     %offset and offset count to modify stl based on prev iterations
     offsetMap
+    %weights for 
+    weights
 end
 
 properties (Dependent)
@@ -81,6 +84,8 @@ methods
 
         %intitalise offset map to empty
         Sys.offsetMap = dictionary();
+        %initialise weights to empty array 
+        Sys.weights = [];
         % default not to use normalization
         Sys.normalize=false;
         %setup (unconstrained) objective fcn
