@@ -83,7 +83,9 @@ end
 if nargin<=2 || ~weighted
     [Fstl, Pstl, Ostl] = koopMilpStl(phi,1,L,Sys.solverTimePoints,var,M,normz,hardcoded,Sys.offsetMap);
 else
-    [Fstl, Pstl, Ostl, Wstl] = koopWeightStl(phi,1,L,Sys.solverTimePoints,var,M,normz,hardcoded,Sys.offsetMap,Sys.weights);
+    %make sure weights aren't too big
+    weights=min(Sys.weights,Sys.maxWeight);
+    [Fstl, Pstl, Ostl, Wstl] = koopWeightStl(phi,1,L,Sys.solverTimePoints,var,M,normz,hardcoded,Sys.offsetMap,weights);
     Sys.Wstl=Wstl; %set weights paramaters for optimizer object
 end
 

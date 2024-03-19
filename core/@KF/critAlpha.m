@@ -171,13 +171,13 @@ for i = 1:size(spec,1)
                 Sys.weights=ones(numel(mus),numel(Sys.solverTimePoints));
             end
             if ~isempty(prevSpecSol.critTimes)
-                for p=1:numel(prevSpecSol.preds)
-                    pred=prevSpecSol.preds{p};
-                    %for each predicate, find all times where constraint must hold
-                    matchingIndices = cellfun(@(x) strcmp(x.pred,pred), prevSpecSol.critTimes);
-                    %we add 1, as time indices start from 1 instead of 0
-                    allTimes = cellfun(@(x) x.time+1, prevSpecSol.critTimes(matchingIndices));
-                    Sys.weights(p,allTimes)=Sys.weights(p,allTimes)*10;
+                %add weights for new constrs
+                for c=1:numel(prevSpecSol.critTimes)
+                    constr=prevSpecSol.critTimes{c};
+                    p = find(strcmp(prevSpecSol.preds, constr.pred), 1);
+                    %we increase the weight of each critical time by how
+                    %much it violates the stl spec
+                    Sys.weights(p,constr.time+1)=Sys.weights(p,constr.time+1)+constr.weight; %+constr.weight
                 end
             end
             %setup weighted stl from scratch: if (1) first time encoding stl OR
@@ -187,9 +187,15 @@ for i = 1:size(spec,1)
                 Sys.stl = set;
                 Sys=setupStl(Sys,~obj.solver.useOptimizer,true); %encode stl using weighted pred constraints
             end
-        elseif obj.solver.autoAddConstraints==1 && ~isempty(prevSpecSol.critTimes)
-            Sys=addPredConstr(Sys,prevSpecSol.critTimes,prevSpecSol.preds,~obj.solver.useOptimizer,obj.offsetStrat);
-        elseif obj.solver.autoAddConstraints==0 
+            specSoln.critTimes={}; %empty list for crit times to only store new crit Times
+            specSoln.preds=prevSpecSol.preds;
+        elseif obj.solver.autoAddConstraints==1
+            if ~isempty(prevSpecSol.critTimes)
+                Sys=addPredConstr(Sys,prevSpecSol.critTimes,prevSpecSol.preds,~obj.solver.useOptimizer,obj.offsetStrat);
+            end
+            specSoln.critTimes=prevSpecSol.critTimes; %store all crit Times
+            specSoln.preds=prevSpecSol.preds;
+        elseif obj.solver.autoAddConstraints==0
             %setup stl from scratch: if (1) first time encoding stl OR
             % (2) offset strategy is used and optimizer object is not used, i.e. offset is hardcoded
             % every time OR (3) time points for evaluating stl changes, typically for 'auto' solver step
@@ -233,11 +239,7 @@ for i = 1:size(spec,1)
     %TODO: how can we compare stl robustness and reachset robustness.
     %store solution for this iteration for each spec.
     specSoln.rob=rob; specSoln.alpha=alpha; specSoln.u=u; specSoln.x=x;
-    specSoln.set=setCrit; 
-    if obj.solver.autoAddConstraints
-        specSoln.critTimes=specSolns(spec(i,1)).critTimes;
-        specSoln.preds=specSolns(spec(i,1)).preds;
-    end
+    specSoln.set=setCrit;
     specSolns(spec(i,1)) = specSoln;
 end
 end

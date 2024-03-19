@@ -107,7 +107,6 @@ for b = 1:length(benches)
 %         kfModel.solver.timePoints=[];
         kfModel.solver.autoAddTimePoints=true;
         kfModel.solver.autoAddConstraints=2;
-%         kfModel.solver.normalize=true;
 
 %         kfModel.solver.useOptimizer=false;
 %         kfModel.reach.on=false;

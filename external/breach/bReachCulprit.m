@@ -21,12 +21,11 @@ function [critPreds, critTimes, preds]=bReachCulprit(Bdata,set)
 %   set - spec set containing STL formula.
 %
 % Outputs:
-%   critPreds - Map of indices of predicates responsible for positive
+%   critPreds - dictionary of indices of predicates responsible for positive
 %               robustness values. Key: predicate index, Value: offset.
-%   critTimes - Map of of indices of critical predicates and their
+%   critTimes - cell array of structs which store critical predicates and their
 %               corresponding critical times
 %   preds -     list of predicates as strings
-%
 %
 % See also: getClauses, coraBreachConvert, recursiveOffset
 %
@@ -75,7 +74,6 @@ mus = STL_ExtractPredicates(phi);
 % Obtain unique values and their counts
 uniqueMus={};
 counts = {};
-signs=[1,-1];
 for ii=1:numel(mus)
     if numEntries(critPreds)>0 && isKey(critPreds, idx+ii)
         continue; % Skip if pred is already offset
@@ -85,45 +83,50 @@ for ii=1:numel(mus)
     predStl=regexprep(get_st(pred), '\n', '');
     %remove enclosing brackets of pred
     predStl = regexprep(predStl, '^(\()|\)$', '');
-    %iterate over signs. TODO: if in cnf, no need to iterate over signs,
-    %sign is +ve is pred>c or -ve if pred<c
-    for jj=1:numel(signs)
-        %modify predicate with current value of rob
-        modPredStl = strcat(predStl,'+',char(vpa(signs(jj)*rob)));
-        stl=regexprep(disp(phi), '\n', '');
-        pattern = strcat('(.*?)',regexptranslate('escape', predStl),'(.*?)');
-        %only count once for each pred
-        if jj==1
-            index = find(strcmp(predStl, uniqueMus));
-            if isempty(index)
-                uniqueMus{end+1} = predStl;
-                counts{end+1} = 1;
-                count=1;
-            else
-                counts{index} = counts{index}+1;
-                count=counts{index};
-            end
-        end
-        modStl = regexprep(stl,pattern,strcat('$1',modPredStl,'$2'),count);
-        modPhi = STL_Formula('phi',modStl);
+    %if in cnf, no need to iterate over signs, sign is +ve is pred>c 
+    % or -ve if pred<c, if there exist ~, might need
+    %to iterate oversigns or handle negation.
+    if contains(predStl, '>')
+        sign=1;
+    elseif contains(predStl, '<')
+        sign=-1;
+    end
+    %modify predicate with current value of rob
+    modPredStl = strcat(predStl,'+',char(vpa(sign*rob)));
+    stl=regexprep(disp(phi), '\n', '');
+    pattern = strcat('(.*?)',regexptranslate('escape', predStl),'(.*?)');
+    %only count once for each pred
+    index = find(strcmp(predStl, uniqueMus));
+    if isempty(index)
+        uniqueMus{end+1} = predStl;
+        counts{end+1} = 1;
+        count=1;
+    else
+        counts{index} = counts{index}+1;
+        count=counts{index};
+    end
+    modStl = regexprep(stl,pattern,strcat('$1',modPredStl,'$2'),count);
+    modPhi = STL_Formula('phi',modStl);
 
-        val = STL_Eval(Bdata.Sys, modPhi, P, traj, traj.time);
-        newRob=val(1);
+    val = STL_Eval(Bdata.Sys, modPhi, P, traj, traj.time);
+    newRob=val(1);
 
-        if newRob<rob
-            critPreds(idx+ii) = signs(jj)*rob;
-            %get critical time point by computing robustness of predicate
-            %at each time point
-            val = STL_Eval(Bdata.Sys, pred, P, traj, traj.time);
-            timeIdx=find(abs(val-rob)<1e-13,1); %val==rob with tolerance of 1e-13
-            if ~isempty(timeIdx)
-                critTime=struct;
-                critTime.time=traj.time(timeIdx);
-                critTime.pred=get_st(pred);
-                critTimes{end+1}=critTime;
-            end
+    if newRob<rob
+        %get critical time point by computing robustness of predicate
+        %at each time point. This also checks that the pred found is in
+        %fact the critical pred.
+        val = STL_Eval(Bdata.Sys, pred, P, traj, traj.time);
+        timeIdx=find(abs(val-rob)<1e-13,1); %val==rob with tolerance of 1e-13
+        if ~isempty(timeIdx)
+            critPreds(idx+ii) = sign*rob;
+            %store crit time struct
+            critTime=struct;
+            critTime.time=traj.time(timeIdx);
+            critTime.pred=get_st(pred);
+            critTime.weight=rob;
+            critTimes{end+1}=critTime;
             if newRob > 1e-13 %not yet offset all responsible predicates
-                [critPreds] = recursiveOffset(critPreds,critTimes,idx,modPhi,Bdata);
+                [critPreds,critTimes] = recursiveOffset(critPreds,critTimes,idx,modPhi,Bdata);
             else %found all responsible predicates
                 return
             end

@@ -53,7 +53,7 @@ for run=1:obj.runs
     falsified=false;
     perturb=0; %perturbation percentage for neighborhood reset
     tak = (0:obj.ak.dt:obj.T)'; %define autokoopman time points
-    tsim = (0:obj.dt:obj.T)'; %time points for interpolating input
+    tcp = (0:obj.dt:obj.T)'; %time points for interpolating input
     %initialize simulation progress bar
     if obj.verb==1
         msg = sprintf('simulations exhausted: 0/%d',obj.maxSims);
@@ -87,47 +87,47 @@ for run=1:obj.runs
                 trainset.X = {}; trainset.XU={}; trainset.t = {};
             end
 
-            %if first iter, random or neighborhood training selected, or critical trajectory is
-            %repeated, retrain with new xu else retrain with prev traj
-            if trainIter==0 || obj.trainStrat>=1 || checkRepeatedTraj(critX,critU,trainset,obj.verb)
+            %if first iter, random or neighborhood training selected, critical trajectory is
+            %repeated, or no viable soln found last iter, retrain with new xu else retrain with prev traj
+            if trainIter==0 || obj.trainStrat>=1 || checkRepeatedTraj(critX,critU,trainset,obj.verb) || ~(curSoln.rob<inf)
                 if trainIter>0 && obj.solver.opts.usex0==1 && checkRepeatedTraj(critX,critU,trainset,obj.verb)
                     obj.solver.opts.usex0=0; %turn off warmstarting if repeated trajectory returned by solver
                     disp('Turned off warmstarting due to repeated solutions')
                 end
-                [t,x,u,simTime] = sampleSimulation(obj,allData,perturb);
+                [tsim,x,u,simTime] = sampleSimulation(obj,allData,perturb);
                 perturb=min(1,perturb+obj.sampPerturb); %increase perturbation
                 soln.sims = soln.sims+1;
                 soln.simTime = soln.simTime+simTime;
                 %check if random input falsifies system, and break if it does
-                [soln,falsified,robustness,Bdata,newBest_,~]=checkFalsification(soln,x,u,t,obj.spec,obj.inputInterpolation,'reset simulation',obj.verb);
-                allData.X{end+1}=x; allData.XU{end+1}=u; allData.t{end+1}=t; allData.Rob=[allData.Rob;robustness];
+                [soln,falsified,robustness,Bdata,newBest_,~]=checkFalsification(soln,x,u,tsim,obj.spec,obj.inputInterpolation,'reset simulation',obj.verb);
+                allData.X{end+1}=x; allData.XU{end+1}=u; allData.t{end+1}=tsim; allData.Rob=[allData.Rob;robustness];
                 if nargout>1;allData.koopModels{end+1}=[];end %store empty model as we are in reset
                 if newBest_; perturb=obj.sampPerturb; end %reset pertrubation if new best soln found
                 if falsified; break; end
 
-%                 %if first iteration and auto mode, add critical time point
-%                 %for sample trajectory
-%                 if soln.sims==1 && obj.solver.autoAddTimePoints
-%                     for ii=1:numel(obj.spec)
-%                         spec=obj.spec(ii);
-%                         if strcmp(spec.type,'logic')
-%                             [~,critTimes,preds]=bReachCulprit(Bdata,spec.set); %get critical times and corresponding predicates
-%                             %transform critical time values to nearest autokoopman step
-%                             critTimes = cellfun(@(x) setfield(x, 'time', round(x.time/obj.ak.dt)),critTimes, 'UniformOutput', false);
-%                             critTimesList = cell2mat(cellfun(@(x) x.time*obj.ak.dt, critTimes, 'UniformOutput', false)); %get list of critical times
-%                             obj.solver.timePoints=sort(unique([obj.solver.timePoints,critTimesList])); %add 'unique' critical time points and sort
-%                             if obj.solver.autoAddConstraints  %if we auto add predicate constraints
-%                                 %append new critical times and predicates
-%                                 specSolns(spec).critTimes=[specSolns(spec).critTimes,critTimes];
-%                                 specSolns(spec).preds=preds;
-%                             end
-%                         end
-%                     end
-%                 end
+                %                 %if first iteration and auto mode, add critical time point
+                %                 %for sample trajectory
+                %                 if soln.sims==1 && obj.solver.autoAddTimePoints
+                %                     for ii=1:numel(obj.spec)
+                %                         spec=obj.spec(ii);
+                %                         if strcmp(spec.type,'logic')
+                %                             [~,critTimes,preds]=bReachCulprit(Bdata,spec.set); %get critical times and corresponding predicates
+                %                             %transform critical time values to nearest autokoopman step
+                %                             critTimes = cellfun(@(x) setfield(x, 'time', round(x.time/obj.ak.dt)),critTimes, 'UniformOutput', false);
+                %                             critTimesList = cell2mat(cellfun(@(x) x.time*obj.ak.dt, critTimes, 'UniformOutput', false)); %get list of critical times
+                %                             obj.solver.timePoints=sort(unique([obj.solver.timePoints,critTimesList])); %add 'unique' critical time points and sort
+                %                             if obj.solver.autoAddConstraints  %if we auto add predicate constraints
+                %                                 %append new critical times and predicates
+                %                                 specSolns(spec).critTimes=[specSolns(spec).critTimes,critTimes];
+                %                                 specSolns(spec).preds=preds;
+                %                             end
+                %                         end
+                %                     end
+                %                 end
 
-                xak = interp1(t,x,tak,obj.trajInterpolation); %define autokoopman trajectory points
+                xak = interp1(tsim,x,tak,obj.trajInterpolation); %define autokoopman trajectory points
             else
-                xak=interp1(t,critX,tak,obj.trajInterpolation); %pass x0 as full x to avoid simulation again
+                xak=interp1(tsim,critX,tak,obj.trajInterpolation); %pass x0 as full x to avoid simulation again
                 u=critU;
             end
 
@@ -155,15 +155,15 @@ for run=1:obj.runs
             R=[];
         end
         % determine most critical reachable set and specification
-        try
-            optimTime=tic;
-            specSolns = critAlpha(obj,R,koopModel,specSolns);
-            soln.optimTime=soln.optimTime+toc(optimTime);
-        catch
-            vprintf(obj.verb,2,"error encountered whilst setup/solving, resetting training data \n")
-            trainIter=0;
-            continue;
-        end
+        %         try
+        optimTime=tic;
+        specSolns = critAlpha(obj,R,koopModel,specSolns);
+        soln.optimTime=soln.optimTime+toc(optimTime);
+        %         catch
+        %             vprintf(obj.verb,2,"error encountered whilst setup/solving, resetting training data \n")
+        %             trainIter=0;
+        %             continue;
+        %         end
 
         %get critical spec with minimum robustness and corresponding soln struct
         [~,minIndex]=min(specSolns.values.rob);
@@ -172,7 +172,7 @@ for run=1:obj.runs
         curSoln=specSolns(critSpec);
 
         % this section check if critical trajectory is falsifying. If not, it also offsets if neccassary
-        if curSoln.rob<inf %found a viable solution
+        if curSoln.rob<inf %found viable solution
             offsetIter = 0;
             while offsetIter <= max(obj.offsetStrat,0) %repeat this loop only if offset in same iteration is selected (offsetStrat=1)
                 [critX0, critU] = falsifyingTrajectory(obj,curSoln);
@@ -181,26 +181,26 @@ for run=1:obj.runs
                 if ~isempty(critU)
                     assert(size(critU,1)>=2,'Input must have at least two sample points')
                     assert(size(critU,2)>=2,'Input must have at least two columns, where first column is time points')
-                    usim = interp1(critU(:,1),critU(:,2:end),tsim,obj.inputInterpolation,"extrap"); %interpolate and extrapolate input points
+                    usim = interp1(critU(:,1),critU(:,2:end),tcp,obj.inputInterpolation,"extrap"); %interpolate and extrapolate input points
                     usim =  max(obj.U.inf',min(obj.U.sup',usim)); %ensure that extrapolation is within input bounds
-                    usim = [tsim,usim];
+                    usim = [tcp,usim];
                 else
                     usim=[]; %no input for the model
                 end
 
                 % run most critical inputs on the real system
-                [t, critX, simTime] = simulate(obj, critX0, usim);
+                [tsim, critX, simTime] = simulate(obj, critX0, usim);
 
 %                 plot(critX(:,1),critX(:,2))
 %                 drawnow;
-%                 pause(1);
+                %                 pause(1);
 
                 soln.sims = soln.sims+1;
                 soln.simTime = soln.simTime+simTime;
 
                 %check if critical inputs falsify the system and store data
-                [soln,falsified,robustness,Bdata,newBest_,critSpec]=checkFalsification(soln,critX,critU,t,obj.spec,obj.inputInterpolation,'kf optimization',obj.verb);
-                allData.X{end+1}=critX; allData.XU{end+1}=critU; allData.t{end+1}=t; allData.Rob=[allData.Rob;robustness];
+                [soln,falsified,robustness,Bdata,newBest_,critSpec]=checkFalsification(soln,critX,critU,tsim,obj.spec,obj.inputInterpolation,'kf optimization',obj.verb);
+                allData.X{end+1}=critX; allData.XU{end+1}=critU; allData.t{end+1}=tsim; allData.Rob=[allData.Rob;robustness];
                 if nargout>1;allData.koopModels{end+1}=koopModel;end %store koop model if needed
                 if newBest_; perturb=0; end %reset pertrubation if new best soln found
                 if falsified; break; end
@@ -224,13 +224,6 @@ for run=1:obj.runs
                             if obj.solver.autoAddConstraints  %if we auto add predicate constraints
                                 %append new critical times and predicates
                                 specSolns(critSpec).critTimes=[specSolns(critSpec).critTimes,critTimes];
-                                %The following 3 lines ensure only unique constraints are stored,
-                                % i.e. only new predicate constraints are added
-                                % Use cellfun with anonymous functions to convert structs to strings
-                                strCell = cellfun(@(s) jsonencode(s), specSolns(critSpec).critTimes, 'UniformOutput', false);
-                                uniqueStrCell = unique(strCell, 'stable');
-                                % Convert the unique cell array of strings back to a cell array of structs
-                                specSolns(critSpec).critTimes = cellfun(@jsondecode, uniqueStrCell, 'UniformOutput', false);
                                 specSolns(critSpec).preds=preds;
                             end
                         end
@@ -239,10 +232,10 @@ for run=1:obj.runs
                             Sys=specSolns(critSpec).KoopSolver;
                             Sys.offsetMap = critPreds;
                             if obj.offsetStrat == 1 %if offset strategy in this iteration selected
-                                % setup stl from scratch: if we are using milp encoding AND
+                                % setup stl from scratch: if we are using milp or weighted encoding AND
                                 % offset strategy is used and optimizer object is not used, i.e. offset is hardcode every time
-                                if ~obj.solver.autoAddConstraints && (~obj.solver.useOptimizer && numEntries(Sys.offsetMap)>0)
-                                    Sys=setupStl(Sys,~obj.solver.useOptimizer); %encode stl using milp
+                                if ~obj.solver.autoAddConstraints==1 && (~obj.solver.useOptimizer && numEntries(Sys.offsetMap)>0)
+                                    Sys=setupStl(Sys,~obj.solver.useOptimizer,obj.solver.autoAddConstraints); %encode stl using milp
                                 end
                                 Sys=optimize(Sys,obj.solver.opts);
                                 curSoln.alpha = value(Sys.alpha); %new alpha value after offset

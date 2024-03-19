@@ -60,8 +60,10 @@ properties
 
     %offset and offset count to modify stl based on prev iterations
     offsetMap
-    %weights for 
+    %weights for weighted stl (recusrive manipulation of weights to falsify stl)
     weights
+    % maximum weight to ensure that problem does not become too large (default 10e9)
+    maxWeight
 end
 
 properties (Dependent)
@@ -90,6 +92,8 @@ methods
         Sys.normalize=false;
         %setup (unconstrained) objective fcn
         Sys.Pstl=sdpvar(1,1);
+        %default max weight
+        Sys.maxWeight=10e9;
     end
 
     %getters for dependent properties

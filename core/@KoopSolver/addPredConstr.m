@@ -44,6 +44,14 @@ function Sys = addPredConstr(Sys,predTimeConstrs,preds,hardcoded,offsetStrat)
 % Last update: ---
 % Last revision: ---
 
+%The following 3 lines ensure only unique constraints exist,
+% i.e. only new predicate constraints are added
+% Use cellfun with anonymous functions to convert structs to strings
+strCell = cellfun(@(s) jsonencode(s), predTimeConstrs, 'UniformOutput', false);
+uniqueStrCell = unique(strCell, 'stable');
+% Convert the unique cell array of strings back to a cell array of structs
+predTimeConstrs = cellfun(@jsondecode, uniqueStrCell, 'UniformOutput', false);
+
 %if first time adding constraints, setup offset params
 if isempty(Sys.Ostl) && ~hardcoded
     Sys.Ostl = sdpvar(1,numel(preds));
@@ -110,8 +118,6 @@ for p=1:numel(preds)
         pred = replace(pred,'<','<=');
         pred = replace(pred,'>','>=');
         
-        pred
-
         z_eval = eval(pred);
         Sys.Fstl=[Sys.Fstl,z_eval];
     end

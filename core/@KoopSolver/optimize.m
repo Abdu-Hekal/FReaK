@@ -43,7 +43,9 @@ else
         param={param};
     else
         %weighted stl is used, so pass weights also as param
-        param={param,Sys.weights};
+        %make sure weights aren't too big
+        weights=min(Sys.weights,Sys.maxWeight);
+        param={param,weights};
     end
     [sol_control, errorflag1,~,~,P] = Sys.optimizer{param}; %% call solver
     assign(Sys.x,double(sol_control{1}));
