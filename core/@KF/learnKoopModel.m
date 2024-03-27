@@ -43,8 +43,13 @@ function [koopModel,koopTime] = learnKoopModel(obj, trainset)
     else
         inputs_list = string(missing);
     end 
+    if obj.ak.weighted
+        robList = trainset.Rob;
+    else
+        robList = string(missing);
+    end
     tic
-    pyrunfile("run_autokoopman.py",'koopman_model',times=trainset.t,trajectories=trainset.X, param_dict=obj.ak,inputs_list=inputs_list);
+    pyrunfile("run_autokoopman.py",'koopman_model',times=trainset.t,trajectories=trainset.X,param_dict=obj.ak,inputs_list=inputs_list,rob_list=robList);
     koopTime=toc;
     %TODO: remove need for creating file by returning A,B,u,w functions
     %from python file.

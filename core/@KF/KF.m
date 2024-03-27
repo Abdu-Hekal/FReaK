@@ -61,6 +61,7 @@ classdef KF
         %  .opt: tuner of type "grid", "bopt", or "monte-carlo" (default=grid)
         %  .rank: set of ranks to try of DMD rank parameter (default=[1,20,4])
         %  variables (default=false)
+        %  .weighted: boolean to use weighted autokoopman (default=true)
 
         % Reachability settings (struct)
         reach
@@ -175,6 +176,7 @@ classdef KF
             obj.ak.gridSlices=5;
             obj.ak.opt="grid"; %grid
             obj.ak.rank=[1,20,4];
+            obj.ak.weighted=true;
 
             %reachability settings
             obj.reach.on=true; %true

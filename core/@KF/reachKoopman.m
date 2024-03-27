@@ -60,6 +60,12 @@ else
     R0 = polyZonotope(R0.c,R0.G,[],R0.expMat(1:n,:));
 end
 
+% check if B is empty anf U isn't, then set B to zeros to avoid errors in
+% optimization
+if isempty(B) && ~isempty(U)
+    B=zeros(size(A,1),dim(U));
+end
+
 % compute reachable set
 t = 0:dt:ceil(tFinal/dt)*dt;
 

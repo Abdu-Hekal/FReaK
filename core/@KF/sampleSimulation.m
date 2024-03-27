@@ -222,7 +222,7 @@ function [filteredRob, filteredInputsSamples] = removeRedundantData(allRob, allI
 %   allInputsSamples: Matrix of input samples (each row represents a data point)
 %   thresholdDistance: Minimum distance between data points to be considered separate
 
-% Combine robot and input samples into a single matrix
+% Combine rob and input samples into a single matrix
 allData = [allRob, allInputsSamples];
 
 % Reverse the order of data points to prioritize later data (avoids passing repeated data to mopso)

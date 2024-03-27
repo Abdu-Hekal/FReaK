@@ -1,4 +1,4 @@
-function [critPreds, critTimes, preds]=bReachCulprit(Bdata,set)
+function [critPreds, critTimes, preds]=bReachCulprit(Bdata,set,sepCaluses)
 % bReachCulprit - Finds indices of critical predicates and critical time
 % points
 %
@@ -19,6 +19,7 @@ function [critPreds, critTimes, preds]=bReachCulprit(Bdata,set)
 % Inputs:
 %   Bdata - Data for the Breach system trajectory.
 %   set - spec set containing STL formula.
+%   sepClauses - boolean to select whether to seperate clauses or not.
 %
 % Outputs:
 %   critPreds - dictionary of indices of predicates responsible for positive
@@ -39,7 +40,11 @@ critTimes = {};
 preds = {};
 
 idx=0;
-clauses = getClauses(set);
+if nargin<=2 || sepCaluses
+    clauses = getClauses(set);
+else
+    clauses={set};
+end
 for ij=1:numel(clauses)
     clause = clauses{ij};
     stl=coraBreachConvert(clause);

@@ -170,7 +170,7 @@ if obj.solver.autoAddConstraints
     end
 end
 %empty struct to store training data
-trainset.X = {}; trainset.XU={}; trainset.t = {};
+trainset.X = {}; trainset.XU={}; trainset.t = {}; trainset.Rob={};
 %empty struct to store all data
 allData.X={}; allData.XU={}; allData.t={}; allData.Rob=[];
 allData.koopModels={};

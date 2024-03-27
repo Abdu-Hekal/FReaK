@@ -84,7 +84,7 @@ for run=1:obj.runs
             end
             % empty trainset at reset, or empty trainset after first iter because it is random trajectory, if rmRand is selected by user.
             if  trainIter==0 || (trainIter == 1 && obj.rmRand)
-                trainset.X = {}; trainset.XU={}; trainset.t = {};
+                trainset.X = {}; trainset.XU={}; trainset.t = {}; trainset.Rob={};
             end
 
             %if first iter, random or neighborhood training selected, critical trajectory is
@@ -104,27 +104,6 @@ for run=1:obj.runs
                 if nargout>1;allData.koopModels{end+1}=[];end %store empty model as we are in reset
                 if newBest_; perturb=obj.sampPerturb; end %reset pertrubation if new best soln found
                 if falsified; break; end
-
-                %                 %if first iteration and auto mode, add critical time point
-                %                 %for sample trajectory
-                %                 if soln.sims==1 && obj.solver.autoAddTimePoints
-                %                     for ii=1:numel(obj.spec)
-                %                         spec=obj.spec(ii);
-                %                         if strcmp(spec.type,'logic')
-                %                             [~,critTimes,preds]=bReachCulprit(Bdata,spec.set); %get critical times and corresponding predicates
-                %                             %transform critical time values to nearest autokoopman step
-                %                             critTimes = cellfun(@(x) setfield(x, 'time', round(x.time/obj.ak.dt)),critTimes, 'UniformOutput', false);
-                %                             critTimesList = cell2mat(cellfun(@(x) x.time*obj.ak.dt, critTimes, 'UniformOutput', false)); %get list of critical times
-                %                             obj.solver.timePoints=sort(unique([obj.solver.timePoints,critTimesList])); %add 'unique' critical time points and sort
-                %                             if obj.solver.autoAddConstraints  %if we auto add predicate constraints
-                %                                 %append new critical times and predicates
-                %                                 specSolns(spec).critTimes=[specSolns(spec).critTimes,critTimes];
-                %                                 specSolns(spec).preds=preds;
-                %                             end
-                %                         end
-                %                     end
-                %                 end
-
                 xak = interp1(tsim,x,tak,obj.trajInterpolation); %define autokoopman trajectory points
             else
                 xak=interp1(tsim,critX,tak,obj.trajInterpolation); %pass x0 as full x to avoid simulation again
@@ -135,6 +114,7 @@ for run=1:obj.runs
             trainset.t{end+1} = tak;
             trainset.X{end+1} = xak';
             trainset.XU{end+1} = u(:,2:end)';
+            trainset.Rob{end+1} = robustness;
         end
 
         %run autokoopman and learn linearized model
@@ -208,13 +188,13 @@ for run=1:obj.runs
                 if robustness~=inf %there exist a value for robustness for which we can neighborhood train or offset
                     if obj.trainStrat==1 && robustness >= soln.best.rob %neighborhood training mode
                         %remove last entry because it is not improving the obj
-                        trainset.X(end) = []; trainset.XU(end)=[]; trainset.t(end) = [];
+                        trainset.X(end) = []; trainset.XU(end)=[]; trainset.t(end) = []; trainset.Rob(end)=[];
                     end
                     %if first offset iteration (re-solve with offset if offsetStrat==1 or save offset for next iter if offsetStrat==-1),
                     % if spec is stl AND [robustness is greater than gap termination criteria for solver and an offset mode selected by user.
                     % OR if auto add  time points (find critical times)]
                     if strcmp(critSpec.type,'logic') && ((offsetIter==0 && robustness > getSolverGap(obj.solver.opts) && abs(obj.offsetStrat)) || obj.solver.autoAddTimePoints)
-                        [critPreds,critTimes,preds]=bReachCulprit(Bdata,critSpec.set); %get predicates responsible for robustness value
+                        [critPreds,critTimes,preds]=bReachCulprit(Bdata,critSpec.set,~obj.solver.autoAddConstraints); %get predicates responsible for robustness value
                         %add new critical time points if auto add is selected by user
                         if obj.solver.autoAddTimePoints
                             %transform critical time values to nearest autokoopman step
@@ -358,7 +338,9 @@ function validateTrainset(trainset,U)
 assert(isstruct(trainset), 'trainset must be a struct');
 assert(isfield(trainset, 'X'), 'trainset must have a field named "X" which is a cell of training trajectories');
 assert(isfield(trainset, 't'), 'trainset must have a field named "t" which is a cell of times corresponding to training trajectories');
+assert(isfield(trainset, 'Rob'), 'trainset must have a field named "Rob" which is a cell of robustness values corresponding to training trajectories');
 assert(numel(trainset.X)==numel(trainset.t),'number of training trajectories must be the same as number of time arrays')
+assert(numel(trainset.Rob)==numel(trainset.t),'number of robustness values must be the same as number of time arrays')
 for ii=1:numel(trainset.t)
     assert(size(trainset.X{ii},2)==size(trainset.t{ii},1),'length of training trajectory must be same as time points')
 end
