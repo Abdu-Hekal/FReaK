@@ -89,8 +89,8 @@ for run=1:obj.runs
 
             %if first iter, random or neighborhood training selected, critical trajectory is
             %repeated, or no viable soln found last iter, retrain with new xu else retrain with prev traj
-            if trainIter==0 || obj.trainStrat>=1 || checkRepeatedTraj(critX,critU,trainset,obj.verb) || ~(curSoln.rob<inf)
-                if trainIter>0 && obj.solver.opts.usex0==1 && checkRepeatedTraj(critX,critU,trainset,obj.verb)
+            if trainIter==0 || obj.trainStrat>=1 || checkTrainsetRepeatedTraj(critX0,critU,trainset,obj.verb) || ~(curSoln.rob<inf)
+                if trainIter>0 && obj.solver.opts.usex0==1 && checkTrainsetRepeatedTraj(critX0,critU,trainset,obj.verb)
                     obj.solver.opts.usex0=0; %turn off warmstarting if repeated trajectory returned by solver
                     disp('Turned off warmstarting due to repeated solutions')
                 end
@@ -169,14 +169,15 @@ for run=1:obj.runs
                 end
 
                 % run most critical inputs on the real system
-                [tsim, critX, simTime] = simulate(obj, critX0, usim);
-
-%                 plot(critX(:,1),critX(:,2))
-%                 drawnow;
-                %                 pause(1);
-
-                soln.sims = soln.sims+1;
-                soln.simTime = soln.simTime+simTime;
+                [repeatedTraj,r] = checkAllDataRepeatedTraj(critX0,critU,allData);
+                if repeatedTraj %avoid simulating again if repeated traj, instead get prev simulation
+                    tsim=allData.t{r};
+                    critX=allData.X{r};
+                else
+                    [tsim, critX, simTime] = simulate(obj, critX0, usim);
+                    soln.sims = soln.sims+1;
+                    soln.simTime = soln.simTime+simTime;
+                end
 
                 %check if critical inputs falsify the system and store data
                 [soln,falsified,robustness,Bdata,newBest_,critSpec]=checkFalsification(soln,critX,critU,tsim,obj.spec,obj.inputInterpolation,'kf optimization',obj.verb);
@@ -280,13 +281,24 @@ end
 if obj.verb==0; fprintf(reverseStr); end
 end
 
-function repeatedTraj = checkRepeatedTraj(critX,critU,trainset,verb)
+function repeatedTraj = checkTrainsetRepeatedTraj(critX0,critU,trainset,verb)
 %check if critical initial set & input are the vsame as found before
 repeatedTraj = false;
 for r = 1:length(trainset.X)
-    if isequal(critX(1,:)',trainset.X{r}(:,1)) && isequal(critU(:,2:end)',trainset.XU{r})
+    if isequal(critX0,trainset.X{r}(:,1)) && isequal(critU(:,2:end)',trainset.XU{r})
         repeatedTraj = true;
         vprintf(verb,2,2,"repeated critical trajectory, generating a new trajectory \n")
+        break
+    end
+end
+end
+
+function [repeatedTraj,r] = checkAllDataRepeatedTraj(critX0,critU,allData)
+%check if critical initial set & input are the vsame as found before
+repeatedTraj = false;
+for r = 1:length(allData.X)
+    if isequal(critX0',allData.X{r}(1,:)) && isequal(critU,allData.XU{r})
+        repeatedTraj = true;
         break
     end
 end

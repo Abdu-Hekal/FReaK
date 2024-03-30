@@ -42,9 +42,12 @@ else
     if isempty(Sys.Wstl)
         param={param};
     else
-        %weighted stl is used, so pass weights also as param
+        %weighted stl is used, so pass weights also as param for solver
+        %time steps
+        timeIdxs = floor(Sys.solverTimePoints/Sys.koopdt)+1;
+        weights=Sys.weights(:,timeIdxs);
         %make sure weights aren't too big
-        weights=min(Sys.weights,Sys.maxWeight);
+        weights=min(weights,Sys.maxWeight);
         param={param,weights};
     end
     [sol_control, errorflag1,~,~,P] = Sys.optimizer{param}; %% call solver

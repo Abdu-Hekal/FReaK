@@ -48,7 +48,7 @@ def run(times, trajectories, param_dict, inputs_list, rob_list):
         training_traj=traj.UniformTimeTrajectory(np.atleast_2d(trajectory).T, inputs, param_dict["dt"])
         training_data.append(training_traj)
         if rob_list is not None:
-            w = np.zeros(len(training_traj.states)) + (i+1)/(rob_list[i]+1)**4
+            w = np.zeros(len(training_traj.states)) + 1/(rob_list[i]+1)
             weights.append(w)
 
     #convert to np array for data manipulation
@@ -56,16 +56,8 @@ def run(times, trajectories, param_dict, inputs_list, rob_list):
     weights=np.array(weights)
     
     if rob_list is not None:
-        #penalise weights based on size
-        weights = (weights/len(weights))**2
         #normalize weights
         weights = normalize(weights, axis=0, norm='max')
-        # filter weights by the minimum value
-        indices = np.where(np.min(weights, axis=1) >= 1e-1)[0]
-        weights = weights[indices]
-        training_data=training_data[indices]
-        print(indices)
-        print(len(indices))
     else:
         weights=None
 

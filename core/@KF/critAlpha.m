@@ -160,7 +160,6 @@ for i = 1:size(spec,1)
         %if auto contraints, add constraints for critical times and
         %corresponding predicates, also check if critTimes have been
         %defined
-        Sys.solverTimePoints=obj.solver.timePoints;
         set=spec(i,1).set;
         if obj.solver.autoAddConstraints==2
             %initialize weights if they have not yet been set
@@ -168,7 +167,8 @@ for i = 1:size(spec,1)
                 %first get all predicstes
                 breachPhi = STL_Formula('phi',coraBreachConvert(set));
                 mus = STL_ExtractPredicates(breachPhi);
-                Sys.weights=ones(numel(mus),numel(Sys.solverTimePoints));
+                %create a weight for every step in ak
+                Sys.weights=ones(numel(mus),(obj.T/obj.ak.dt)+1);
             end
             if ~isempty(prevSpecSol.critTimes)
                 %add weights for new constrs
@@ -185,11 +185,13 @@ for i = 1:size(spec,1)
             % (3) time points for evaluating stl changes, typically for 'auto' solver step
             if ~isequal(set,Sys.stl) || ~obj.solver.useOptimizer || ~isequal(obj.solver.timePoints,Sys.solverTimePoints)
                 Sys.stl = set;
+                Sys.solverTimePoints=obj.solver.timePoints;
                 Sys=setupStl(Sys,~obj.solver.useOptimizer,true); %encode stl using weighted pred constraints
             end
             specSoln.critTimes={}; %empty list for crit times to only store new crit Times
             specSoln.preds=prevSpecSol.preds;
         elseif obj.solver.autoAddConstraints==1
+            Sys.solverTimePoints=obj.solver.timePoints;
             if ~isempty(prevSpecSol.critTimes)
                 Sys=addPredConstr(Sys,prevSpecSol.critTimes,prevSpecSol.preds,~obj.solver.useOptimizer,obj.offsetStrat);
             end
@@ -201,13 +203,14 @@ for i = 1:size(spec,1)
             % every time OR (3) time points for evaluating stl changes, typically for 'auto' solver step
             if ~isequal(set,Sys.stl) || (~obj.solver.useOptimizer && numEntries(Sys.offsetMap)>0) || ~isequal(obj.solver.timePoints,Sys.solverTimePoints)
                 Sys.stl = set;
+                Sys.solverTimePoints=obj.solver.timePoints;
                 Sys=setupStl(Sys,~obj.solver.useOptimizer,false); %encode stl using milp
             end
         end
 
         %setup evolution of system using reachable sets or direct encoding
         if obj.reach.on
-            Sys.reachZonos=R.zono; %update reach zonos with new
+            Sys.reachZonos=R.zono; %update reach z onos with new
             Sys = setupReach(Sys);
         else
             Sys.A=koopModel.A;

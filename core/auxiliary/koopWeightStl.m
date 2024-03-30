@@ -1,9 +1,9 @@
-function [F,P,O,W] = koopWeightStl(phi,kList,kMax,timePoints,var,M,normz,hardcoded,offsetMap,weights)
+function [F,P,O,W] = koopWeightStl(phi,kList,kMax,timePoints,var,normz,hardcoded,offsetMap,weights)
 % koopWeightStl - constructs constraints in YALMIP that compute
 %             the robustness of satisfaction for stl specification phi
 %
 % Syntax:
-%   [F,P,O] = koopWeightStl(phi,kList,kMax,timePoints,var,M,normz,hardcoded,offsetMap,weights)
+%   [F,P,O] = koopWeightStl(phi,kList,kMax,timePoints,var,normz,hardcoded,offsetMap,weights)
 %
 % Input:
 %       phi:    an STLformula
@@ -11,12 +11,13 @@ function [F,P,O,W] = koopWeightStl(phi,kList,kMax,timePoints,var,M,normz,hardcod
 %       kMAx:   the length of the trajectory
 %       timePoints:  time points for analyzing robustness
 %       var:    a dictionary mapping strings to variables
-%       M:   	a large positive constant used for big-M constraints
 %       normz:  normalization values based on boundaries of reachable sets
 %       hardcoded: bool set to false if using optimizer object otherwise
 %       true.
 %       offsetMap: map that defines predicates to offset, key:number of
 %       predicate, value:offset value
+%       weights: matrix representing weights for each predicate and time
+%       point
 %
 % Output:
 %       F:  YALMIP constraints
@@ -28,10 +29,6 @@ function [F,P,O,W] = koopWeightStl(phi,kList,kMax,timePoints,var,M,normz,hardcod
 %
 % :copyright: TBD
 % :license: TBD
-
-if (nargin==4)
-    M = 1000;
-end
 
 F = [];
 P = [];
@@ -67,7 +64,7 @@ switch (phi.type)
         [F,P,O,W] = pred(phi,kList,var,normz,hardcoded,offsetMap,weights);
 
     case '~'
-        [Frest,Prest,Orest,Wrest] = koopWeightStl(phi.lhs,kList,kMax,timePoints, var,M,normz,hardcoded,offsetMap,weights);
+        [Frest,Prest,Orest,Wrest] = koopWeightStl(phi.lhs,kList,kMax,timePoints, var,normz,hardcoded,offsetMap,weights);
         [Fnot, Pnot] = not(Prest);
         F = [F, Fnot, Frest];
         P = Pnot;
@@ -75,18 +72,18 @@ switch (phi.type)
         W = [W; Wrest];
 
     case '|'
-        [Fdis1,Pdis1,O1,W1] = koopWeightStl(phi.lhs,kList,kMax,timePoints, var,M,normz,hardcoded,offsetMap,weights);
-        [Fdis2,Pdis2,O2,W2] = koopWeightStl(phi.rhs,kList,kMax,timePoints, var,M,normz,hardcoded,offsetMap,weights);
-        [For, Por] = or([Pdis1;Pdis2],M);
+        [Fdis1,Pdis1,O1,W1] = koopWeightStl(phi.lhs,kList,kMax,timePoints, var,normz,hardcoded,offsetMap,weights);
+        [Fdis2,Pdis2,O2,W2] = koopWeightStl(phi.rhs,kList,kMax,timePoints, var,normz,hardcoded,offsetMap,weights);
+        [For, Por] = or([Pdis1;Pdis2]);
         F = [F, For, Fdis1, Fdis2];
         P = Por;
         O = [O, O1, O2];
         W = [W; W1; W2]; 
 
     case '&'
-        [Fcon1,Pcon1,O1,W1] = koopWeightStl(phi.lhs,kList,kMax,timePoints, var,M,normz,hardcoded,offsetMap,weights);
-        [Fcon2,Pcon2,O2,W2] = koopWeightStl(phi.rhs,kList,kMax,timePoints, var,M,normz,hardcoded,offsetMap,weights);
-        [Fand, Pand] = and([Pcon1;Pcon2],M);
+        [Fcon1,Pcon1,O1,W1] = koopWeightStl(phi.lhs,kList,kMax,timePoints, var,normz,hardcoded,offsetMap,weights);
+        [Fcon2,Pcon2,O2,W2] = koopWeightStl(phi.rhs,kList,kMax,timePoints, var,normz,hardcoded,offsetMap,weights);
+        [Fand, Pand] = and([Pcon1;Pcon2]);
         F = [F, Fand, Fcon1, Fcon2];
         P = Pand;
         O = [O, O1, O2];
@@ -94,8 +91,8 @@ switch (phi.type)
 
     case 'globally'
         kListAlw = unique(cell2mat(arrayfun(@(k) {min(kMax,k + a): min(kMax,k + b)}, kList)));
-        [Frest,Prest,Orest,Wrest] = koopWeightStl(phi.lhs,kListAlw,kMax,timePoints, var,M,normz,hardcoded,offsetMap,weights);
-        [Falw, Palw] = always(Prest,a,b,kList,kMax,M);
+        [Frest,Prest,Orest,Wrest] = koopWeightStl(phi.lhs,kListAlw,kMax,timePoints, var,normz,hardcoded,offsetMap,weights);
+        [Falw, Palw] = always(Prest,a,b,kList,kMax);
         F = [F, Falw];
         P = [Palw, P];
         F = [F, Frest];
@@ -104,8 +101,8 @@ switch (phi.type)
 
     case 'finally'
         kListEv = unique(cell2mat(arrayfun(@(k) {min(kMax,k + a): min(kMax,k + b)}, kList)));
-        [Frest,Prest,Orest,Wrest] = koopWeightStl(phi.lhs,kListEv,kMax,timePoints, var,M,normz,hardcoded,offsetMap,weights);
-        [Fev, Pev] = eventually(Prest,a,b,kList,kMax,M);
+        [Frest,Prest,Orest,Wrest] = koopWeightStl(phi.lhs,kListEv,kMax,timePoints, var,normz,hardcoded,offsetMap,weights);
+        [Fev, Pev] = eventually(Prest,a,b,kList,kMax);
         F = [F, Fev];
         P = [Pev, P];
         F = [F, Frest];
@@ -182,7 +179,7 @@ end
 z = sdpvar(1,size(z_eval,2));
 
 if hardcoded
-    varWeight={}; %hardcode, no weight paramater  
+    varWeight={}; %hardcode, no weight paramater 
     F = z == weights(vkmrCount,kList).*z_eval;
 else
     varWeight=sdpvar(1,size(weights,2));
@@ -193,13 +190,13 @@ end
 
 % BOOLEAN OPERATIONS
 
-function [F,P] = and(p_list,M)
-[F,P] = min_r(p_list,M);
+function [F,P] = and(p_list)
+[F,P] = min_r(p_list);
 end
 
 
-function [F,P] = or(p_list,M)
-[F,P] = max_r(p_list,M);
+function [F,P] = or(p_list)
+[F,P] = max_r(p_list);
 end
 
 
@@ -212,7 +209,7 @@ end
 
 % TEMPORAL OPERATIONS
 
-function [F,P_alw] = always(P, a,b,kList,kMax,M)
+function [F,P_alw] = always(P, a,b,kList,kMax)
 F = [];
 k = size(kList,2);
 P_alw = sdpvar(1,k);
@@ -222,13 +219,13 @@ for i = 1:k
     [ia, ib] = getIndices(kList(i),a,b,kMax);
     ia_real = find(kListAlw==ia);
     ib_real = find(kListAlw==ib);
-    [F0,P0] = and(P(ia_real:ib_real)',M);
+    [F0,P0] = and(P(ia_real:ib_real)');
     F = [F;F0,P_alw(i)==P0];
 end
 end
 
 %AH: fixed this function from blustl version
-function [F,P_ev] = eventually(P, a,b,kList,kMax,M)
+function [F,P_ev] = eventually(P, a,b,kList,kMax)
 F = [];
 k = size(kList,2);
 P_ev = sdpvar(1,k);
@@ -238,13 +235,13 @@ for i = 1:k
     [ia, ib] = getIndices(kList(i),a,b,kMax);
     ia_real = find(kListEv==ia);
     ib_real = find(kListEv==ib);
-    [F0,P0] = or(P(ia_real:ib_real)',M);
+    [F0,P0] = or(P(ia_real:ib_real)');
     F = [F;F0,P_ev(i)==P0];
 end
 end
 
 
-function [F,P_until] = until(Pp,Pq,a,b,k,M)
+function [F,P_until] = until(Pp,Pq,a,b,k)
 
 F = [];
 P_until = sdpvar(1,k);
@@ -254,7 +251,7 @@ for i = 1:k
     F0 = [];
     P0 = [];
     for j = ia:ib
-        [F1,P1] = until_mins(i,j,Pp,Pq,M);
+        [F1,P1] = until_mins(i,j,Pp,Pq);
         F0 = [F0, F1];
         P0 = [P0, P1];
     end
@@ -267,30 +264,32 @@ end
 
 % UTILITY FUNCTIONS
 
-function [F,P] = min_r(p_list,M)
+function [F,P] = min_r(p_list)
 
 F = [];
-P=sum(p_list);
+P=sum(p_list)/length(p_list);
 
 end
 
-function [F,P] = max_r(p_list,M)
+function [F,P] = max_r(p_list)
 
 k = size(p_list,2);
 m = size(p_list,1);
 
 P = sdpvar(1,k);
-% F= P>=p_list;
+repP=repmat(P,m,1);
+F= repP>=p_list;
 
-F = [];
-for i=1:m
-    F = [F, P >= p_list(i,:)];
-end
+
+% F = [];
+% for i=1:m
+%     F = [F, P >= p_list(i,:)];
+% end
 end
 
-function [F,P] = until_mins(i,j,Pp,Pq,M)
-[F0,P0] = min_r(Pp(i:j)',M);
-[F1,P] = min_r([Pq(j),P0],M);
+function [F,P] = until_mins(i,j,Pp,Pq)
+[F0,P0] = min_r(Pp(i:j)');
+[F1,P] = min_r([Pq(j),P0]);
 F = [F0,F1];
 end
 
