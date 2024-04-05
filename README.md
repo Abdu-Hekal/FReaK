@@ -1,4 +1,4 @@
-# Koopman Falsification
+# FReaK - Falsification using Reachability and Koopman 
 
 ## Overview
 
@@ -15,7 +15,7 @@ A MATLAB toolkit for falsification using Koopman surrogate models.
 
 ## Introduction
 
-Koopman Falsification is a novel framework that generates counterexamples for falsification of black-box models.
+FReaK is a novel framework that generates counterexamples for falsification of black-box models.
 We employ an iterative refinement technique based on surrogate modelling. In particular, simulations are used 
 to construct a surrogate model for the system dynamics using data-driven Koopman operator linearization. 
 The reachable set of states are then computed and combined with an encoding of the signal temporal logic specification in a mixed-integer linear program (MILP).
@@ -24,7 +24,7 @@ The trajectory's initial state and input signal are then executed on the origina
 
 ## Prerequisites
 
-Koopman falsification requires the following prerequisites:
+FReaK requires the following prerequisites:
 
 - **MATLAB** - You can download MATLAB from [MathWorks website](https://www.mathworks.com/).
 - **Breach** - Download Breach toolbox from github repository [here](https://github.com/decyphir/breach/tree/master)
@@ -38,7 +38,7 @@ Koopman falsification requires the following prerequisites:
 
 We provide a setup script to help with installation. The script automatically installs prerequisites where possible 
 or outlines which are missing via the command window. The script also makes necassary modifications to external toolboxes
-and removes any conflicting files from path. Add the Koopman falsification folder and subfolders to path and run setup file
+and removes any conflicting files from path. Add the FReaK folder and subfolders to path and run setup file
 **setupKF.m**
 
 ```matlab
