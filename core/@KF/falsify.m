@@ -90,10 +90,6 @@ for run=1:obj.runs
             %if first iter, random or neighborhood training selected, critical trajectory is
             %repeated, or no viable soln found last iter, retrain with new xu else retrain with prev traj
             if trainIter==0 || obj.trainStrat>=1 || checkTrainsetRepeatedTraj(critX0,critU,trainset,obj.verb) || ~(curSoln.rob<inf)
-                if trainIter>0 && obj.solver.opts.usex0==1 && checkTrainsetRepeatedTraj(critX0,critU,trainset,obj.verb)
-                    obj.solver.opts.usex0=0; %turn off warmstarting if repeated trajectory returned by solver
-                    disp('Turned off warmstarting due to repeated solutions')
-                end
                 [tsim,x,u,simTime] = sampleSimulation(obj,allData,perturb);
                 perturb=min(1,perturb+obj.sampPerturb); %increase perturbation
                 soln.sims = soln.sims+1;

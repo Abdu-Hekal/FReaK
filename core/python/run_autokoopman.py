@@ -19,6 +19,7 @@ def run(times, trajectories, param_dict, inputs_list, rob_list):
 
     if rob_list is not None:
         rob_list=np.array(rob_list).reshape(-1,1)
+        inputs_list=np.array(inputs_list)
         cost_func='weighted'
         # remove large outliers (large +ve robustness)
         q1 = np.percentile(rob_list, 25)
@@ -32,10 +33,9 @@ def run(times, trajectories, param_dict, inputs_list, rob_list):
         inputs_list=np.array(inputs_list)
         if inputs_list.any():
             inputs_list=inputs_list[indices]
-        # minmax normalize robustness
+#         minmax normalize robustness
         scaler = MinMaxScaler()
         rob_list = scaler.fit_transform(rob_list.reshape(-1,1))
-    #     rob_list = normalize(rob_list, axis=0, norm='max')
     else:
         cost_func='total'
         inputs_list=np.array(inputs_list)
@@ -48,17 +48,14 @@ def run(times, trajectories, param_dict, inputs_list, rob_list):
         training_traj=traj.UniformTimeTrajectory(np.atleast_2d(trajectory).T, inputs, param_dict["dt"])
         training_data.append(training_traj)
         if rob_list is not None:
-            w = np.zeros(len(training_traj.states)) + 1/(rob_list[i]+1)
+            w = np.zeros(len(training_traj.states)) + 1/(rob_list[i]+1) #(i+1/len(trajectories))/(rob_list[i]+(len(trajectories)))
             weights.append(w)
 
     #convert to np array for data manipulation
     training_data=np.array(training_data)
     weights=np.array(weights)
     
-    if rob_list is not None:
-        #normalize weights
-        weights = normalize(weights, axis=0, norm='max')
-    else:
+    if rob_list is None:
         weights=None
 
     ids = np.arange(0, len(training_data)).tolist()
