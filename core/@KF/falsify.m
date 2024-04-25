@@ -148,7 +148,7 @@ for run=1:obj.runs
         curSoln=specSolns(critSpec);
 
         % this section check if critical trajectory is falsifying. If not, it also offsets if neccassary
-        if curSoln.rob<inf %found viable solution
+        if curSoln.rob~=inf %found some solution
             offsetIter = 0;
             while offsetIter <= max(obj.offsetStrat,0) %repeat this loop only if offset in same iteration is selected (offsetStrat=1)
                 [critX0, critU] = falsifyingTrajectory(obj,curSoln);
@@ -174,6 +174,12 @@ for run=1:obj.runs
                     soln.sims = soln.sims+1;
                     soln.simTime = soln.simTime+simTime;
                 end
+        
+%                 clf
+%                 hold on   
+%                 plot(critX(:,1),critX(:,2))
+%                 plot(curSoln.x(1,:),curSoln.x(2,:))
+%                 drawnow
 
                 %check if critical inputs falsify the system and store data
                 [soln,falsified,robustness,Bdata,newBest_,critSpec]=checkFalsification(soln,critX,critU,tsim,obj.spec,obj.inputInterpolation,'kf optimization',obj.verb);

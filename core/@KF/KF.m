@@ -101,7 +101,7 @@ classdef KF
         %runs: number of falsification attempts (default=1)
         runs
         % maxSims: maximum number of simulations for training before
-        % terminating, (default=100)
+        % terminating, (default=5000)
         maxSims
         %timeout: maximum time before algorithm terminates, (default=inf)
         timeout

@@ -7,7 +7,7 @@ import autokoopman.core.trajectory as traj
 import numpy as np
 import random
 
-def run(times, trajectories, param_dict, inputs_list, rob_list):
+def run(times, trajectories, param_dict, inputs_list, rob_list,state_weights):
 
     # Sort all lists based on robustness
 #     if inputs_list:
@@ -19,23 +19,24 @@ def run(times, trajectories, param_dict, inputs_list, rob_list):
 
     if rob_list is not None:
         rob_list=np.array(rob_list).reshape(-1,1)
+        state_weights=np.array(state_weights)
         inputs_list=np.array(inputs_list)
         cost_func='weighted'
-        # remove large outliers (large +ve robustness)
-        q1 = np.percentile(rob_list, 25)
-        q3 = np.percentile(rob_list, 75)
-        iqr = q3 - q1
-        upper_bound = q3 + 1.5 * iqr
-        indices=np.where(rob_list<=upper_bound)[0]
-        rob_list=rob_list[indices]
-        trajectories=np.array(trajectories)[indices]
-        times=np.array(times)[indices]
-        inputs_list=np.array(inputs_list)
-        if inputs_list.any():
-            inputs_list=inputs_list[indices]
-#         minmax normalize robustness
-        scaler = MinMaxScaler()
-        rob_list = scaler.fit_transform(rob_list.reshape(-1,1))
+#         # remove large outliers (large +ve robustness)
+#         q1 = np.percentile(rob_list, 25)
+#         q3 = np.percentile(rob_list, 75)
+#         iqr = q3 - q1
+#         upper_bound = q3 + 1.5 * iqr
+#         indices=np.where(rob_list<=upper_bound)[0]
+#         rob_list=rob_list[indices]
+#         trajectories=np.array(trajectories)[indices]
+#         times=np.array(times)[indices]
+#         inputs_list=np.array(inputs_list)
+#         if inputs_list.any():
+#             inputs_list=inputs_list[indices]
+# #         minmax normalize robustness
+#         scaler = MinMaxScaler()
+#         rob_list = scaler.fit_transform(rob_list.reshape(-1,1))
     else:
         cost_func='total'
         inputs_list=np.array(inputs_list)
@@ -48,7 +49,7 @@ def run(times, trajectories, param_dict, inputs_list, rob_list):
         training_traj=traj.UniformTimeTrajectory(np.atleast_2d(trajectory).T, inputs, param_dict["dt"])
         training_data.append(training_traj)
         if rob_list is not None:
-            w = np.zeros(len(training_traj.states)) + 1/(rob_list[i]+1) #(i+1/len(trajectories))/(rob_list[i]+(len(trajectories)))
+            w = np.ones(training_traj.states.shape)*state_weights*(1/rob_list[i]) #(i+1/len(trajectories))/(rob_list[i]+(len(trajectories)))
             weights.append(w)
 
     #convert to np array for data manipulation
@@ -69,23 +70,22 @@ def run(times, trajectories, param_dict, inputs_list, rob_list):
     else:
         n_splits=None
    
-    with hide_prints():
-        experiment_results = auto_koopman(
-            training_data,  # list of trajectories
-            sampling_period=param_dict["dt"],  # sampling period of trajectory snapshots
-            obs_type=param_dict["obsType"],  # use Random Fourier Features Observables
-            cost_func=cost_func,   # use "weighted" cost function
-            learning_weights=weights, # weight the eDMD algorithm objectives
-            scoring_weights=weights, # pass weights as required for cost_func="weighted"
-            opt=param_dict["opt"],  # grid search to find best hyperparameters
-            n_obs=int(param_dict["nObs"]),  # maximum number of observables to try
-            max_opt_iter=200,  # maximum number of optimization iterations
-            grid_param_slices=int(param_dict["gridSlices"]),
-            # for grid search, number of slices for each parameter
-            rank=tuple(param_dict["rank"]), # rank range (start, stop, step) DMD hyperparameter
-            n_splits=n_splits,
-            verbose= False,
-        )
+    experiment_results = auto_koopman(
+        training_data,  # list of trajectories
+        sampling_period=param_dict["dt"],  # sampling period of trajectory snapshots
+        obs_type=param_dict["obsType"],  # use Random Fourier Features Observables
+        cost_func=cost_func,   # use "weighted" cost function
+        learning_weights=weights, # weight the eDMD algorithm objectives
+        scoring_weights=weights, # pass weights as required for cost_func="weighted"
+        opt=param_dict["opt"],  # grid search to find best hyperparameters
+        n_obs=int(param_dict["nObs"]),  # maximum number of observables to try
+        max_opt_iter=200,  # maximum number of optimization iterations
+        grid_param_slices=int(param_dict["gridSlices"]),
+        # for grid search, number of slices for each parameter
+        rank=tuple(param_dict["rank"]), # rank range (start, stop, step) DMD hyperparameter
+        n_splits=n_splits,
+        verbose= False,
+    )
     
     model = experiment_results['tuned_model']
     # get evolution matrices
@@ -104,4 +104,4 @@ def run(times, trajectories, param_dict, inputs_list, rob_list):
     return koopman_model
 
 
-koopman_model = run(times,trajectories, param_dict,inputs_list,rob_list)
+koopman_model = run(times,trajectories, param_dict,inputs_list,rob_list,state_weights)
