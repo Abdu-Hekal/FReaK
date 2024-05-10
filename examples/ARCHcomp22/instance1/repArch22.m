@@ -100,8 +100,8 @@ for b = 1:length(benches)
 
         kfModel.spec = specification(eq,'logic');
         kfModel.runs=10;
-        kfModel.verb=3;
-        kfModel.nResets=5; %'auto'
+        kfModel.verb=0;
+        kfModel.nResets='auto'; %'auto'
         kfModel.resetStrat=0;
         kfModel.maxSims=1000;
 
