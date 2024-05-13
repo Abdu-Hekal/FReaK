@@ -83,4 +83,7 @@ simTime=toc(sim);
 if isempty(xFinal)
     xFinal=yout(end,:)';
 end
+%make sure that data type is double for returned time and output
+tout=double(tout); 
+yout=double(yout);
 end
