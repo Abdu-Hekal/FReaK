@@ -175,11 +175,11 @@ for run=1:obj.runs
                     soln.simTime = soln.simTime+simTime;
                 end
         
-                clf
-                hold on   
-                plot(tsim,critX(:,1))
-                plot(tak,curSoln.x(1,:))
-                drawnow
+%                 clf
+%                 hold on   
+%                 plot(tsim,critX(:,1))
+%                 plot(tak,curSoln.x(1,:))
+%                 drawnow
 
                 %check if critical inputs falsify the system and store data
                 [soln,falsified,robustness,Bdata,newBest_,critSpec]=checkFalsification(soln,critX,critU,tsim,obj.spec,obj.inputInterpolation,'kf optimization',obj.verb);

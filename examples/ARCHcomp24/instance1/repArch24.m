@@ -57,7 +57,7 @@ beta2=0.04;
 bench.requirements = {; ...
     "NN", 40/12, globally(implies(abs(x(1)-u(1))>alpha+beta*abs(u(1)),finally(globally(~(alpha+beta*abs(u(1))<=abs(x(1)-u(1))),interval(0,1)),interval(0,2))),interval(1,37)); ...
     "NN2", 40/12, globally(implies(abs(x(1)-u(1))>alpha+beta2*abs(u(1)),finally(globally(~(alpha+beta2*abs(u(1))<=abs(x(1)-u(1))),interval(0,1)),interval(0,2))),interval(1,37)); ...
-    %         "NNx", 40/12, (finally(x(1)>3.2,interval(0,1))) & (finally(globally(x(1)>1.75 & x(1)<2.25,interval(0,0.5)),interval(1,1.5))) & (globally(x(1)>1.825 & x(1)<2.175,interval(2,3))) ; ...
+    "NNx", 1, (finally(x(1)>3.2,interval(0,1))) & (finally(globally(x(1)>1.75 & x(1)<2.25,interval(0,0.5)),interval(1,1.5))) & (globally(x(1)>1.825 & x(1)<2.175,interval(2,3))) ; ...
     };
 benches{end+1} = bench;
 
@@ -105,9 +105,9 @@ for b = 1:length(benches)
         kfModel.resetStrat=0;
         kfModel.maxSims=1000;
 
-        kfModel.ak.weighted=true;
-        kfModel.solver.autoAddTimePoints=true;
-        kfModel.solver.autoAddConstraints=2;
+%         kfModel.ak.weighted=true;
+%         kfModel.solver.autoAddTimePoints=true;
+%         kfModel.solver.autoAddConstraints=2;
 
         [kfSolns,~] = falsify(kfModel);
 

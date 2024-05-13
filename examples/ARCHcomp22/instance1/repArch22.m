@@ -105,9 +105,9 @@ for b = 1:length(benches)
         kfModel.resetStrat=0;
         kfModel.maxSims=1000;
 
-        kfModel.ak.weighted=true;
-        kfModel.solver.autoAddTimePoints=true;
-        kfModel.solver.autoAddConstraints=2;
+%         kfModel.ak.weighted=true;
+%         kfModel.solver.autoAddTimePoints=true;
+%         kfModel.solver.autoAddConstraints=2;
 
         [kfSolns,~] = falsify(kfModel);
 
