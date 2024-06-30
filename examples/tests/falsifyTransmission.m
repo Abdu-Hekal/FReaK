@@ -6,9 +6,9 @@ pyrunfile("seed.py")
 kfModel = modelAutoTransmission();
 plotVars = [1,2];
 
-% x = stl('x',3);
-% eq = implies(globally(x(2)<3000,interval(0,30)),globally(x(1)<35,interval(0,4)));
-% kfModel.spec = specification(eq,'logic');
+x = stl('x',3);
+eq = implies(globally(x(2)<3000,interval(0,30)),globally(x(1)<35,interval(0,4)));
+kfModel.spec = specification(eq,'logic');
 
 kfModel.verb=2;
 

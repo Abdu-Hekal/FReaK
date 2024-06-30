@@ -95,7 +95,7 @@ for run=1:obj.runs
                 soln.sims = soln.sims+1;
                 soln.simTime = soln.simTime+simTime;
                 %check if random input falsifies system, and break if it does
-                [soln,falsified,robustness,Bdata,newBest_,~]=checkFalsification(soln,x,u,tsim,obj.spec,obj.inputInterpolation,'reset simulation',obj.verb);
+                [soln,falsified,robustness,Bdata,newBest_,~]=checkFalsification(soln,x,u,tsim,obj.spec,tcp,obj.inputInterpolation,'reset simulation',obj.verb);
                 allData.X{end+1}=x; allData.XU{end+1}=u; allData.t{end+1}=tsim; allData.Rob=[allData.Rob;robustness];
                 if nargout>1;allData.koopModels{end+1}=[];end %store empty model as we are in reset
                 if newBest_; perturb=obj.sampPerturb; end %reset pertrubation if new best soln found
@@ -148,7 +148,7 @@ for run=1:obj.runs
         curSoln=specSolns(critSpec);
 
         % this section check if critical trajectory is falsifying. If not, it also offsets if neccassary
-        if curSoln.rob~=inf %found some solution
+        if curSoln.rob~=inf && ~all(isnan(curSoln.u),'all') %found some solution
             offsetIter = 0;
             while offsetIter <= max(obj.offsetStrat,0) %repeat this loop only if offset in same iteration is selected (offsetStrat=1)
                 [critX0, critU] = falsifyingTrajectory(obj,curSoln);
@@ -174,15 +174,15 @@ for run=1:obj.runs
                     soln.sims = soln.sims+1;
                     soln.simTime = soln.simTime+simTime;
                 end
-        
-%                 clf
-%                 hold on   
-%                 plot(tsim,critX(:,1))
-%                 plot(tak,curSoln.x(1,:))
-%                 drawnow
+
+                %                 clf
+                %                 hold on
+                %                 plot(tsim,critX(:,1))
+                %                 plot(tak,curSoln.x(1,:))
+                %                 drawnow
 
                 %check if critical inputs falsify the system and store data
-                [soln,falsified,robustness,Bdata,newBest_,critSpec]=checkFalsification(soln,critX,critU,tsim,obj.spec,obj.inputInterpolation,'kf optimization',obj.verb);
+                [soln,falsified,robustness,Bdata,newBest_,critSpec]=checkFalsification(soln,critX,critU,tsim,obj.spec,tcp,obj.inputInterpolation,'kf optimization',obj.verb);
                 allData.X{end+1}=critX; allData.XU{end+1}=critU; allData.t{end+1}=tsim; allData.Rob=[allData.Rob;robustness];
                 if nargout>1;allData.koopModels{end+1}=koopModel;end %store koop model if needed
                 if newBest_; perturb=0; end %reset pertrubation if new best soln found

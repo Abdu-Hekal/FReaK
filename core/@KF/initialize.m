@@ -106,7 +106,7 @@ if obj.trainStrat==1 || obj.trainStrat==2
     end
 end
 assert(isnumeric(obj.offsetStrat) && isscalar(obj.offsetStrat) && obj.offsetStrat >= -1 && obj.offsetStrat <= 1 && round(obj.offsetStrat) == obj.offsetStrat,'Offset strategy (obj.offsetStrat) must be an integer between -1 and 1')
-assert(isnumeric(obj.verb) && isscalar(obj.verb) && obj.verb >= 0 && obj.verb <= 3 && round(obj.verb) == obj.verb,'Verbosity level (obj.verb) must be an integer between 0 and 3')
+assert(isnumeric(obj.verb) && isscalar(obj.verb) && obj.verb >= -1 && obj.verb <= 3 && round(obj.verb) == obj.verb,'Verbosity level (obj.verb) must be an integer between -1 and 3')
 
 
 %set autokoopman timestep if it is not set, else check it is compliant.
