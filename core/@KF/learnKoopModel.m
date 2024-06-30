@@ -46,9 +46,9 @@ end
 if obj.ak.weighted
     robList = trainset.Rob;
     stateWeights=ones(dim(obj.R0),1)*numel(trainset.t{1});
-    % if only one spec and it is stl, then use weight states
+    % if only one spec and it is stl and state weights options set to true, then use weight states
     % according to variable hierarchy
-    if numel(obj.spec)==1 && strcmp(obj.spec(1).type,'logic')
+    if numel(obj.spec)==1 && strcmp(obj.spec(1).type,'logic') && obj.ak.stateWeighted
         stateWeights=getVarHierarchy(obj.spec(1).set,obj.ak.dt,obj.T,1,stateWeights);
     end
 else

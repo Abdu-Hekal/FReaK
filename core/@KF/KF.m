@@ -62,6 +62,7 @@ classdef KF
         %  .rank: set of ranks to try of DMD rank parameter (default=[1,20,4])
         %  variables (default=false)
         %  .weighted: boolean to use weighted autokoopman (default=false)
+        %  .stateWeighted: boolean to use state weighted autokoopman (default=false)
 
         % Reachability settings (struct)
         reach
@@ -177,6 +178,7 @@ classdef KF
             obj.ak.opt="grid"; %grid
             obj.ak.rank=[1,20,4];
             obj.ak.weighted=false;
+            obj.ak.stateWeighted=false;
 
             %reachability settings
             obj.reach.on=true; %true
