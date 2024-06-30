@@ -6,7 +6,3 @@ kf.nResets=10;
 kf.maxSims=1;
 
 [kfSolns,allDatas] = falsify(kf);
-kfSoln=kfSolns{1};
-allData=allDatas{1};
-
-visualizeTrain(allData,kf.ak.dt, plot_vars)

@@ -148,7 +148,7 @@ for run=1:obj.runs
         curSoln=specSolns(critSpec);
 
         % this section check if critical trajectory is falsifying. If not, it also offsets if neccassary
-        if curSoln.rob~=inf && ~all(isnan(curSoln.u),'all') %found some solution
+        if curSoln.rob~=inf %found some solution
             offsetIter = 0;
             while offsetIter <= max(obj.offsetStrat,0) %repeat this loop only if offset in same iteration is selected (offsetStrat=1)
                 [critX0, critU] = falsifyingTrajectory(obj,curSoln);

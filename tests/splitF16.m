@@ -24,7 +24,8 @@ function bestSoln=recursiveSplit(kf,bestSoln,dim, currentLevel, maxLevel)
     %falsify and update best soln
     fprintf('split level %d \n',currentLevel)
     disp('--->')
-    soln = falsify(kf);
+    solns = falsify(kf);
+    soln=solns{1};
     if soln.best.rob < bestSoln.rob
         bestSoln.rob = soln.best.rob;
         bestSoln.level=currentLevel;

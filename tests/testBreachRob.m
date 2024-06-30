@@ -8,8 +8,7 @@ time = linspace(0,1,length(func))';
 trace = [time temperature humidity]; % combine into a trace, column oriented
 Bdata.AddTrace(trace);
 
-
-phi = STL_Formula('phi', '(alw_[0,0.2] humidity[t]<=0.5) until_[0.5,1] temperature[t]>=0.5');
+% phi = STL_Formula('phi', '(alw_[0,0.2] humidity[t]<=0.5) until_[0.5,1] temperature[t]>=0.5');
 % phi = STL_Formula('phi', '(alw_[0,0.2] humidity[t]<=0.5) until_[0.5,1] humidity[t]<=0.5');
 
 % phi = STL_Formula('phi', 'ev (humidity[t]>0.8)');
@@ -30,11 +29,7 @@ Rphi = BreachRequirement(phi);
 
 
 robustness = @(Bdata) Rphi.Eval(Bdata);
-
-rob=robustness(Bdata);
-
-disp("break")
-map=get_formula_name_map(phi, dictionary());
+rob=robustness(Bdata)
 
 
 

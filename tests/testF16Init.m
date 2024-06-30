@@ -20,8 +20,7 @@ g = koopModel.g;
 R0=kf.R0;
 
 dims=[26,21];
-
-n = dim(R0); dig = length(num2str(n));
+n = R0.dim; dig = length(num2str(n));
 names = {}; for i = 1:n; names{i,1} = ['x',num2str(i,['%0',num2str(dig), '.f'])]; end
 tay = taylm(R0,6,names);
 tay = g(tay);
@@ -32,7 +31,7 @@ plot(R0,dims)
 
 R0_=split(kf.R0,6);
 R0 = R0_{1};
-n = dim(R0); dig = length(num2str(n));
+n = R0.dim; dig = length(num2str(n));
 names = {}; for i = 1:n; names{i,1} = ['x',num2str(i,['%0',num2str(dig), '.f'])]; end
 tay = taylm(R0);
 tay = g(tay);
@@ -42,7 +41,7 @@ plot(R0,dims,'g')
 
 R0_=split(kf.R0,6);
 R0 = R0_{2};
-n = dim(R0); dig = length(num2str(n));
+n = R0.dim; dig = length(num2str(n));
 names = {}; for i = 1:n; names{i,1} = ['x',num2str(i,['%0',num2str(dig), '.f'])]; end
 tay = taylm(R0);
 tay = g(tay);
