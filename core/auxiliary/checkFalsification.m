@@ -1,4 +1,4 @@
-function [soln,falsified,robustness,Bdata,newGlobalBest,bestSpec]=checkFalsification(soln,x,u,t,specs,tcp,inputInterpolation,method,verb)
+function [soln,falsified,robustness,Bdata,newGlobalBest,bestSpec]=checkFalsification(soln,x,u,t,specs,tcp,inputInterpolation,U,method,verb)
 % CHECKFALSIFICATION Checks if a given trajectory falsifies a set of specifications.
 %
 %   [soln, falsified, robustness, Bdata, newGlobalBest] = checkFalsification(soln, x, u, t, specs, inputInterpolation, method, verb)
@@ -51,6 +51,7 @@ for ii=1:numel(specs)
         if ~isempty(u)
             interpU = interp1(u(:,1),u(:,2:end),t,inputInterpolation); %interpolate input at same time points as trajectory
             usim = interp1(u(:,1),u(:,2:end),tcp,inputInterpolation,"extrap"); %interpolate and extrapolate input points
+            usim = max(U.inf',min(U.sup',usim)); %ensure that extrapolation is within input bounds
         else
             interpU=u;
             usim=u;
