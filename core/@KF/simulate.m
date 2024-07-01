@@ -48,7 +48,7 @@ if isa(obj.model, 'string') || isa(obj.model,"char")
     if ~isa(x0, 'Simulink.op.ModelOperatingPoint') && all(rad(obj.R0) == 0)
         x0=[];
     end
-    [tout, yout,xFinal] = runSimulink(obj.model, obj.T, x0, u);
+    evalc('[tout, yout,xFinal] = runSimulink(obj.model, obj.T, x0, u)');
 elseif isa(obj.model,'function_handle')
     %function handle must have 3 inputs T,x0,u
     numInputs = nargin(obj.model);
@@ -84,6 +84,6 @@ if isempty(xFinal)
     xFinal=yout(end,:)';
 end
 %make sure that data type is double for returned time and output
-tout=double(tout); 
+tout=double(tout);
 yout=double(yout);
 end
