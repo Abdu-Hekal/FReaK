@@ -111,7 +111,7 @@ for b = 1:length(benches)
         disp('------ eDMD ------')
         [kfSolns,~] = falsify(kfModel);
         %print info
-        fprintf('Benchmark: %s\n', name);
+        fprintf('\nBenchmark: %s\n', name);
         printInfo(kfSolns)
 
         % initialize seeds
@@ -122,7 +122,7 @@ for b = 1:length(benches)
         kfModel.ak.stateWeighted=true;
         [kfSolns,~] = falsify(kfModel);
         %print info
-        fprintf('Benchmark: %s\n', name);
+        fprintf('\nBenchmark: %s\n', name);
         printInfo(kfSolns)
 
 

@@ -108,7 +108,7 @@ for b = 1:length(benches)
         disp('------ MILP ------')
         [kfSolns,~] = falsify(kfModel);
         %print info
-        fprintf('Benchmark: %s\n', name);
+        fprintf('\nBenchmark: %s\n', name);
         printInfo(kfSolns)
 
         % initialize seeds
@@ -120,7 +120,7 @@ for b = 1:length(benches)
         kfModel.solver.timePoints=[];
         [kfSolns,~] = falsify(kfModel);
         %print info
-        fprintf('Benchmark: %s\n', name);
+        fprintf('\nBenchmark: %s\n', name);
         printInfo(kfSolns)
 
         % initialize seeds
@@ -131,7 +131,7 @@ for b = 1:length(benches)
         kfModel.solver.timePoints=0:kfModel.ak.dt:kfModel.T;
         [kfSolns,~] = falsify(kfModel);
         %print info
-        fprintf('Benchmark: %s\n', name);
+        fprintf('\nBenchmark: %s\n', name);
         printInfo(kfSolns)
 
 

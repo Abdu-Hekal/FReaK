@@ -63,7 +63,7 @@ for w=1:numel(weighted)
                 kfSolns = falsify(kfModel);
 
                 %print info
-                fprintf('Benchmark: %s\n', name);
+                fprintf('\nBenchmark: %s\n', name);
                 fprintf('Timestep=%.1f \n',timesteps(t));
                 printInfo(kfSolns)
             end
