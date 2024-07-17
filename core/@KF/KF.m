@@ -185,7 +185,7 @@ classdef KF
             obj.reach.tayOrder=6;
 
             %default optimizer options
-            if exist('gurobi', 'file') == 2
+            if exist('gurobi', 'file') == 3
                 solver='gurobi';
             else
                 solver = 'glpk';
