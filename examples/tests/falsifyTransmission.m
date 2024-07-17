@@ -18,7 +18,6 @@ allData=allDatas{1};
 
 if kfSoln.falsified
     disp(['simulations required: ',num2str(kfSoln.sims)])
-    visualizeFalsification(kfSoln.best.x,kfSoln.best.t,kfSoln.best.spec,plotVars,'Speed','Angular velocity')
 else
     disp("No falsifiying trace found")
 end

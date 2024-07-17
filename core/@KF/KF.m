@@ -78,7 +78,7 @@ classdef KF
         %   .timePoints: solver time points for encoding stl robustness.
         % default solver.timePoints=0:ak.dt:T, i.e. time point every
         % autokoopman step. Change to use coarser solver step when setting
-        % up stl constraints for quicker solving time. 
+        % up stl constraints for quicker solving time.
         % All solver points must be multiple of ak.dt
         %    .autoAddTimePoints: set to true to automatically add
         % timePoints using iterative method. If false, only user defined
@@ -114,8 +114,8 @@ classdef KF
         %trainset if they improve the robustness,
         % or 0 to train with previously found crit trajectory (default=0)
         trainStrat
-        % resetStrat: int, set to 2 to reset to mopso (staliro soar strategy) 
-        % trajectory, 1 to reset to perturbed neighborhood trajectory, 
+        % resetStrat: int, set to 2 to reset to mopso (staliro soar strategy)
+        % trajectory, 1 to reset to perturbed neighborhood trajectory,
         % or 0 to reset to random trajectory (default=0)
         resetStrat
         % rmRand: bool, set to true to remove first random trajectory when
@@ -142,7 +142,7 @@ classdef KF
         % pulseInput: boolean, set to true if the inputs are pulse inputs,
         % otherwise false (default=false)
         pulseInput
-        % verb: int, set 3 for printing all info whilst falsifying, 
+        % verb: int, set 3 for printing all info whilst falsifying,
         % 2 for only best soln info whilst falsifying, 1 for
         % print at end of falsifying, 0 for no print (default=0)
         verb
@@ -185,7 +185,11 @@ classdef KF
             obj.reach.tayOrder=6;
 
             %default optimizer options
-            solver = 'gurobi';  % gurobi, cplex, glpk
+            if exist('gurobi', 'file') == 2
+                solver='gurobi';
+            else
+                solver = 'glpk';
+            end
             timeLimit = 120; %2000;
             gapLimit = 10e-4; %0.1;
             gapAbsLimit = 10e-10; %0.1;
