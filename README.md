@@ -10,7 +10,7 @@ A MATLAB toolkit for falsification using Koopman surrogate models.
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Usage](#usage)
-- [Publications](#publications)
+- [Citing FReaK](#Citing-FReaK)
 - [Contact](#contact)
 
 ## Introduction
