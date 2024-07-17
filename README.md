@@ -67,7 +67,24 @@ falsifyVanderpol
 
 
 
-## Publications
+## Citing FReaK
+
+FReaK has been published as a tool paper at HSCC 2024, available [here](https://dl.acm.org/doi/abs/10.1145/3641513.3650141).
+
+If you cite FReak, please cite
+
+Bak, S., Bogomolov, S., Hekal, A., Kochdumper, N., Lew, E., Mata, A. and Rahmati, A., 2024, May. Falsification using Reachability of Surrogate Koopman Models. In Proceedings of the 27th ACM International Conference on Hybrid Systems: Computation and Control (pp. 1-13)
+
+Bibtex:
+```
+@inproceedings{bak2024falsification,
+  title={Falsification using Reachability of Surrogate Koopman Models},
+  author={Bak, Stanley and Bogomolov, Sergiy and Hekal, Abdelrahman and Kochdumper, Niklas and Lew, Ethan and Mata, Andrew and Rahmati, Amir},
+  booktitle={Proceedings of the 27th ACM International Conference on Hybrid Systems: Computation and Control},
+  pages={1--13},
+  year={2024}
+}
+```
 
 ## Contact
 
