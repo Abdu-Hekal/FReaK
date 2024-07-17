@@ -69,7 +69,7 @@ falsifyVanderpol
 
 ## Citing FReaK
 
-FReaK has been published as a tool paper at HSCC 2024, available [here](https://dl.acm.org/doi/abs/10.1145/3641513.3650141).
+FReaK has been published as a tool paper at the 27th ACM International Conference on Hybrid Systems: Computation and Control (HSCC) 2024, available [here](https://dl.acm.org/doi/abs/10.1145/3641513.3650141).
 
 If you cite FReak, please cite
 
