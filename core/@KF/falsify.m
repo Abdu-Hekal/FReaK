@@ -50,6 +50,7 @@ for run=1:obj.runs
     [obj,trainset,soln,specSolns,allData] = initialize(obj);
     %initalize training iterations and falsification result
     trainIter = 0;
+    curSoln=[];
     falsified=false;
     perturb=0; %perturbation percentage for neighborhood reset
     tak = (0:obj.ak.dt:obj.T)'; %define autokoopman time points
@@ -119,13 +120,13 @@ for run=1:obj.runs
         % compute reachable set for Koopman linearized model (if reachability is used)
         if obj.reach.on
             reachTime=tic;
-            try
-                R = reachKoopman(obj,koopModel);
-            catch
-                vprintf(obj.verb,2,"error encountered whilst computing reachable set, resetting training data \n")
-                trainIter=0;
-                continue
-            end
+%             try 
+            R = reachKoopman(obj,koopModel,curSoln);
+%             catch
+%                 vprintf(obj.verb,2,"error encountered whilst computing reachable set, resetting training data \n")
+%                 trainIter=0;
+%                 continue
+%             end
             soln.reachTime=soln.reachTime+toc(reachTime); %time for reachability computation
         else
             R=[];
