@@ -118,12 +118,8 @@ end
 for i = 1:length(set)
     set{i} = project(set{i},1:n);
     if ~isempty(alphaInit)
-        zono{i} = zonotopeEnclosureMinLinErr(set{i},alphaInit,false);
-        %         if i==1
-        %             zono{i} = zonotopeEnclosureNew(set{i},alphaInit');
-        %         else
-        %             zono{i} = zonotope(set{i});
-        %         end
+        zono{i} = zonotopeEnclosureMinLinErr(set{i},[0;0;0]);
+%         zono{i} = zonotopeEnclosureNew(set{i},[0;0;0]);
     else
         zono{i} = zonotope(set{i});
     end
