@@ -72,6 +72,9 @@ classdef KF
         % Note that for system's with uncertain initial state, reachability
         % must be used.
         %   .tayOrder: Order of taylor models for reachability (default=6)
+        %   .split: recursively split (and unsplit) initial set in a binary
+        %   manner when new best solution is found. See 'falsify.m' for
+        %   implementation
 
         %solver/optimizer (struct)
         solver
@@ -183,6 +186,7 @@ classdef KF
             %reachability settings
             obj.reach.on=true; %true
             obj.reach.tayOrder=6;
+            obj.reach.split=false;
 
             %default optimizer options
             solver = 'gurobi';  % gurobi, cplex, glpk

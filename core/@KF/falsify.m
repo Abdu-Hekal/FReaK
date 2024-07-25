@@ -51,6 +51,10 @@ for run=1:obj.runs
     %initalize training iterations and falsification result
     trainIter = 0;
     falsified=false;
+    %initialize cell to store splits of initial set (R0), to enable backtracking
+    cellR0 = {obj.R0};
+    newBestReset = false; %check if a new best soln has been found within current window (before reset)
+    %initialize other params
     perturb=0; %perturbation percentage for neighborhood reset
     tak = (0:obj.ak.dt:obj.T)'; %define autokoopman time points
     tcp = (0:obj.dt:obj.T)'; %time points for interpolating input
@@ -80,6 +84,21 @@ for run=1:obj.runs
                     spec=obj.spec(ii);
                     specSolns(spec).KoopSolver.offsetMap=dictionary();
                 end
+                if obj.reach.split && ~all(rad(obj.R0) == 0)
+                    if newBestReset
+                        %binary split initial set based on new found best
+                        %point
+                        obj.R0 = binarySplitInterval(obj.R0,soln.best.x(1,:));
+                        cellR0{end+1} = obj.R0;
+                    else
+                        %backtrack splitting of initial set
+                        if numel(cellR0)>1
+                            cellR0(end) = [];
+                        end
+                        obj.R0 = cellR0{end};
+                    end
+                end
+                newBestReset = false; %reset variable that tracks if a new best soln was found in this window (betweeen resets)
                 vprintf(obj.verb,2,2,'Reset applied to training set of size %d\n',size(trainset.t,2))
             end
             % empty trainset at reset, or empty trainset after first iter because it is random trajectory, if rmRand is selected by user.
@@ -98,7 +117,7 @@ for run=1:obj.runs
                 [soln,falsified,robustness,Bdata,newBest_,~]=checkFalsification(soln,x,u,tsim,obj.spec,tcp,obj.inputInterpolation,obj.U,'reset simulation',obj.verb);
                 allData.X{end+1}=x; allData.XU{end+1}=u; allData.t{end+1}=tsim; allData.Rob=[allData.Rob;robustness];
                 if nargout>1;allData.koopModels{end+1}=[];end %store empty model as we are in reset
-                if newBest_; perturb=obj.sampPerturb; end %reset pertrubation if new best soln found
+                if newBest_; perturb=obj.sampPerturb; newBestReset=newBest_; end %reset pertrubation if new best soln found
                 if falsified; break; end
                 xak = interp1(tsim,x,tak,obj.trajInterpolation); %define autokoopman trajectory points
             else
@@ -185,7 +204,7 @@ for run=1:obj.runs
                 [soln,falsified,robustness,Bdata,newBest_,critSpec]=checkFalsification(soln,critX,critU,tsim,obj.spec,tcp,obj.inputInterpolation,obj.U,'kf optimization',obj.verb);
                 allData.X{end+1}=critX; allData.XU{end+1}=critU; allData.t{end+1}=tsim; allData.Rob=[allData.Rob;robustness];
                 if nargout>1;allData.koopModels{end+1}=koopModel;end %store koop model if needed
-                if newBest_; perturb=0; end %reset pertrubation if new best soln found
+                if newBest_; perturb=0; newBestReset=newBest_; end %reset pertrubation if new best soln found
                 if falsified; break; end
 
                 if robustness~=inf %there exist a value for robustness for which we can neighborhood train or offset
