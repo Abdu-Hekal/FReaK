@@ -20,7 +20,7 @@ model.U = interval([34386;0],[53973;16]);
 model.T=4;
 model.dt = 0.01;
 model.ak.dt=0.4;
-model.cp=[10 10];
+% model.cp=[4 4];
 
 x = stl('x',3);
 % eq = ~(globally(x(1) >=240 & x(1) <=250,interval(0,4)) & finally(x(1)>=240 & x(1)<=240.1,interval(3.5,4)));

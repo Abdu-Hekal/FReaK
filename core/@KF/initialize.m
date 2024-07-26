@@ -195,14 +195,3 @@ for k=1:length(obj.cp)
 end
 end
 
-function obj=setInputsInterval(obj)
-lowerBound=[obj.R0.inf];
-upperBound=[obj.R0.sup];
-for i=1:size(obj.U,1)
-    cp=find(obj.cpBool(:,i));
-    numU = numel(cp);
-    lowerBound=[lowerBound;repmat(obj.U.inf(i),numU,1)];
-    upperBound = [upperBound;repmat(obj.U.sup(i),numU,1)];
-end
-obj.inputsInterval = interval(lowerBound,upperBound);
-end

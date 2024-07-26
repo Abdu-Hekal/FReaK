@@ -42,6 +42,7 @@ if isempty(obj.inputsInterval)
     obj=initialize(obj);
     vprintf(obj.verb,1,'Initiallizing object to setup control points and input intervals\n')
 end
+obj=setInputsInterval(obj);
 
 perturb=0;
 simd=true; %simulation needed

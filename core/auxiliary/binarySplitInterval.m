@@ -1,7 +1,7 @@
-function res = binarySplitInterval(interval, point)
+function res = binarySplitInterval(I, point)
 
-dims=dim(interval);
-splitInterval = split(interval,1:dims);
+dims=dim(I);
+splitInterval = split(I,1:dims);
 s1=splitInterval{1};
 s2=splitInterval{2};
 
@@ -13,7 +13,6 @@ for i=1:dims
     elseif contains(s2(i),point(i))
         res=vertcat(res,s2(i));
     else
-        soln.best.x(1,:)
         error('point must be within bounds of original interval')
     end
 end

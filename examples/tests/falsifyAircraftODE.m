@@ -20,10 +20,17 @@ for i = 1:size(req, 1)
     eq = req{i, 2};
 
     kfModel.spec = specification(eq,'logic');
-    kfModel.runs=50;
-    kfModel.verb=0;
+    kfModel.runs=1;
+    kfModel.verb=3;
 
     kfModel.reach.split=true;
+    kfSolns = falsify(kfModel);
+
+    %print info
+    fprintf('Benchmark: %s\n', name);
+    printInfo(kfSolns)
+
+    kfModel.reach.split=false;
     kfSolns = falsify(kfModel);
 
     %print info

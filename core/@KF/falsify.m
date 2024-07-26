@@ -89,6 +89,7 @@ for run=1:obj.runs
                         %binary split initial set based on new found best
                         %point
                         obj.R0 = binarySplitInterval(obj.R0,soln.best.x(1,:));
+%                         obj.R0=zoomInterval(obj.R0,soln.best.x(1,:)',1);
                         cellR0{end+1} = obj.R0;
                     else
                         %backtrack splitting of initial set
